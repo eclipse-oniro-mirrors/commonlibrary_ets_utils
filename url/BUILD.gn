@@ -50,6 +50,8 @@ ohos_shared_library("url") {
   }
   subsystem_name = "ccruntime"
   part_name = "jsapi_api"
+
+  relative_install_dir = "module"
 }
 
 group("url_packages") {
