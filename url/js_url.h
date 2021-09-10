@@ -12,34 +12,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <string>
-#include <vector>
-#include <iostream>
-#include <bitset>
-#include <regex>
-#include <ctype.h>
+#ifndef COMPILERUNTIME_JS_API_URL_H
+#define COMPILERUNTIME_JS_API_URL_H
+
 #include <algorithm>
-#include <map>
-#include <cstdlib>
+#include <bitset>
 #include <cmath>
 #include <cstdio>
-#include <sstream>
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <vector>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
-struct url_data {
-    int port = -1;
-    std::string scheme;
-    std::string username;
-    std::string password;
-    std::string host;
-    std::string query;
-    std::string fragment;
-    std::vector<std::string> path;
+enum class BitsetStatusFlag {
+    BIT0 = 0, // 0:Bit 0 Set to true,The URL analysis failed
+    BIT1 = 1, // 1:Bit 1 Set to true,The protocol is the default protocol
+    BIT2 = 2, // 2:Bit 2 Set to true,The URL has username
+    BIT3 = 3, // 3:Bit 3 Set to true,The URL has password
+    BIT4 = 4, // 4:Bit 4 Set to true,The URL has hostname
+    BIT5 = 5, // 5:Bit 5 Set to true,The URL Port is the specially
+    BIT6 = 6, // 6:Bit 6 Set to true,The URL has pathname
+    BIT7 = 7, // 7:Bit 7 Set to true,The URL has query
+    BIT8 = 8, // 8:Bit 8 Set to true,The URL has fragment
+    BIT9 = 9, // 9:Bit 9 Set to true,The URL Can not be base
+    BIT10 = 10, // 10:Bit 10 Set to true,The host is IPV6
+    BIT_STATUS_11 = 11 // 11:Each bit of a BIT represents a different parsing state.
 };
 
-class URL
-{
+struct UrlData {
+    int port = -1;
+    std::vector<std::string> path;
+    std::string password = "";
+    std::string scheme = "";
+    std::string query = "";
+    std::string username = "";
+    std::string fragment = "";
+    std::string host = "";
+};
+
+class URL {
 public:
     URL(napi_env env, const std::string& input);
     URL(napi_env env, const std::string& input, const std::string& base);
@@ -68,37 +81,39 @@ public:
     napi_value GetIsIpv6() const;
     napi_value GetHost() const;
 
-    static void InitOnlyInput(std::string& input, url_data& urlData, std::bitset<11>& flags);
+    static void InitOnlyInput(std::string& input, UrlData& urlData,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
     virtual ~URL() {}
 private:
-    url_data urlData_;
-    std::bitset<11> flags_;
+    UrlData urlData_;
+    std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> flags_;
     // bitset<11>:Similar to bool array, each bit status represents the real-time status of current URL parsing
     napi_env env_ = nullptr;
 };
 
 class URLSearchParams {
 public:
-    URLSearchParams(napi_env env);
+    explicit URLSearchParams(napi_env env);
     virtual ~URLSearchParams() {}
-    napi_value IsHas(napi_value  name);
+    napi_value IsHas(napi_value  name) const;
     napi_value Get(napi_value buffer);
     napi_value GetAll(napi_value buffer);
     void Append(napi_value buffer, napi_value temp);
     void Delete(napi_value buffer);
     void ForEach(napi_value function, napi_value thisVar);
-    napi_value Entries();
+    napi_value Entries() const;
     void Set(napi_value name, napi_value value);
     void Sort();
     napi_value ToString();
     napi_value IterByKeys();
     napi_value IterByValues();
     void SetArray(std::vector<std::string> input);
-    napi_value GetArray();
-    std::vector<std::string> StringParmas (std::string Stringpar);
+    napi_value GetArray() const;
+    std::vector<std::string> StringParmas(std::string Stringpar);
 private:
     std::string ToUSVString(std::string inputStr);
     void HandleIllegalChar(std::wstring& inputStr, std::wstring::const_iterator it);
     std::vector<std::string> searchParams;
     napi_env env;
 };
+#endif /* COMPILERUNTIME_JS_API_URL_H */

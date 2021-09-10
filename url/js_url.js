@@ -14,7 +14,7 @@
  */
 
 'use strict';
-const urlUtil = requireInternal("url");
+const urlUtil = requireInternal('url');
 let seachParamsArr = [];
 
 class URLSearchParams {
@@ -40,7 +40,6 @@ class URLSearchParams {
     has(hasname) {
         return this.urlcalss.has(hasname);
     }
-
     toString() {
         return this.urlcalss.toString();
     }
@@ -50,6 +49,7 @@ class URLSearchParams {
     }
 
     values() {
+        console.log('constructor failed');
         return this.urlcalss.values();
     }
 
@@ -84,7 +84,6 @@ class URLSearchParams {
         this.urlcalss.array = out;
     }
 }
-
 function toHleString(arg) {
     return arg.toString();
 }
@@ -99,38 +98,36 @@ function parameterProcessing(input) {
         return initToStringSeachParams(input);
     }
 }
-
 function initObjectSeachParams(input) {
     if (typeof input[Symbol.iterator] === 'function') {
         return iteratorMethod(input);
     }
     return recordMethod(input);
 }
-
 function recordMethod(input) {
-    const keys = Reflect.ownKeys(input);
+    const objectkeys = Reflect.ownKeys(input);
     seachParamsArr = [];
-    for (let i = 0; i <= keys.length; i++) {
-        const key = keys[i];
-        const desc = Reflect.getOwnPropertyDescriptor(input, key);
-        if (desc !== undefined && desc.enumerable) {
-            const typedKey = toHleString(key);
-            const typedValue = toHleString(input[key]);
-            seachParamsArr.push(typedKey, typedValue);
+    let objectlength = objectkeys.length;
+    for (let i = 0; i <= objectlength; i++) {
+        const objectkey = objectkeys[i];
+        const descry = Reflect.getOwnPropertyDescriptor(input, objectkey);
+        if (descry !== undefined && descry.enumerable) {
+            const inputkey = toHleString(objectkey);
+            const inputValue = toHleString(input[objectkey]);
+            seachParamsArr.push(inputkey, inputValue);
         }
     }
-    return  seachParamsArr;
+    return seachParamsArr;
 }
-
 function iteratorMethod(input) {
     let pairs = [];
     seachParamsArr = [];
     for (const pair of input) {
-        const convertedPair = [];
+        const conversionsPair = [];
         for (let element of pair) {
-            convertedPair.push(element);
+            conversionsPair.push(element);
         }
-        pairs.push(convertedPair);
+        pairs.push(conversionsPair);
     }
 
     for (const pair of pairs) {
@@ -150,7 +147,6 @@ function initToStringSeachParams(input) {
     seachParamsArr = urlUtil.stringParmas(strVal);
     return seachParamsArr;
 }
-
 class URL {
     href_;
     search_;
@@ -192,7 +188,7 @@ class URL {
                     }
                 }
                 if (typeof inputBase === 'object') {
-                    let nativeBase = inputBase.get_info();
+                    let nativeBase = inputBase.getInfo();
                     nativeUrl = new urlUtil.Url(inputUrl, nativeBase);
                 }
             }
@@ -220,8 +216,164 @@ class URL {
             console.log('constructor failed');
         }
     }
-    get_info() {
+    getInfo() {
         return this.c_info;
+    }
+    toString() {
+        return this.href_;
+    }
+
+    get protocol() {
+        return this.protocol_;
+    }
+    set protocol(scheme) {
+        if (scheme.length === 0) {
+            return;
+        }
+        if (this.protocol_ === 'file:'
+            && (this.host_ === '' || this.host_ == null)) {
+            return;
+        }
+        this.c_info.protocol = scheme;
+        this.protocol_ = this.c_info.protocol;
+        this.set_href()
+    }
+    get origin() {
+        let kOpaqueOrigin = 'null';
+        switch (this.protocol_) {
+            case 'ftp:':
+            case 'gopher:':
+            case 'http:':
+            case 'https:':
+            case 'ws:':
+            case 'wss:':
+                return this.origin_;
+        }
+        return kOpaqueOrigin;
+    }
+    get username() {
+        return this.username_;
+    }
+    set username(input) {
+        if (this.host_ == null || this.host_ === '' || this.protocol_ === 'file:') {
+            return;
+        }
+        const usname_ = escape(input);
+        this.c_info.username = usname_;
+        this.username_ = this.c_info.username;
+        this.set_href();
+    }
+    get password() {
+        return this.password_;
+    }
+    set password(input) {
+        if (this.host_ == null || this.host_ === '' || this.protocol_ === 'file:') {
+            return;
+        }
+        const passwd_ = escape(input);
+        this.c_info.password = passwd_;
+        this.password_ = this.c_info.password;
+        this.set_href();
+    }
+    get hash() {
+        return this.hash_;
+    }
+    set hash(fragment) {
+        const fragment_ = encodeURI(fragment);
+        this.c_info.hash = fragment_;
+        this.hash_ = this.c_info.hash;
+        this.set_href();
+    }
+    get search() {
+        return this.search_;
+    }
+    set search(query) {
+        const query_ = encodeURI(query);
+        this.c_info.search = query_;
+        this.search_ = this.c_info.search;
+        this.searchParamsClass_.updateParams(this.search_);
+        this.set_href();
+    }
+    get hostname() {
+        return this.hostname_;
+    }
+    set hostname(hostname) {
+        this.c_info.hostname = hostname;
+        if (this.c_info.GetIsIpv6) {
+            this.hostname_ = this.c_info.hostname;
+        } else {
+            this.hostname_ = encodeURI(this.c_info.hostname);
+        }
+        this.set_href();
+    }
+    get host() {
+        return this.host_;
+    }
+    set host(host_) {
+        this.c_info.host = host_;
+        if (this.c_info.GetIsIpv6) {
+            this.host_ = this.c_info.host;
+            this.hostname_ = this.c_info.hostname;
+            this.port_ = this.c_info.port;
+        } else {
+            this.host_ = encodeURI(this.c_info.host);
+            this.hostname_ = encodeURI(this.c_info.hostname);
+            this.port_ = this.c_info.port;
+        }
+        this.set_href();
+    }
+    get port() {
+        return this.port_;
+    }
+    set port(port) {
+        if (this.host_ === '' || this.protocol_ === 'file:' || port === '') {
+            return;
+        }
+        this.c_info.port = port;
+        this.port_ = this.c_info.port;
+        this.set_href();
+    }
+    get href() {
+        return this.href_;
+    }
+    set href(href_) {
+        this.c_info.href(href_);
+        if (this.c_info.onOrOff) {
+            this.search_ = encodeURI(this.c_info.search);
+            this.username_ = encodeURI(this.c_info.username);
+            this.password_ = encodeURI(this.c_info.password);
+            if (this.c_info.GetIsIpv6) {
+                this.hostname_ = this.c_info.hostname;
+                this.host_ = this.c_info.host;
+            } else {
+                this.hostname_ = encodeURI(this.c_info.hostname);
+                this.host_ = encodeURI(this.c_info.host);
+            }
+            this.hash_ = encodeURI(this.c_info.hash);
+            this.protocol_ = encodeURI(this.c_info.protocol);
+            this.pathname_ = encodeURI(this.c_info.pathname);
+            this.port_ = this.c_info.port;
+            this.origin_ = this.protocol_ + '//' + this.host_;
+            this.searchParamsClass_.updateParams(this.search_);
+            this.set_href();
+        }
+    }
+    get pathname() {
+        return this.pathname_;
+    }
+    set pathname(path) {
+        const path_ = encodeURI(path);
+        this.c_info.pathname = path_;
+        this.pathname_ = this.c_info.pathname;
+        this.set_href();
+    }
+
+    get searchParams() {
+        return this.searchParamsClass_;
+    }
+
+    toJSON() {
+        return this.href_;
     }
     set_href() {
         let temp = this.protocol_;
@@ -255,222 +407,6 @@ class URL {
         this.href_ = temp;
     }
 }
-
-Object.defineProperties(URL.prototype, {
-
-    to_string: {
-        writable: true,
-        enumerable: true,
-        configurable: true,
-        value: function toString() {
-            return this.href_;
-        }
-    },
-    origin: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            let kOpaqueOrigin = 'null';
-            switch (this.protocol_) {
-                case 'ftp:':
-                case 'gopher:':
-                case 'http:':
-                case 'https:':
-                case 'ws:':
-                case 'wss:':
-                    return this.origin_;
-            }
-            return kOpaqueOrigin;
-        }
-    },
-    protocol: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.protocol_;
-        },
-        set(scheme) {
-            if (scheme.length === 0) {
-                return;
-            }
-            if (this.protocol_ === 'file:'
-                && (this.host_ === '' || this.host_ == null)) {
-                return;
-            }
-            this.c_info.protocol = scheme;
-            this.protocol_ = this.c_info.protocol;
-            this.set_href();
-        }
-    },
-    username: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.username_;
-        },
-        set(input) {
-            if (this.host_ == null || this.host_ === '' || this.protocol_ === 'file:') {
-                return;
-            }
-            const usname_ = escape(input);
-            this.c_info.username = usname_;
-            this.username_ = this.c_info.username;
-            this.set_href();
-        }
-    },
-    password: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.password_;
-        },
-        set(input) {
-            if (this.host_ == null || this.host_ === '' || this.protocol_ === 'file:') {
-                return;
-            }
-            const passwd_ = escape(input);
-            this.c_info.password = passwd_;
-            this.password_ = this.c_info.password;
-            this.set_href();
-        }
-    },
-    hash: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.hash_;
-        },
-        set(fragment) {
-            const fragment_ = encodeURI(fragment);
-            this.c_info.hash = fragment_;
-            this.hash_ = this.c_info.hash;
-            this.set_href();
-        }
-    },
-    search: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.search_;
-        },
-        set(query) {
-            const query_ = encodeURI(query);
-            this.c_info.search = query_;
-            this.search_ = this.c_info.search;
-            this.searchParamsClass_.updateParams(this.search_);
-            this.set_href();
-        }
-    },
-    hostname: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.hostname_;
-        },
-        set(hostname) {
-            this.c_info.hostname = hostname;
-            if (this.c_info.GetIsIpv6) {
-                this.hostname_ = this.c_info.hostname;
-            } else {
-                this.hostname_ = encodeURI(this.c_info.hostname);
-            }
-            this.set_href();
-        }
-    },
-    host: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.host_;
-        },
-        set(host_) {
-            this.c_info.host = host_;
-            if (this.c_info.GetIsIpv6) {
-                this.host_ = this.c_info.host;
-                this.hostname_ = this.c_info.hostname;
-                this.port_ = this.c_info.port;
-            } else {
-                this.host_ = encodeURI(this.c_info.host);
-                this.hostname_ = encodeURI(this.c_info.hostname);
-                this.port_ = this.c_info.port;
-            }
-            this.set_href();
-        }
-    },
-    port: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.port_;
-        },
-        set(port) {
-            if (this.host_ === '' || this.protocol_ === 'file:' || port === '') {
-                return;
-            }
-            this.c_info.port = port;
-            this.port_ = this.c_info.port;
-            this.set_href();
-        }
-    },
-    href: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.href_;
-        },
-        set(href_) {
-            this.c_info.href(href_);
-            if (this.c_info.onOrOff) {
-                this.search_ = encodeURI(this.c_info.search);
-                this.username_ = encodeURI(this.c_info.username);
-                this.password_ = encodeURI(this.c_info.password);
-                if (this.c_info.GetIsIpv6) {
-                    this.hostname_ = this.c_info.hostname;
-                    this.host_ = this.c_info.host;
-                } else {
-                    this.hostname_ = encodeURI(this.c_info.hostname);
-                    this.host_ = encodeURI(this.c_info.host);
-                }
-                this.hash_ = encodeURI(this.c_info.hash);
-                this.protocol_ = encodeURI(this.c_info.protocol);
-                this.pathname_ = encodeURI(this.c_info.pathname);
-                this.port_ = this.c_info.port;
-                this.origin_ = this.protocol_ + '//' + this.host_;
-                this.searchParamsClass_.updateParams(this.search_);
-                this.set_href();
-            }
-            return this.href_;
-        }
-    },
-    pathname: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.pathname_;
-        },
-        set(path) {
-            const path_ = encodeURI(path);
-            this.c_info.pathname = path_;
-            this.pathname_ = this.c_info.pathname;
-            this.set_href();
-        }
-    },
-    toJSON: {
-        writable: true,
-        enumerable: true,
-        configurable: true,
-        value: function toJSON() {
-            return this.href_;
-        }
-    },
-    searchParams: {
-        enumerable: true,
-        configurable: true,
-        get() {
-            return this.searchParamsClass_;
-        }
-    }
-});
 
 export default {
     URLSearchParams: URLSearchParams,

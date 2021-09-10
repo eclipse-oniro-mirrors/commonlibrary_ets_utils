@@ -1,7 +1,7 @@
 {
   "subsystem": "ccruntime",
   "parts": {
-    "jsapi_api": {
+    "jsapi_url": {
       "variants": [
         "wearable",
         "phone"

@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (c) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,13 +12,61 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "utils/log.h"
+#include "js_url.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "js_url.h"
-#include "utils/log.h"
 
 extern const char _binary_js_url_js_start[];
 extern const char _binary_js_url_js_end[];
+
+static void UrlStructor(napi_env &env, napi_callback_info &info, URL* &object)
+{
+    napi_value thisVar = nullptr;
+    size_t argc = 2;
+    napi_value argv[2] = { 0 };
+    void* data = nullptr;
+    napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data);
+    napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
+    napi_valuetype valuetype1;
+    napi_valuetype valuetype2;
+    std::string input = "";
+    napi_typeof(env, argv[0], &valuetype1);
+    if (valuetype1 == napi_string) {
+        char* tem = nullptr;
+        size_t temlen = 0;
+        napi_get_value_string_utf8(env, argv[0], nullptr, 0, &temlen);
+        if (temlen > 0) {
+            tem = new char[temlen + 1];
+            napi_get_value_string_utf8(env, argv[0], tem, temlen + 1, &temlen);
+            input = tem;
+            delete[] tem;
+        }
+        napi_typeof(env, argv[1], &valuetype2);
+        if (valuetype2 == napi_string) {
+            std::string base = "";
+            char* type1 = nullptr;
+            size_t typelen1 = 0;
+            napi_get_value_string_utf8(env, argv[1], nullptr, 0, &typelen1);
+            if (typelen1 > 0) {
+                type1 = new char[typelen1 + 1];
+                napi_get_value_string_utf8(env, argv[1], type1, typelen1 + 1, &typelen1);
+                base = type1;
+                delete[] type1;
+            }
+            object = new URL(env, input, base);
+        } else if (valuetype2 == napi_object) {
+            URL* temp = nullptr;
+            napi_unwrap(env, argv[1], (void**)&temp);
+            object = new URL(env, input, *temp);
+        } else {
+            HILOG_INFO("secondParameter error");
+        }
+    } else {
+        HILOG_INFO("firstParameter error");
+    }
+    return;
+}
 
 static napi_value UrlConstructor(napi_env env, napi_callback_info info)
 {
@@ -29,62 +77,37 @@ static napi_value UrlConstructor(napi_env env, napi_callback_info info)
     URL* object = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
     if (argc == 1) {
+        std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, &data));
         napi_valuetype valuetype;
-        NAPI_CALL(env,napi_typeof(env, argv[0], &valuetype));
+        NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype));
         if (valuetype == napi_string) {
         char* type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-        type = new char[typelen+1];
-        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-        object = new URL(env,type);
-        delete[] type;
+        if (typelen > 0) {
+            type = new char[typelen + 1];
+            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+            input = type;
+            delete[] type;
+        }
+        object = new URL(env, input);
     } else {
         HILOG_INFO("Parameter error");
     }
-    } else if (argc == 2) {
-        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, &data));
-        napi_valuetype valuetype1;
-        napi_valuetype valuetype2;
-        NAPI_CALL(env,napi_typeof(env, argv[0], &valuetype1));
-        if (valuetype1 == napi_string) {
-            char* tem = nullptr;
-            size_t temlen = 0;
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &temlen));
-            tem = new char[temlen+1];
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], tem, temlen + 1, &temlen));
-            std::string input_(tem);
-            delete[] tem;
-            NAPI_CALL(env,napi_typeof(env, argv[1], &valuetype2));
-            if (valuetype2 == napi_string){
-                char* type1 = nullptr;
-                size_t typelen1 = 0;
-                NAPI_CALL(env, napi_get_value_string_utf8(env, argv[1], nullptr, 0, &typelen1));
-                type1 = new char[typelen1 + 1];
-                NAPI_CALL(env, napi_get_value_string_utf8(env, argv[1], type1, typelen1 + 1, &typelen1));
-                std::string base_(type1);
-                delete[] type1;
-                object = new URL(env, input_, base_);        
-            } else if (valuetype2 == napi_object) {
-                URL * temp = nullptr;
-                NAPI_CALL(env, napi_unwrap(env, argv[1], (void**)&temp));
-                object = new URL(env,input_,*temp);
-            } else {
-                HILOG_INFO("secondParameter error");
-            }
-        } else {
-            HILOG_INFO("firstParameter error");
-        }        
+    } else if (argc == 2) { // 2:When the input parameter is set to 2
+        UrlStructor(env, info, object);
     }
-    NAPI_CALL(env, napi_wrap(env, thisVar, object,
-            [](napi_env env, void* data, void* hint) {
-                auto object = (URL*)data;
-                if (object != nullptr) {
-                    delete object;
-                }
-            }, nullptr, nullptr));
-        return thisVar;
+    napi_wrap(
+        env, thisVar, object,
+        [](napi_env env, void* data, void* hint) {
+            auto object = (URL*)data;
+            if (object != nullptr) {
+                delete object;
+            }
+        },
+        nullptr, nullptr);
+    return thisVar;
 }
 
 static napi_value GetHostname(napi_env env, napi_callback_info info)
@@ -202,13 +225,16 @@ static napi_value SetHref(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -226,13 +252,16 @@ static napi_value SetHostname(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -250,13 +279,16 @@ static napi_value SetPort(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -274,13 +306,16 @@ static napi_value SetHost(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -298,13 +333,16 @@ static napi_value SetSearch(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -322,13 +360,16 @@ static napi_value SetScheme(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -346,13 +387,16 @@ static napi_value SetFragment(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -370,13 +414,16 @@ static napi_value SetUsername(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -394,13 +441,16 @@ static napi_value SetPath(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -418,13 +468,16 @@ static napi_value SetPassword(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     char* type = nullptr;
     size_t typelen = 0;
     NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-    type = new char[typelen+1];
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-    std::string input(type);
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+        input = type;
+    }
     if (type != nullptr) {
         delete[] type;
         type = nullptr;
@@ -443,7 +496,7 @@ static napi_value SeachParamsConstructor(napi_env env, napi_callback_info info)
     void* data = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
     auto object = new URLSearchParams(env);
-    NAPI_CALL(env, napi_wrap(
+    napi_wrap(
         env, thisVar, object,
         [](napi_env env, void* data, void* hint) {
             auto object = (URLSearchParams*)data;
@@ -451,30 +504,34 @@ static napi_value SeachParamsConstructor(napi_env env, napi_callback_info info)
                 delete object;
             }
         },
-        nullptr, nullptr));
+        nullptr, nullptr);
     return thisVar;
 }
 
 static napi_value SetArray(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    napi_value argv[1];
+    napi_value argv[1] = {0};
     size_t argc = 1;
     uint32_t length = 0;
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     napi_get_array_length(env, argv[0], &length);
     std::vector<std::string> vec;
-    char* cstr = nullptr;
     size_t arraySize = 0;
     napi_value napiStr = nullptr;
     for (size_t i = 0; i < length; i++) {
+        char* cstr = nullptr;
         napi_get_element(env, argv[0], i, &napiStr);
         napi_get_value_string_utf8(env, napiStr, nullptr, 0, &arraySize);
-        cstr = new char[arraySize + 1];
-        napi_get_value_string_utf8(env, napiStr, cstr, arraySize + 1, &arraySize);
-        vec.push_back(cstr);
-        delete []cstr;
-        cstr = nullptr;
+        if (arraySize > 0) {
+            cstr = new char[arraySize + 1];
+            napi_get_value_string_utf8(env, napiStr, cstr, arraySize + 1, &arraySize);
+            vec.push_back(cstr);
+            delete []cstr;
+            cstr = nullptr;
+        } else {
+            vec.push_back("");
+        }
     }
     URLSearchParams* murl = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
@@ -500,8 +557,7 @@ static napi_value Get(napi_env env, napi_callback_info info)
     size_t argc = 1;
     napi_value args = nullptr;
     napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-
-    if(argc != 1) {
+    if (argc != 1) {
         HILOG_INFO("One arg needs to be specified");
         return nullptr;
     }
@@ -517,8 +573,7 @@ static napi_value GetAll(napi_env env, napi_callback_info info)
     size_t argc = 1;
     napi_value args = nullptr;
     napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-
-    if(argc != 1) {
+    if (argc != 1) {
         HILOG_INFO("One arg needs to be specified");
         return nullptr;
     }
@@ -535,8 +590,7 @@ static napi_value Append(napi_env env, napi_callback_info info)
     napi_value args[2] = { 0 };
     void* data = nullptr;
     napi_get_cb_info(env, info, &argc, args, &thisVar, &data);
-
-    if(argc != 2) {
+    if (argc != 2) { // 2:If the input parameter is not set to 2,
         HILOG_INFO("Two args needs to be specified");
         return nullptr;
     }
@@ -552,8 +606,7 @@ static napi_value Delete(napi_env env, napi_callback_info info)
     size_t argc = 1;
     napi_value args = nullptr;
     napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-
-    if(argc != 1) {
+    if (argc != 1) {
         HILOG_INFO("One arg needs to be specified");
         return nullptr;
     }
@@ -569,7 +622,6 @@ static napi_value ForEach(napi_env env, napi_callback_info info)
     size_t argc = 1;
     napi_value args = nullptr;
     napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-
     URLSearchParams* object = nullptr;
     napi_unwrap(env, thisVar, (void**)&object);
     object->ForEach(args, thisVar);
@@ -660,91 +712,116 @@ static napi_value IterByValues(napi_env env, napi_callback_info info)
     return result;
 }
 
-std::vector<std::string> stringParsing (std::string Stringpar)
+void IsPlusSign(size_t &strLastPos, size_t &iteaor, std::string &buf, std::string &stringParm)
+{
+    if (strLastPos < iteaor) {
+        buf += stringParm.substr(strLastPos, iteaor - strLastPos);
+    }
+    buf += "";
+    strLastPos = iteaor + 1;
+    return;
+}
+void IsEqualSign(size_t &strLastPos, size_t &iteaor, std::string &buf, std::string &stringParm, std::vector<std::string> &seachParasVec)
+{
+    if (strLastPos < iteaor) {
+        buf += stringParm.substr(strLastPos, iteaor - strLastPos);
+    }
+    seachParasVec.push_back(buf);
+    buf = "";
+    strLastPos = iteaor + 1;
+    return;
+}
+
+void IsAddressSign(size_t &strLastPos, size_t &iteaor, std::string &buf, std::string &stringParm, std::vector<std::string> &seachParasVec)
+{
+    if (strLastPos < iteaor) {
+        buf += stringParm.substr(strLastPos, iteaor - strLastPos);
+    }
+    seachParasVec.push_back(buf);
+    return;
+}
+void DealParmsString(size_t &strLastPos, size_t &iteaor, std::string &buf, std::string &stringParm, std::vector<std::string> &seachParasVec)
+{
+    if (strLastPos < iteaor) {
+        buf += stringParm.substr(strLastPos, iteaor - strLastPos);
+    }
+    seachParasVec.push_back(buf);
+}
+void IsEqualCode(size_t &strStartPos, size_t &iteaor, size_t strLastPos)
+{
+    if (strStartPos == iteaor) {
+        strLastPos = iteaor + 1;
+        strStartPos = iteaor + 1;
+    }
+    return;
+}
+static std::vector<std::string> StringParsing(std::string stringParm)
 {
     std::vector<std::string> seachParasVec;
     size_t strStartPos = 0;
     size_t strLastPos = 0;
     bool isHasSpace = false;
     std::string buf = "";
-    size_t i;
-    for(i = 0;i < Stringpar.length(); i++) {
-        char code = Stringpar[i];
-        switch(code) {
-            case '&' :
+    size_t iteaor = 0;
+    for (iteaor = 0; iteaor < stringParm.length(); iteaor++) {
+        char code = stringParm[iteaor];
+        switch (code) {
+            case '&':
                 {
-                    if (strStartPos == i){
-                        strLastPos = i + 1;
-                        strStartPos = i + 1;
-                        break;
-                    }
-                    if (strLastPos < i) {
-                        buf += Stringpar.substr(strLastPos, i - strLastPos);
-                    }
-                    seachParasVec.push_back(buf);
+                    IsEqualCode(strStartPos, iteaor, strLastPos);
+                    IsAddressSign(strLastPos, iteaor, buf, stringParm, seachParasVec);
                     if (!isHasSpace) {
                         seachParasVec.push_back("");
                     }
                     isHasSpace = false;
                     buf = "";
-                    strLastPos = i + 1;
-                    strStartPos = i + 1;
+                    strLastPos = iteaor + 1;
+                    strStartPos = iteaor + 1;
                     break;
                 }
-            case '=' :
+            case '=':
                 {
                     if (isHasSpace) {
                         break;
                     }
-                    if (strLastPos < i) {
-                        buf += Stringpar.substr(strLastPos, i- strLastPos);
-                    }
-                    seachParasVec.push_back(buf);
+                    IsEqualSign(strLastPos, iteaor, buf, stringParm, seachParasVec);
                     isHasSpace = true;
-                    buf = "";
-                    strLastPos = i + 1;
                     break;
                 }
-            case '+' :
-                {
-                    if (strLastPos < i) {
-                        buf += Stringpar.substr(strLastPos, i - strLastPos);
-                    }
-                    buf += "";
-                    strLastPos = i + 1;
-                    break;
-                }
+            case '+':
+                IsPlusSign(strLastPos, iteaor, buf, stringParm);
+                break;
             default:break;
         }
     }
-    if (strStartPos == i) {
+    if (strStartPos == iteaor) {
         return seachParasVec;
     }
-    if (strLastPos < i) {
-        buf += Stringpar.substr(strLastPos, i - strLastPos);
-    }
-    seachParasVec.push_back(buf);
+    DealParmsString(strLastPos, iteaor, buf, stringParm, seachParasVec);
     if (!isHasSpace) {
         seachParasVec.push_back("");
     }
     return seachParasVec;
 }
 
-static  napi_value StringParmas(napi_env env, napi_callback_info info)
-{  
+static napi_value StringParmas(napi_env env, napi_callback_info info)
+{
     napi_value thisVar = nullptr;
     napi_value argv[1] = {0};
     size_t argc = 1;
+    std::string input = "";
     napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     char* type = nullptr;
     size_t typelen = 0;
     napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen);
-    type = new char[typelen+1];
-    napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
-    std::string input(type);
-    delete[] type;
+    if (typelen > 0) {
+        type = new char[typelen + 1];
+        napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen);
+        input = type;
+        delete[] type;
+    }
     std::vector<std::string> seachParasmsString;
-    seachParasmsString = stringParsing(input);
+    seachParasmsString = StringParsing(input);
     napi_value arr = nullptr;
     napi_create_array(env, &arr);
     for (size_t i = 0; i < seachParasmsString.size(); i++) {
@@ -757,10 +834,9 @@ static  napi_value StringParmas(napi_env env, napi_callback_info info)
 
 static napi_value SeachParamsInit(napi_env env, napi_value exports)
 {
-    const char* SeachParamsClassName = "URLSearchParams";
-    napi_value SeachParamsInitClass = nullptr;
-    static napi_property_descriptor UrlDesc[] =
-    {
+    const char *seachParamsClassName = "URLSearchParams";
+    napi_value seachParamsInitClass = nullptr;
+    static napi_property_descriptor UrlDesc[] = {
         DECLARE_NAPI_FUNCTION("has", IsHas),
         DECLARE_NAPI_FUNCTION("set", Set),
         DECLARE_NAPI_FUNCTION("sort", Sort),
@@ -775,39 +851,38 @@ static napi_value SeachParamsInit(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("entries", Entries),
         DECLARE_NAPI_GETTER_SETTER("array", GetArray, SetArray),
     };
-    NAPI_CALL(env, napi_define_class(env, SeachParamsClassName, strlen(SeachParamsClassName), SeachParamsConstructor,
-        nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc, &SeachParamsInitClass));
+    NAPI_CALL(env, napi_define_class(env, seachParamsClassName, strlen(seachParamsClassName), SeachParamsConstructor,
+        nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc, &seachParamsInitClass));
     static napi_property_descriptor desc[] = {
-        DECLARE_NAPI_PROPERTY("URLSearchParams1", SeachParamsInitClass)
+        DECLARE_NAPI_PROPERTY("URLSearchParams1", seachParamsInitClass)
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;
 };
 
 static napi_value UrlInit(napi_env env, napi_value exports)
- {
-    const char* UrlClassName = "Url";
-    napi_value UrlClass = nullptr;
-    static napi_property_descriptor UrlDesc[] =
-    {
+{
+    const char *urlClassName = "Url";
+    napi_value urlClass = nullptr;
+    static napi_property_descriptor UrlDesc[] = {
         DECLARE_NAPI_GETTER_SETTER("hostname", GetHostname, SetHostname),
         DECLARE_NAPI_FUNCTION("href", SetHref),
-        DECLARE_NAPI_GETTER_SETTER("search", GetSearch, SetSearch), 
-        DECLARE_NAPI_GETTER_SETTER("username", GetUsername, SetUsername), 
-        DECLARE_NAPI_GETTER_SETTER("password", GetPassword, SetPassword), 
+        DECLARE_NAPI_GETTER_SETTER("search", GetSearch, SetSearch),
+        DECLARE_NAPI_GETTER_SETTER("username", GetUsername, SetUsername),
+        DECLARE_NAPI_GETTER_SETTER("password", GetPassword, SetPassword),
         DECLARE_NAPI_GETTER_SETTER("host", GetHost, SetHost),
-        DECLARE_NAPI_GETTER_SETTER("hash", GetFragment, SetFragment), 
-        DECLARE_NAPI_GETTER_SETTER("protocol", GetScheme, SetScheme),  
-        DECLARE_NAPI_GETTER_SETTER("pathname", GetPath, SetPath), 
+        DECLARE_NAPI_GETTER_SETTER("hash", GetFragment, SetFragment),
+        DECLARE_NAPI_GETTER_SETTER("protocol", GetScheme, SetScheme),
+        DECLARE_NAPI_GETTER_SETTER("pathname", GetPath, SetPath),
         DECLARE_NAPI_GETTER_SETTER("port", GetPort, SetPort),
         DECLARE_NAPI_GETTER("onOrOff", GetOnOrOff),
         DECLARE_NAPI_GETTER("GetIsIpv6", GetIsIpv6),
     };
-        NAPI_CALL(env, napi_define_class(env, UrlClassName, strlen(UrlClassName), UrlConstructor,
-        nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc,
-        &UrlClass));  
+    NAPI_CALL(env, napi_define_class(env, urlClassName, strlen(urlClassName), UrlConstructor,
+                                     nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc,
+                                     &urlClass));
     static napi_property_descriptor desc[] = {
-        DECLARE_NAPI_PROPERTY("Url", UrlClass)
+        DECLARE_NAPI_PROPERTY("Url", urlClass)
     };
     napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
     return exports;
@@ -816,15 +891,15 @@ static napi_value UrlInit(napi_env env, napi_value exports)
 static napi_value Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {
-        DECLARE_NAPI_FUNCTION("stringParmas",StringParmas),
+        DECLARE_NAPI_FUNCTION("stringParmas", StringParmas),
     };
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
-    SeachParamsInit(env, exports);  
+    SeachParamsInit(env, exports);
     UrlInit(env, exports);
     return exports;
 }
 
-extern "C" 
+extern "C"
 __attribute__((visibility("default"))) void NAPI_url_GetJSCode(const char** buf, int* bufLen)
 {
     if (buf != nullptr) {
@@ -836,8 +911,7 @@ __attribute__((visibility("default"))) void NAPI_url_GetJSCode(const char** buf,
     }
 }
 
-static napi_module UrlModule =
-{
+static napi_module UrlModule = {
     .nm_version = 1,
     .nm_flags = 0,
     .nm_filename = nullptr,
