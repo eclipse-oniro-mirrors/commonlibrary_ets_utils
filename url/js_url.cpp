@@ -36,7 +36,6 @@ static std::vector<char> g_specialcharacter = {
     '@', '[', '\\', ']'
 };
 
-static const size_t STEP_SZIE = 2; // 2:Searching for the number and number of keys and values
 static void ReplaceSpecialSymbols(std::string& input, std::string& oldstr, std::string& newstr)
 {
     size_t oldlen = oldstr.size();
@@ -404,7 +403,7 @@ static std::string IPv6HostCompress(std::vector<std::string>& tempIPV6, int flag
 }
 
 void DealWithtempIpv6(std::vector<std::string> &tempIpv6, std::stringstream &ss,
-    std::string &numberHex, int tempProt[4])
+    std::string &numberHex, const int tempProt[4])
 {
     tempIpv6.push_back(numberHex);
     ss.clear();
@@ -471,7 +470,7 @@ void DealWithElse(std::vector<std::string> &temp, size_t &i, unsigned &numberFla
         } else if (IsHexDigit(temp[i][j])) {
             val = val * 0x10 + AsciiToHex(temp[i][j]);
         }
-    }  
+    }
 }
 
 void DealWithStringStream(std::stringstream &ss, unsigned &val,
@@ -526,7 +525,7 @@ static void IPv6Host(std::string& input, std::string& host,
         }
     }
     if (numberFlag != 0) {
-        IsFlagExist(pos, temp, tempEnd, flags, numberFlag); 
+        IsFlagExist(pos, temp, tempEnd, flags, numberFlag);
         DealWithProt(tempEnd, val, flags, number, tempProt);
         ss << std::hex << tempProt[0] * 0x100 + tempProt[1];
         ss >> numberHex;
@@ -811,7 +810,7 @@ void AnalyInfoPath(std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_
 }
 
 void AnalyHostPath(std::string &strHost, std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags,
-    std::string input, UrlData& urlinfo)
+    UrlData& urlinfo)
 {
     size_t pos = 0;
     if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos) {
@@ -865,16 +864,17 @@ static void AnalysisNoDefaultProtocol(std::string& input, UrlData& urlinfo,
                 std::string port = strHost.substr(pos + 1);
                 strHost = strHost.substr(0, pos);
                 AnalysisPort(port, urlinfo, flags);
-                if (flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
-                    return;
-                }
+            }
+            if (strHost[strHost.size() - 1] != ']' && (pos = strHost.find_last_of(':')) != std::string::npos &&
+                flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
+                return;
             }
             AnalysisHost(strHost, urlinfo.host, flags, special);
             AnalysisPath(strPath, urlinfo.path, flags, special);
         } else {
             std::string strHost = hostandpath;
-            AnalyStrHost(strHost,urlinfo,flags);
-            AnalyHostPath(strHost, flags, input, urlinfo);
+            AnalyStrHost(strHost, urlinfo, flags);
+            AnalyHostPath(strHost, flags, urlinfo);
             AnalysisHost(strHost, urlinfo.host, flags, special);
         }
     } else if (input[1] == '/') {
@@ -988,7 +988,7 @@ static void AnalysisInput(std::string& input, UrlData& urlData,
 }
 
 static void BaseInfoToUrl(const UrlData& baseInfo,
-    const std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& baseflags, UrlData& urlData,
+    const std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> baseflags, UrlData& urlData,
     std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, bool inputIsEmpty)
 {
     urlData.scheme = baseInfo.scheme;
@@ -1092,7 +1092,7 @@ URL::URL(napi_env env, const std::string& input, const std::string& base)
                 urlData_.path = baseInfo.path;
                 flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6),
                     baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT6)));
-            } 
+            }
             if (!input.empty() && input[0] != '/' && !urlData_.path.empty()) {
                 bool isFile = ((urlData_.scheme == "file:") ? true : false);
                 ShorteningPath(baseInfo, isFile);
@@ -1660,7 +1660,7 @@ size_t CharToUnicode(std::string str, size_t &i)
 {
     size_t bytOfSpeChar = 3; // 3:Bytes of special characters in Linux
     std::string subStr = str.substr(i, bytOfSpeChar);
-    i += STEP_SZIE;
+    i += 2; // 2:Searching for the number and number of keys and values
     std::wstring wstr = StrToWstr(subStr.c_str());
     wchar_t wch = wstr[0];
     auto charaEncode = static_cast<size_t>(wch);
@@ -1749,7 +1749,7 @@ napi_value URLSearchParams::ToString()
     output = firstStrKey + "=" + firstStrValue;
     if (lenStr % 2 == 0) { // 2:Divisible by 2
         size_t i = 2; // 2:Initial Position
-        for (; i < lenStr; i += STEP_SZIE) {
+        for (; i < lenStr; i += 2) { // 2:Searching for the number and number of keys and values
             std::string strKey = ReviseStr(searchParams[i], reviseChar);
             std::string strValue = ReviseStr(searchParams[i + 1], reviseChar);
             output += +"&" + strKey + "=" + strValue;
@@ -1846,7 +1846,7 @@ napi_value URLSearchParams::Get(napi_value buffer)
         return result;
     }
     size_t size = searchParams.size() - 1;
-    for (size_t i = 0; i < size; i += STEP_SZIE) {
+    for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
         if (searchParams[i] == sname) {
             std::string str = searchParams[i + 1];
             napi_create_string_utf8(env, searchParams[i + 1].c_str(), searchParams[i + 1].length(), &result);
@@ -1875,7 +1875,7 @@ napi_value URLSearchParams::GetAll(napi_value buffer)
         return result;
     }
     size_t size = searchParams.size() - 1;
-    for (size_t i = 0; i < size; i += STEP_SZIE) {
+    for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
         if (searchParams[i] == sname) {
             napi_create_string_utf8(env, searchParams[i + 1].c_str(), searchParams[i + 1].length(), &napiStr);
             napi_status status = napi_set_element(env, result, flag, napiStr);
@@ -1926,9 +1926,9 @@ void URLSearchParams::Delete(napi_value buffer)
     delete[] name;
     for (std::vector<std::string>::iterator iter = searchParams.begin(); iter != searchParams.end();) {
         if (*iter == sname) {
-            iter = searchParams.erase(iter, iter + STEP_SZIE);
+            iter = searchParams.erase(iter, iter + 2); // 2:Searching for the number and number of keys and values
         } else {
-            iter += STEP_SZIE;
+            iter += 2; // 2:Searching for the number and number of keys and values
         }
     }
 }
@@ -1942,7 +1942,7 @@ napi_value URLSearchParams::Entries() const
         return resend;
     }
     size_t size = searchParams.size() - 1;
-    for (size_t i = 0; i < size; i += STEP_SZIE) {
+    for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
         napi_value result = nullptr;
         napi_create_array(env, &result);
 
@@ -1960,7 +1960,7 @@ void URLSearchParams::ForEach(napi_value function, napi_value thisVar)
         return;
     }
     size_t size = searchParams.size() - 1;
-    for (size_t i = 0; i < size; i += STEP_SZIE) {
+    for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
         napi_value returnVal = nullptr;
         size_t argc = 3;
         napi_value global = nullptr;
@@ -1987,7 +1987,7 @@ napi_value URLSearchParams::IsHas(napi_value name) const
     bool flag = false;
     napi_value result = nullptr;
     size_t lenStr = searchParams.size();
-    for (size_t i = 0; i != lenStr; i += STEP_SZIE) {
+    for (size_t i = 0; i != lenStr; i += 2) { // 2:Searching for the number and number of keys and values
         if (searchParams[i] == buf) {
             flag = true;
             napi_get_boolean(env, flag, &result);
@@ -2026,12 +2026,12 @@ void URLSearchParams::Set(napi_value name, napi_value value)
             if (!flag) {
                 *(it + 1) = cppValue;
                 flag = true;
-                it += STEP_SZIE;
+                it += 2; // 2:Searching for the number and number of keys and values
             } else {
-                it = searchParams.erase(it, it + STEP_SZIE);
+                it = searchParams.erase(it, it + 2); // 2:Searching for the number and number of keys and values
             }
         } else {
-            it += STEP_SZIE;
+            it += 2; // 2:Searching for the number and number of keys and values
         }
     }
     if (!flag) {
@@ -2046,7 +2046,7 @@ void URLSearchParams::Sort()
         return;
     }
     unsigned int i = 0;
-    for (; i < len - 2; i += STEP_SZIE) { // 2:Iterate over key-value pairs
+    for (; i < len - 2; i += 2) { // 2:Iterate over key-value pairs
         unsigned int  j = i + 2; // 2:Iterate over key-value pairs
         for (; j < len; j += 2) { // 2:Iterate over key-value pairs
             bool tmp = (searchParams[i] > searchParams[j]);
@@ -2067,9 +2067,10 @@ napi_value URLSearchParams::IterByKeys()
     napi_value result = nullptr;
     napi_value napiStr = nullptr;
     napi_create_array(env, &result);
+    size_t stepSize = 2; // 2:Searching for the number and number of keys and values
     size_t lenStr = searchParams.size();
     if (lenStr % 2 == 0) { // 2:Get the number of values
-        for (std::vector<std::string>::iterator it = searchParams.begin(); it != searchParams.end(); it += STEP_SZIE) {
+        for (std::vector<std::string>::iterator it = searchParams.begin(); it != searchParams.end(); it += stepSize) {
             toKeys.push_back(*it);
         }
         size_t lenToKeys = toKeys.size();
@@ -2086,9 +2087,10 @@ napi_value URLSearchParams::IterByValues()
     napi_value result = nullptr;
     napi_value napiStr = nullptr;
     napi_create_array(env, &result);
+    size_t stepSize = 2; // 2:Searching for the number and number of keys and values
     size_t lenStr = searchParams.size();
     if (lenStr % 2 == 0) { // 2:Get the number of values
-        for (std::vector<std::string>::iterator it = searchParams.begin(); it != searchParams.end(); it += STEP_SZIE) {
+        for (std::vector<std::string>::iterator it = searchParams.begin(); it != searchParams.end(); it += stepSize) {
             toKeys.push_back(*(it + 1));
         }
         size_t lenToKeys = toKeys.size();
