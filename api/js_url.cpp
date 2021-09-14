@@ -18,9 +18,7 @@
 #include <sstream>
 #include "securec.h"
 #include "utils/log.h"
-
 namespace OHOS::Api {
-
     static std::map<std::string, int> g_head = {
         {"ftp:", 21}, {"file:", -1}, {"gopher:", 70}, {"http:", 80},
         {"https:", 443}, {"ws:", 80}, {"wss:", 443}
@@ -32,7 +30,7 @@ namespace OHOS::Api {
     };
 
     static std::vector<std::string> g_singlesegment = { ".", "%2e", "%2E" };
-
+    
     static std::vector<char> g_specialcharacter = {
         '\0', '\t', '\n', '\r', ' ', '#', '%', '/', ':', '?',
         '@', '[', '\\', ']'
@@ -167,7 +165,7 @@ namespace OHOS::Api {
                         input[i] = tolower(input[i]);
                 }
                 if (!isalnum(input[i]) && input[i] != '+' && input[i] != '-' && input[i] != '.') {
-                    flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0)); 
+                    flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
                     // 0:Bit 0 Set to true,The URL analysis failed
                     return false;
                 }
