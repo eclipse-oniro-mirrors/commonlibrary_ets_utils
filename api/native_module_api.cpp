@@ -1,16 +1,16 @@
  /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+  *Copyright (c) 2021 Huawei Device Co., Ltd.
+  *Licensed under the Apache License, Version 2.0 (the "License");
+  *you may not use this file except in compliance with the License.
+  *You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+  *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+  *See the License for the specific language governing permissions and
+  *limitations under the License.
  */
 
 #include "napi/native_api.h"
@@ -21,9 +21,7 @@
 
 extern const char _binary_js_api_js_start[];
 extern const char _binary_js_api_js_end[];
-
 namespace OHOS::Api {
-
     napi_value g_uriClass = nullptr;
     static napi_value UriConstructor(napi_env env, napi_callback_info info)
     {
@@ -47,12 +45,12 @@ namespace OHOS::Api {
             napi_throw_error(env, nullptr, "parameter type is error");
         }
         NAPI_CALL(env, napi_wrap(env, thisVar, object,
-                [](napi_env env, void* data, void* hint) {
-                    auto object = (Uri*)data;
-                    if (object != nullptr) {
-                        delete object;
-                    }
-                }, nullptr, nullptr));
+            [](napi_env env, void *data, void *hint) {
+            auto object = (Uri*)data;
+            if (object != nullptr) {
+                delete object;
+            }
+        }, nullptr, nullptr));
         return thisVar;
     }
 
@@ -106,7 +104,7 @@ namespace OHOS::Api {
         napi_value thisVar = nullptr;
         napi_value result = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        Uri* muri = nullptr;
+        Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&muri));
         std::string temp = muri->IsFailed();
         size_t templen = temp.size();
@@ -244,12 +242,12 @@ namespace OHOS::Api {
         return result;
     }
 
-    static void UrlStructor(napi_env &env, napi_callback_info &info, URL* &object)
+    static void UrlStructor(napi_env &env, napi_callback_info &info, URL *&object)
     {
         napi_value thisVar = nullptr;
         size_t argc = 2;
         napi_value argv[2] = { 0 };
-        void* data = nullptr;
+        void *data = nullptr;
         napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data);
         napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
         napi_valuetype valuetype1;
@@ -257,7 +255,7 @@ namespace OHOS::Api {
         std::string input = "";
         napi_typeof(env, argv[0], &valuetype1);
         if (valuetype1 == napi_string) {
-            char* tem = nullptr;
+            char *tem = nullptr;
             size_t temlen = 0;
             napi_get_value_string_utf8(env, argv[0], nullptr, 0, &temlen);
             if (temlen > 0) {
@@ -269,7 +267,7 @@ namespace OHOS::Api {
             napi_typeof(env, argv[1], &valuetype2);
             if (valuetype2 == napi_string) {
                 std::string base = "";
-                char* type1 = nullptr;
+                char *type1 = nullptr;
                 size_t typelen1 = 0;
                 napi_get_value_string_utf8(env, argv[1], nullptr, 0, &typelen1);
                 if (typelen1 > 0) {
@@ -280,7 +278,7 @@ namespace OHOS::Api {
                 }
                 object = new URL(env, input, base);
             } else if (valuetype2 == napi_object) {
-                URL* temp = nullptr;
+                URL *temp = nullptr;
                 napi_unwrap(env, argv[1], (void**)&temp);
                 object = new URL(env, input, *temp);
             } else {
@@ -295,10 +293,10 @@ namespace OHOS::Api {
     static napi_value UrlConstructor(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        void* data = nullptr;
+        void *data = nullptr;
         size_t argc = 0;
         napi_value argv[2] = { 0 };
-        URL* object = nullptr;
+        URL *object = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
         if (argc == 1) {
             std::string input = "";
@@ -306,7 +304,7 @@ namespace OHOS::Api {
             napi_valuetype valuetype;
             NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype));
             if (valuetype == napi_string) {
-            char* type = nullptr;
+            char *type = nullptr;
             size_t typelen = 0;
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
             if (typelen > 0) {
@@ -324,7 +322,7 @@ namespace OHOS::Api {
         }
         napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void* data, void* hint) {
+            [](napi_env env, void *data, void *hint) {
                 auto object = (URL*)data;
                 if (object != nullptr) {
                     delete object;
@@ -338,7 +336,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetHostname();
         return retVal;
@@ -348,7 +346,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetSearch();
         return retVal;
@@ -358,7 +356,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetUsername();
         return retVal;
@@ -368,7 +366,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetPassword();
         return retVal;
@@ -378,7 +376,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetFragment();
         return retVal;
@@ -388,7 +386,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetScheme();
         return retVal;
@@ -398,7 +396,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetPort();
         return retVal;
@@ -408,7 +406,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetHost();
         return retVal;
@@ -418,7 +416,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetPath();
         return retVal;
@@ -428,7 +426,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetOnOrOff();
         return retVal;
@@ -438,7 +436,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetIsIpv6();
         return retVal;
@@ -451,7 +449,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -463,7 +461,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetHref(input);
         napi_value result = nullptr;
@@ -478,7 +476,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -490,7 +488,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetHostname(input);
         napi_value result = nullptr;
@@ -505,7 +503,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -517,7 +515,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetPort(input);
         napi_value result = nullptr;
@@ -532,7 +530,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -544,7 +542,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetHost(input);
         napi_value result = nullptr;
@@ -559,7 +557,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -571,7 +569,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetSearch(input);
         napi_value result = nullptr;
@@ -586,7 +584,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -598,7 +596,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetScheme(input);
         napi_value result = nullptr;
@@ -613,7 +611,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -625,7 +623,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetFragment(input);
         napi_value result = nullptr;
@@ -640,7 +638,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -652,7 +650,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetUsername(input);
         napi_value result = nullptr;
@@ -667,7 +665,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -679,7 +677,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetPath(input);
         napi_value result = nullptr;
@@ -694,7 +692,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
         if (typelen > 0) {
@@ -706,7 +704,7 @@ namespace OHOS::Api {
             delete[] type;
             type = nullptr;
         }
-        URL* murl = nullptr;
+        URL *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetPassword(input);
         napi_value result = nullptr;
@@ -717,15 +715,15 @@ namespace OHOS::Api {
     static napi_value SeachParamsConstructor(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
-        void* data = nullptr;
+        void *data = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data));
         auto object = new URLSearchParams(env);
         napi_wrap(
             env, thisVar, object,
-            [](napi_env env, void* data, void* hint) {
-                auto object = (URLSearchParams*)data;
-                if (object != nullptr) {
-                    delete object;
+            [](napi_env env, void *data, void *hint) {
+                auto obj = (URLSearchParams*)data;
+                if (obj != nullptr) {
+                    delete obj;
                 }
             },
             nullptr, nullptr);
@@ -744,7 +742,7 @@ namespace OHOS::Api {
         size_t arraySize = 0;
         napi_value napiStr = nullptr;
         for (size_t i = 0; i < length; i++) {
-            char* cstr = nullptr;
+            char *cstr = nullptr;
             napi_get_element(env, argv[0], i, &napiStr);
             napi_get_value_string_utf8(env, napiStr, nullptr, 0, &arraySize);
             if (arraySize > 0) {
@@ -757,7 +755,7 @@ namespace OHOS::Api {
                 vec.push_back("");
             }
         }
-        URLSearchParams* murl = nullptr;
+        URLSearchParams *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         murl->SetArray(vec);
         napi_value result = nullptr;
@@ -769,7 +767,7 @@ namespace OHOS::Api {
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
-        URLSearchParams* murl = nullptr;
+        URLSearchParams *murl = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&murl));
         napi_value retVal = murl->GetArray();
         return retVal;
@@ -785,7 +783,7 @@ namespace OHOS::Api {
             HILOG_INFO("One arg needs to be specified");
             return nullptr;
         }
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         napi_value result = object->Get(args);
         return result;
@@ -801,7 +799,7 @@ namespace OHOS::Api {
             HILOG_INFO("One arg needs to be specified");
             return nullptr;
         }
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         napi_value result = object->GetAll(args);
         return result;
@@ -812,13 +810,13 @@ namespace OHOS::Api {
         napi_value thisVar = nullptr;
         size_t argc = 2;
         napi_value args[2] = { 0 };
-        void* data = nullptr;
+        void *data = nullptr;
         napi_get_cb_info(env, info, &argc, args, &thisVar, &data);
         if (argc != 2) { // 2:If the input parameter is not set to 2,
             HILOG_INFO("Two args needs to be specified");
             return nullptr;
         }
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         object->Append(args[0], args[1]);
         return nullptr;
@@ -834,7 +832,7 @@ namespace OHOS::Api {
             HILOG_INFO("One arg needs to be specified");
             return nullptr;
         }
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         object->Delete(args);
         return nullptr;
@@ -846,7 +844,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         object->ForEach(args, thisVar);
         return nullptr;
@@ -858,7 +856,7 @@ namespace OHOS::Api {
         size_t argc = 0;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         napi_value result = object->Entries();
         return result;
@@ -870,7 +868,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         napi_value args = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr));
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
         napi_value result = object->IsHas(args);
         return result;
@@ -882,7 +880,7 @@ namespace OHOS::Api {
         size_t argc = 2;
         napi_value args[2] = { 0 };
         napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr);
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         object->Set(args[0], args[1]);
         return nullptr;
@@ -894,7 +892,7 @@ namespace OHOS::Api {
         size_t argc = 0;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         object->Sort();
         return nullptr;
@@ -906,7 +904,7 @@ namespace OHOS::Api {
         size_t argc = 0;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         napi_value result = object->ToString();
         return result;
@@ -918,7 +916,7 @@ namespace OHOS::Api {
         size_t argc = 0;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         napi_value result = object->IterByKeys();
         return result;
@@ -930,7 +928,7 @@ namespace OHOS::Api {
         size_t argc = 0;
         napi_value args = nullptr;
         napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        URLSearchParams* object = nullptr;
+        URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, (void**)&object);
         napi_value result = object->IterByValues();
         return result;
@@ -1038,7 +1036,7 @@ namespace OHOS::Api {
         size_t argc = 1;
         std::string input = "";
         napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
-        char* type = nullptr;
+        char *type = nullptr;
         size_t typelen = 0;
         napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen);
         if (typelen > 0) {
@@ -1078,8 +1076,9 @@ namespace OHOS::Api {
             DECLARE_NAPI_FUNCTION("entries", Entries),
             DECLARE_NAPI_GETTER_SETTER("array", GetArray, SetArray),
         };
-        NAPI_CALL(env, napi_define_class(env, seachParamsClassName, strlen(seachParamsClassName), SeachParamsConstructor,
-            nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc, &seachParamsInitClass));
+        NAPI_CALL(env, napi_define_class(env, seachParamsClassName, strlen(seachParamsClassName),
+            SeachParamsConstructor, nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]),
+            UrlDesc, &seachParamsInitClass));
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("URLSearchParams1", seachParamsInitClass)
         };
@@ -1106,8 +1105,7 @@ namespace OHOS::Api {
             DECLARE_NAPI_GETTER("GetIsIpv6", GetIsIpv6),
         };
         NAPI_CALL(env, napi_define_class(env, urlClassName, strlen(urlClassName), UrlConstructor,
-                                        nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc,
-                                        &urlClass));
+        nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc, &urlClass));
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("Url", urlClass)
         };
@@ -1136,8 +1134,7 @@ namespace OHOS::Api {
             DECLARE_NAPI_GETTER("isFailed", IsFailed),
         };
         NAPI_CALL(env, napi_define_class(env, uriClassName, strlen(uriClassName), UriConstructor,
-        nullptr, sizeof(uriDesc) / sizeof(uriDesc[0]), uriDesc,
-        &uriClass));
+        nullptr, sizeof(uriDesc) / sizeof(uriDesc[0]), uriDesc, &uriClass));
         g_uriClass = uriClass;
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("Uri", uriClass)

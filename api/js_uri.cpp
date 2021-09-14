@@ -14,9 +14,7 @@
  */
 #include "js_uri.h"
 #include "utils/log.h"
-
 namespace OHOS::Api {
-
     std::bitset <MAX_BIT_SIZE> g_ruleAlpha;
     std::bitset <MAX_BIT_SIZE> g_ruleScheme;
     std::bitset <MAX_BIT_SIZE> g_ruleUrlc;
@@ -74,7 +72,6 @@ namespace OHOS::Api {
         env_ = env;
         errStr_ = "";
         if (input.empty()) {
-            napi_throw_error(env_, nullptr, "uri is empty");
             errStr_ = "uri is empty";
             return;
         }
@@ -91,24 +88,18 @@ namespace OHOS::Api {
             if (pos != 0) {
                 AnalysisFragment(pos);
             } else {
-                HILOG_INFO("CJX -------CPP----- AnalysisUri throw err");
-                napi_throw_error(env_, nullptr, "#It can't be the first");
                 errStr_ = "#It can't be the first";
-                HILOG_INFO("CJX -------CPP----- AnalysisUri throw err  end");
                 return;
             }
         }
-
-        // Query
-        pos = data_.find('?');
+        pos = data_.find('?'); // Query
         if (pos != std::string::npos) {
             AnalysisQuery(pos);
             if (!errStr_.empty()) {
                 return;
             }
         }
-        //Scheme
-        pos = data_.find(':');
+        pos = data_.find(':'); // Scheme
         if (pos != std::string::npos) {
             AnalysisScheme(pos);
             if (!errStr_.empty()) {
@@ -122,7 +113,6 @@ namespace OHOS::Api {
             uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
             return;
         }
-
         // userInfo path host port ipv4 or ipv6
         pos = data_.find("//");
         if (pos != std::string::npos && pos == 0) {
@@ -164,7 +154,6 @@ namespace OHOS::Api {
     void Uri::SpecialPath()
     {
         if (!CheckCharacter(data_, g_rulePath, true)) {
-            napi_throw_error(env_, nullptr, "SpecialPath does not conform to the rule");
             errStr_ = "SpecialPath does not conform to the rule";
             return;
         }
@@ -176,7 +165,6 @@ namespace OHOS::Api {
     {
         std::string fragment = data_.substr(pos + 1);
         if (!CheckCharacter(fragment, g_ruleUrlc, true)) {
-            napi_throw_error(env_, nullptr, "Fragment does not conform to the rule");
             errStr_ = "Fragment does not conform to the rule";
             return;
         }
@@ -188,7 +176,6 @@ namespace OHOS::Api {
     {
         std::string query = data_.substr(pos + 1);
         if (!CheckCharacter(query, g_ruleUrlc, true)) {
-            napi_throw_error(env_, nullptr, "Query does not conform to the rule");
             errStr_ = "Query does not conform to the rule";
             return;
         }
@@ -205,13 +192,11 @@ namespace OHOS::Api {
             data_ = "";
         } else {
             if (!g_ruleAlpha.test(data_[0])) {
-                napi_throw_error(env_, nullptr, "Scheme the first character must be a letter");
                 errStr_ = "Scheme the first character must be a letter";
                 return;
             }
             std::string scheme = data_.substr(0, pos);
             if (!CheckCharacter(scheme, g_ruleScheme, false)) {
-                napi_throw_error(env_, nullptr, "scheme does not conform to the rule");
                 errStr_ = "scheme does not conform to the rule";
                 return;
             }
@@ -257,15 +242,13 @@ namespace OHOS::Api {
         // find ipv4 or ipv6 or host
         if (data_[0] == '[') {
             if (data_[data_.size() - 1] == ']') {
-                //IPV6
+                // IPV6
                 if (!isLawfulProt) {
-                    napi_throw_error(env_, nullptr, "ipv6 does not conform to the rule");
                     errStr_ = "ipv6 does not conform to the rule";
                     return;
                 }
                 AnalysisIPV6();
             } else {
-                napi_throw_error(env_, nullptr, "ipv6 does not conform to the rule");
                 errStr_ = "ipv6 does not conform to the rule";
                 return;
             }
@@ -283,7 +266,6 @@ namespace OHOS::Api {
     {
         std::string path = data_.substr(pos);
         if (!CheckCharacter(path, g_rulePath, true)) {
-            napi_throw_error(env_, nullptr, "path does not conform to the rule");
             errStr_ = "path does not conform to the rule";
             return;
         }
@@ -295,7 +277,6 @@ namespace OHOS::Api {
     {
         std::string userInfo = data_.substr(0, pos);
         if (!CheckCharacter(userInfo, g_ruleUserInfo, true)) {
-            napi_throw_error(env_, nullptr, "userInfo does not conform to the rule");
             errStr_ = "userInfo does not conform to the rule";
             return;
         }
@@ -307,7 +288,6 @@ namespace OHOS::Api {
     {
         std::string port = data_.substr(pos + 1);
         if (!CheckCharacter(port, g_rulePort, true)) { // 存在非规则内字符
-            napi_throw_error(env_, nullptr, "port does not conform to the rule");
             errStr_ = "port does not conform to the rule";
             return false;
         } else if (CheckCharacter(port, g_ruleDigit, false)) { // 纯数字
@@ -335,11 +315,11 @@ namespace OHOS::Api {
             return true;
         }
     }
-    
+
     void Uri::AnalysisIPV6()
     {
         std::string str = data_.substr(1, data_.size() - 2); // 2:Intercept the string from the second subscript
-        std::regex ipv6("(::|(:((:[0-9A-Fa-f]{1,4}){1,7}))|(([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|"
+        std::regex ipv6("^(::|(:((:[0-9A-Fa-f]{1,4}){1,7}))|(([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|"
                         "(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|:))|(([0-9A-Fa-f]{1,4}:){2}"
                         "(((:[0-9A-Fa-f]{1,4}){1,5})|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})"
                         "|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|:))|(([0-9A-Fa-f]{1,4}:){5}"
@@ -348,9 +328,8 @@ namespace OHOS::Api {
                         "|(([0-9A-Fa-f]{1,4}:){2}(:[0-9A-Fa-f]{1,4}){0,3}:)|(([0-9A-Fa-f]{1,4}:){3}"
                         "(:[0-9A-Fa-f]{1,4}){0,2}:)|(([0-9A-Fa-f]{1,4}:){4}(:[0-9A-Fa-f]{1,4})?:)|"
                         "(([0-9A-Fa-f]{1,4}:){5}:)|(([0-9A-Fa-f]{1,4}:){6}))((25[0-5]|2[0-4]\\d|1\\d{2}|"
-                        "[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)))(%([0-9A-Fa-f]|.|_)+)?");
+                        "[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)))(%[a-zA-Z0-9._]+)?$");
         if (!std::regex_match(str, ipv6)) {
-            napi_throw_error(env_, nullptr, "ipv6 does not conform to the rule");
             errStr_ = "ipv6 does not conform to the rule";
             return;
         }

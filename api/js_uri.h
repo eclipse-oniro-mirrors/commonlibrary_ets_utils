@@ -25,11 +25,8 @@
 #include <sstream>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-
 namespace OHOS::Api {
-    namespace {
-        constexpr int MAX_BIT_SIZE = 128;
-    }
+    constexpr int MAX_BIT_SIZE = 128;
     struct uri_data {
         int port = -1;
         std::string scheme = "";

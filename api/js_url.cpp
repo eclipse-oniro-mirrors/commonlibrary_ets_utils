@@ -87,8 +87,8 @@ namespace OHOS::Api {
             return temp;
         }
         temp.reserve(len);
-        const char* it = input;
-        const char* end = input + len;
+        const char *it = input;
+        const char *end = input + len;
         while (it < end) {
             const char ch = it[0];
             size_t left = end - it - 1;
@@ -162,11 +162,13 @@ namespace OHOS::Api {
         } else {
             size_t strlen = input.size();
             for (size_t i = 0; i < strlen - 1; ++i) {
-                if ((isalnum(input[i]) || input[i] == '+' || input[i] == '-' || input[i] == '.') && isupper(input[i])) {
+                if ((isalnum(input[i]) || input[i] == '+' || input[i] == '-' || input[i] == '.') &&
+                    isupper(input[i])) {
                         input[i] = tolower(input[i]);
                 }
                 if (!isalnum(input[i]) && input[i] != '+' && input[i] != '-' && input[i] != '.') {
-                    flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0)); // 0:Bit 0 Set to true,The URL analysis failed
+                    flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0)); 
+                    // 0:Bit 0 Set to true,The URL analysis failed
                     return false;
                 }
             }
@@ -609,7 +611,7 @@ namespace OHOS::Api {
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags)
     {
         int count = 0;
-        for (const char* ptr = instr; *ptr != '\0'; ptr++) {
+        for (const char *ptr = instr; *ptr != '\0'; ptr++) {
             if (*ptr == '.') {
                 if (++count > 3) { // 3:The IPV4 address has only four segments
                     return false;
@@ -1158,7 +1160,7 @@ namespace OHOS::Api {
     napi_value URL::GetHostname() const
     {
         napi_value result;
-        const char* temp = nullptr;
+        const char *temp = nullptr;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT4))) {
             temp = urlData_.host.c_str();
         } else {
@@ -1172,7 +1174,7 @@ namespace OHOS::Api {
     napi_value URL::GetSearch() const
     {
         napi_value result;
-        const char* temp = nullptr;
+        const char *temp = nullptr;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT7))) {
             if (urlData_.query.size() == 1) {
                 temp = "";
@@ -1190,7 +1192,7 @@ namespace OHOS::Api {
     napi_value URL::GetUsername() const
     {
         napi_value result;
-        const char* temp = nullptr;
+        const char *temp = nullptr;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT2))) {
             temp = urlData_.username.c_str();
         } else
@@ -1203,7 +1205,7 @@ namespace OHOS::Api {
     napi_value URL::GetPassword() const
     {
         napi_value result;
-        const char* temp = nullptr;
+        const char *temp = nullptr;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT3))) {
             temp = urlData_.password.c_str();
         } else {
@@ -1217,7 +1219,7 @@ namespace OHOS::Api {
     napi_value URL::GetFragment() const
     {
         napi_value result;
-        const char* temp = nullptr;
+        const char *temp = nullptr;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT8))) {
             if (urlData_.fragment.size() == 1) {
                 temp = "";
@@ -1235,7 +1237,7 @@ namespace OHOS::Api {
     napi_value URL::GetScheme() const
     {
         napi_value result;
-        const char* temp = nullptr;
+        const char *temp = nullptr;
         if (!urlData_.scheme.empty()) {
             temp = urlData_.scheme.c_str();
         } else {
@@ -1273,7 +1275,7 @@ namespace OHOS::Api {
     napi_value URL::GetPort() const
     {
         napi_value result;
-        const char* temp = nullptr;
+        const char *temp = nullptr;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT5))) {
             temp = std::to_string(urlData_.port).c_str();
         } else {
@@ -1630,7 +1632,10 @@ namespace OHOS::Api {
     {}
     std::wstring StrToWstr(const std::string& str)
     {
-        setlocale(LC_ALL, "");
+        char *p = setlocale(LC_ALL, "");
+        if (p == nullptr) {
+            return L"";
+        }
         std::wstring wstr = L"";
         size_t len = str.size() + 1;
         if (len > 0) {
@@ -1638,7 +1643,10 @@ namespace OHOS::Api {
             mbstowcs(wch, str.c_str(), len);
             wstr = wch;
             delete[] wch;
-            setlocale(LC_ALL, "");
+            p = setlocale(LC_ALL, "");
+            if (p == nullptr) {
+            return L"";
+            }
             return wstr;
         }
         return wstr;
@@ -1668,7 +1676,7 @@ namespace OHOS::Api {
         auto charaEncode = static_cast<size_t>(wch);
         return charaEncode;
     }
-    std::string ReviseStr(std::string str, std::string* reviseChar)
+    std::string ReviseStr(std::string str, std::string *reviseChar)
     {
         const size_t lenStr = str.length();
         if (lenStr == 0) {
@@ -1696,7 +1704,7 @@ namespace OHOS::Api {
                     (charaEncode & 0x0000003F)]; // Acquisition method of the second byte
                 output += output1 + output2;
             } else if ((charaEncode >= 0x0000E000) ||
-                    (charaEncode <= 0x0000D7FF)) { // Convert the Unicode code into three bytes
+                        (charaEncode <= 0x0000D7FF)) { // Convert the Unicode code into three bytes
                 std::string output1 = reviseChar[0x000000E0 |
                     (charaEncode / 4096)]; // 4096:Acquisition method of the first byte
                 std::string output2 = reviseChar[numOfAscii |
@@ -1786,7 +1794,7 @@ namespace OHOS::Api {
     std::string URLSearchParams::ToUSVString(std::string inputStr)
     {
         size_t strLen = strlen(inputStr.c_str());
-        wchar_t* strPtr = nullptr;
+        wchar_t *strPtr = nullptr;
         std::wstring winput = L"";
         int strSize = mbstowcs(strPtr, inputStr.c_str(), 0) + 1;
         if (strSize > 0) {
@@ -1794,9 +1802,9 @@ namespace OHOS::Api {
             mbstowcs(strPtr, inputStr.c_str(), strLen);
             winput = strPtr;
         }
-        const char* expr = "(?:[^\\uD800-\\uDBFF]|^)[\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])";
+        const char *expr = "(?:[^\\uD800-\\uDBFF]|^)[\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])";
         size_t exprLen = strlen(expr);
-        wchar_t* exprPtr = nullptr;
+        wchar_t *exprPtr = nullptr;
         int exprSize = mbstowcs(exprPtr, expr, 0) + 1;
         if (exprSize > 0) {
             exprPtr = new wchar_t[exprSize];
@@ -1813,7 +1821,7 @@ namespace OHOS::Api {
         }
         HandleIllegalChar(winput, result[0].first);
         size_t inputLen = wcslen(winput.c_str());
-        char* rePtr = nullptr;
+        char *rePtr = nullptr;
         std::string reStr = "";
         int reSize = wcstombs(rePtr, winput.c_str(), 0) + 1;
         if (reSize > 0) {
@@ -1832,7 +1840,7 @@ namespace OHOS::Api {
     }
     napi_value URLSearchParams::Get(napi_value buffer)
     {
-        char* name = nullptr;
+        char *name = nullptr;
         size_t nameSize = 0;
         std::string temp = "";
         napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize);
@@ -1859,7 +1867,7 @@ namespace OHOS::Api {
     }
     napi_value URLSearchParams::GetAll(napi_value buffer)
     {
-        char* name = nullptr;
+        char *name = nullptr;
         size_t nameSize = 0;
         std::string sname = "";
         napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize);
@@ -1891,7 +1899,7 @@ namespace OHOS::Api {
     }
     void URLSearchParams::Append(napi_value buffer, napi_value temp)
     {
-        char* name = nullptr;
+        char *name = nullptr;
         size_t nameSize = 0;
         std::string tempName = "";
         std::string tempValue = "";
@@ -1901,7 +1909,7 @@ namespace OHOS::Api {
             napi_get_value_string_utf8(env, buffer, name, nameSize + 1, &nameSize);
             tempName = name;
         }
-        char* value = nullptr;
+        char *value = nullptr;
         size_t valueSize = 0;
         napi_get_value_string_utf8(env, temp, nullptr, 0, &valueSize);
         if (valueSize > 0) {
@@ -1916,7 +1924,7 @@ namespace OHOS::Api {
     }
     void URLSearchParams::Delete(napi_value buffer)
     {
-        char* name = nullptr;
+        char *name = nullptr;
         size_t nameSize = 0;
         std::string sname = "";
         napi_get_value_string_utf8(env, buffer, nullptr, 0, &nameSize);
@@ -1977,7 +1985,7 @@ namespace OHOS::Api {
     }
     napi_value URLSearchParams::IsHas(napi_value name) const
     {
-        char* buffer = nullptr;
+        char *buffer = nullptr;
         size_t bufferSize = 0;
         std::string buf = "";
         napi_get_value_string_utf8(env, name, nullptr, 0, &bufferSize);
@@ -2002,7 +2010,7 @@ namespace OHOS::Api {
     }
     void URLSearchParams::Set(napi_value name, napi_value value)
     {
-        char* buffer0 = nullptr;
+        char *buffer0 = nullptr;
         size_t bufferSize0 = 0;
         std::string cppName = "";
         std::string cppValue = "";
@@ -2013,7 +2021,7 @@ namespace OHOS::Api {
             cppName = buffer0;
             delete[] buffer0;
         }
-        char* buffer1 = nullptr;
+        char *buffer1 = nullptr;
         size_t bufferSize1 = 0;
         napi_get_value_string_utf8(env, value, nullptr, 0, &bufferSize1);
         if (bufferSize1 > 0) {
@@ -2072,7 +2080,7 @@ namespace OHOS::Api {
         size_t stepSize = 2; // 2:Searching for the number and number of keys and values
         size_t lenStr = searchParams.size();
         if (lenStr % 2 == 0) { // 2:Get the number of values
-            for (std::vector<std::string>::iterator it = searchParams.begin(); it != searchParams.end(); it += stepSize) {
+            for (auto it = searchParams.begin(); it != searchParams.end(); it += stepSize) {
                 toKeys.push_back(*it);
             }
             size_t lenToKeys = toKeys.size();
@@ -2092,7 +2100,9 @@ namespace OHOS::Api {
         size_t stepSize = 2; // 2:Searching for the number and number of keys and values
         size_t lenStr = searchParams.size();
         if (lenStr % 2 == 0) { // 2:Get the number of values
-            for (std::vector<std::string>::iterator it = searchParams.begin(); it != searchParams.end(); it += stepSize) {
+            for (auto it = searchParams.begin();
+                it != searchParams.end();
+                it += stepSize) {
                 toKeys.push_back(*(it + 1));
             }
             size_t lenToKeys = toKeys.size();
