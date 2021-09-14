@@ -30,7 +30,7 @@ namespace OHOS::Api {
     };
 
     static std::vector<std::string> g_singlesegment = { ".", "%2e", "%2E" };
-    
+
     static std::vector<char> g_specialcharacter = {
         '\0', '\t', '\n', '\r', ' ', '#', '%', '/', ':', '?',
         '@', '[', '\\', ']'
