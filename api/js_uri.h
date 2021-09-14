@@ -22,7 +22,6 @@
 #include <bitset>
 #include <regex>
 #include <cstdlib>
-#include <sstream>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 namespace OHOS::Api {
