@@ -1,22 +1,22 @@
-#### js_api_module
-####一、URL简介
-URL接口用于解析，构造，规范化和编码 URLs。 URL的构造函数创建新的URL对象。 以便对URL的已解析组成部分或对URL进行更改。
+# js_api_module
+# Introduction to URL
+The URL interface is used to parse, construct, normalize, and encode URLs. The URL constructor creates a new URL object. In order to make changes to the resolved components of the URL or to the URL.
 
-接口介绍
+Interface introduction
 
 1.new URL(url: string,base?:string|URL)
 
-创建并返回一个URL对象，该URL对象引用使用绝对URL字符串，相对URL字符串和基本URL字符串指定的URL。
+Create and return a URL object that references the URL specified by the absolute URL string, the relative URL string, and the basic URL string.
 
 2.tostring():string;
 
-该字符串化方法返回一个包含完整 URL 的 USVString。它的作用等同于只读的 URL.href。
+The stringification method returns a USVString containing the complete URL. It is equivalent to the read-only URL.href.
 
 3.toJSON():string;
 
-该方法返回一个USVString，其中包含一个序列化的URL版本。
+This method returns a USVString, which contains a serialized URL version.
 
-各接口使用方法如下：
+The usage of each interface is as follows:
 
 let b = new URL('https://developer.mozilla.org');                    // => 'https://developer.mozilla.org/'
 
@@ -36,77 +36,77 @@ const url = new URL("https://developer.mozilla.org/en-US/docs/Web/API/URL/toStri
 url.toJSON();   // =>  'https://developer.mozilla.org/en-US/docs/Web/API/URL/toString'
 
 
-####二、URLSreachParams简介
+####2nd. Introduction to URLSreachParams
 
-URLSearchParams 接口定义了一些实用的方法来处理 URL 的查询字符串。
+The URLSearchParams interface defines some practical methods to process URL query strings.
 
-接口介绍
+Interface introduction
 
 1.new URLSearchParams()
 
-URLSearchParams() 构造器无入参，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。
+The URLSearchParams() constructor has no parameters. This method creates and returns a new URLSearchParams object. The beginning'?' character will be ignored.
 
 2.new URLSearchParams(string)
 
-URLSearchParams(string) 构造器的入参为string数据类型，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。
+The input parameter of URLSearchParams(string) constructor is string data type.
 
 3.new URLSearchParams(obj)
 
-URLSearchParams(obj) 构造器的入参为obj数据类型，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。
+The input parameter of URLSearchParams(obj) constructor is obj data type.
 
 4.new URLSearchParams(iterable)
 
-URLSearchParams(iterable) 构造器的入参为iterable数据类型，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。
+The input parameter of URLSearchParams(iterable) constructor is iterable data type.
 
 5.isHas(name: string): boolean
 
-检索searchParams对象中是否含有name。有则返回ture，否则返回false。
+Retrieve whether the searchParams object contains name. If yes, it returns true, otherwise it returns false.
 
 6.set(name: string, value string): void
 
-检索searchParams对象中是否含有key为name的键值对。
-没有的话则添加该键值对，有的话则修改对象中第一个key所对应的value，并删除键为name的其余键值对。
+Retrieve whether the searchParams object contains a key-value pair whose key is name.
+If not, add the key-value pair, if any, modify the value corresponding to the first key in the object, and delete the remaining key-value pairs whose key is name.
 
 7.sort(): void
 
-根据键的Unicode代码点，对包含在此对象中的所有键/值对进行排序，并返回undefined。
+According to the Unicode code point of the key, sort all key/value pairs contained in this object and return undefined.
 
 8.toString(): string
 
-根据searchParams对象,返回适用在URL中的查询字符串。
+According to the searchParams object, the query string applicable in the URL is returned.
 
 9.keys(): iterableIterator<string>
 
-返回一个iterator，遍历器允许遍历对象中包含的所有key值。
+Return an iterator, which allows iterating through all the key values contained in the object.
 
 10.values(): iterableIterator<string>
 
-返回一个iterator，遍历器允许遍历对象中包含的所有value值。
+Returns an iterator, which allows iterating over all the value values contained in the object.
 
 11.append(name: string, value: string): void
 
-在searchParams对象中插入name, value键值对。
+Insert the name, value key-value pair in the searchParams object.
 
 12.delete(name: string): void
 
-遍历searchParams对象，查找所有的name,删除对应的键值对。
+Traverse the searchParams object, find all the names, and delete the corresponding key-value pairs.
 
 13.get(name: string): string
 
-检索searchParams对象中第一个name,返回name键对应的值。
+Retrieve the first name in the searchParams object and return the value corresponding to the name key.
 
 14.getAll(name: string): string[]
 
-检索searchParams对象中所有name,返回name键对应的所有值。
+Retrieve all names in the searchParams object and return all the values corresponding to the name key.
 
 15.entries(): iterableIterator<[string, string]>
 
-返回一个iterator，允许遍历searchParams对象中包含的所有键/值对。
+Returns an iterator that allows iterating through all key/value pairs contained in the searchParams object.
 
 16.forEach(): void
-通过回调函数来遍历URLSearchParams实例对象上的键值对.
+The callback function is used to traverse the key-value pairs on the URLSearchParams instance object.
 
-各接口使用方法如下：
+The usage of each interface is as follows:
 
 let params = new URLSearchParams('foo=1&bar=2');
 

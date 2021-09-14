@@ -7,7 +7,7 @@
         "phone"
       ],
       "module_list": [
-        "//base/compileruntime/js_api_module/uri:uri_packages"
+        "//base/compileruntime/js_api_module/api:api_packages"
       ],
       "inner_kits": [
       ],
