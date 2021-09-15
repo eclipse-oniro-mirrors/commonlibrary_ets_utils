@@ -14,26 +14,19 @@
  */
 
 'use strict';
-console.log("LHC...test      01");
 const convertXml = requireInternal("ConvertXML");
-console.log("LHC...test      02");
 class ConvertXml {
     convertxmlclass;
     constructor() {
         this.convertxmlclass = new convertXml.ConvertXml();
-        console.log("LHC...test      03");
     }
     convert(strXml, options) {
         let converted = this.convertxmlclass.convert(strXml, options);
-        
-        var ses = JSON.stringify(converted);
-        console.log("LHC...test      04 ses =" + ses);
         let space = 0;
         if (converted.hasOwnProperty("spaces")) {
             space = converted.spaces;
             delete converted.spaces;
         }
-        console.log("LHC...test      05");
         return JSON.stringify(converted, null, space);
     }
 }

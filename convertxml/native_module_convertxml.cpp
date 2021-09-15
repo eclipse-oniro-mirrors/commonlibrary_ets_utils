@@ -9,12 +9,12 @@ extern const char _binary_js_convertxml_js_end[];
 static napi_value ConvertXmlConstructor(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
-    void* data = nullptr;
+    void *data = nullptr;
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);
     auto objectInfo = new ConvertXml(env);
     napi_wrap (
         env, thisVar, objectInfo,
-        [](napi_env env, void* data, void* hint) {
+        [](napi_env env, void *data, void *hint) {
             auto objectInfo = (ConvertXml*)data;
             if (objectInfo != nullptr) {
                 delete objectInfo;
@@ -32,11 +32,11 @@ static napi_value Convert(napi_env env, napi_callback_info info)
     size_t argc = 2;
     napi_value args[2] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-    NAPI_ASSERT(env, argc<=requireMaxArgc, "Wrong number of arguments(Over)");
-    NAPI_ASSERT(env, argc>=requireMinArgc, "Wrong number of arguments(Less)");
+    NAPI_ASSERT(env, argc <= requireMaxArgc, "Wrong number of arguments(Over)");
+    NAPI_ASSERT(env, argc >= requireMinArgc, "Wrong number of arguments(Less)");
     std::string strXml;
     napi_valuetype valuetype;
-    ConvertXml* object = nullptr;
+    ConvertXml *object = nullptr;
     NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
     if (args[0] == nullptr) {
         NAPI_CALL(env, napi_throw_error(env, "", "parameter is empty"));
@@ -46,7 +46,7 @@ static napi_value Convert(napi_env env, napi_callback_info info)
         object->DealNapiStrValue(args[0], strXml);
     }
     if (args[1] != nullptr) {
-      object->DealOptions(args[1]);
+        object->DealOptions(args[1]);
     }
     napi_value result = object->convert(strXml);
     HILOG_INFO("LHC....Convert start011");
@@ -57,12 +57,12 @@ static napi_value Convert(napi_env env, napi_callback_info info)
 static napi_value ConvertXmlInit(napi_env env, napi_value exports)
 {
     HILOG_INFO("LHC....ConvertXmlInit start02");
-    const char* ConvertXmlClassName = "ConvertXml";
+    const char *ConvertXmlClassName = "ConvertXml";
     napi_value ConvertXmlClass = nullptr;
     static napi_property_descriptor ConvertXmlDesc[] = {
         DECLARE_NAPI_FUNCTION("convert", Convert)
     };
-    NAPI_CALL(env, napi_define_class(env, ConvertXmlClassName, strlen(ConvertXmlClassName), ConvertXmlConstructor, 
+    NAPI_CALL(env, napi_define_class(env, ConvertXmlClassName, strlen(ConvertXmlClassName), ConvertXmlConstructor,
                                      nullptr, sizeof(ConvertXmlDesc) / sizeof(ConvertXmlDesc[0]), ConvertXmlDesc,
                                      &ConvertXmlClass));
     static napi_property_descriptor desc[] = {
@@ -74,7 +74,7 @@ static napi_value ConvertXmlInit(napi_env env, napi_value exports)
 }
 
 extern "C"
-__attribute__((visibility("default"))) void NAPI_convertxml_GetJSCode(const char** buf, int* bufLen)
+__attribute__((visibility("default"))) void NAPI_convertxml_GetJSCode(const char **buf, int *bufLen)
 {
     if (buf != nullptr) {
         *buf = _binary_js_convertxml_js_start;
