@@ -24,7 +24,7 @@ class URI {
         this.uricalss = new api.Uri(input);
         let errStr = this.uricalss.isFailed;
         if (errStr.length !== 0) {
-            throw new Error("----------CJX----------" + errStr);
+            throw new Error(errStr);
         }
     }
     toString() {
