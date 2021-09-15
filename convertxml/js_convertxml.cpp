@@ -1,8 +1,21 @@
-#include <stdlib.h>
+/*
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include <cstdlib>
 #include "js_convertxml.h"
-#include "utils/log.h"
 #include "securec.h"
-
+#include "utils/log.h"
 
 ConvertXml::ConvertXml(napi_env env): env_(env)
 {
@@ -67,7 +80,7 @@ void ConvertXml::SetKeyValue(napi_value &object, std::string strKey, std::string
     napi_create_string_utf8(env_, strValue.c_str(), NAPI_AUTO_LENGTH, &attrValue);
     napi_set_named_property(env_, object, strKey.c_str(), attrValue);
 }
-std::string ConvertXml::Trim(std::string strXmltrim) 
+std::string ConvertXml::Trim(std::string strXmltrim)
 {
     if (strXmltrim.empty()) {
         return "";
@@ -83,7 +96,7 @@ std::string ConvertXml::Trim(std::string strXmltrim)
     }
     strXmltrim = strXmltrim.substr(i);
     strlen = strXmltrim.size();
-    for (i = strlen - 1;i != 0;i--) {
+    for (i = strlen - 1; i != 0; i--) {
         if (strXmltrim[i] == ' ') {
             strXmltrim.pop_back();
         } else {
@@ -146,8 +159,8 @@ void ConvertXml::SetNodeInfo(xmlNodePtr curNode, napi_value &elementsObject)
         SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
     }
     SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
-    if((curNode->type != xmlElementType::XML_COMMENT_NODE) &&
-    (curNode->type != xmlElementType::XML_CDATA_SECTION_NODE)) {
+    if ((curNode->type != xmlElementType::XML_COMMENT_NODE) &&
+        (curNode->type != xmlElementType::XML_CDATA_SECTION_NODE)) {
         SetKeyValue(elementsObject, m_Options.name, (char*)curNode->name);
     }
 }
@@ -176,7 +189,7 @@ void ConvertXml::SetEndInfo(xmlNodePtr curNode, napi_value &elementsObject, bool
 void ConvertXml::SetPrevInfo(napi_value &recvElement, int flag, int32_t &index1)
 {
     if (!m_prevObj.empty() && !flag) {
-        for(int i = (m_prevObj.size() - 1); i >= 0; --i) {
+        for (int i = (m_prevObj.size() - 1); i >= 0; --i) {
             napi_set_element(env_, recvElement, index1++, m_prevObj[i]);
         }
     }
@@ -252,7 +265,7 @@ napi_value ConvertXml::convert(std::string strXml)
     napi_create_object(env_, &subSubObject);
     napi_create_object(env_, &subObject);
     napi_create_string_utf8(env_, (const char*)doc->version, NAPI_AUTO_LENGTH, &napiKey);
-    napi_set_named_property(env_, subSubObject,"version", napiKey);
+    napi_set_named_property(env_, subSubObject, "version", napiKey);
     napi_create_string_utf8(env_, (const char*)doc->encoding, NAPI_AUTO_LENGTH, &napiKey);
     napi_set_named_property(env_, subSubObject, "encoding", napiKey);
     if (!m_Options.ignoreDeclaration) {
@@ -273,6 +286,8 @@ napi_value ConvertXml::convert(std::string strXml)
             break;
         case (SpaceType::T_INIT):
             SetKeyValue(object, "spaces", m_strSpace);
+            break;
+        default:
             break;
     }
     return object;
@@ -320,7 +335,7 @@ void ConvertXml::DealIgnore(napi_value napi_obj)
 {
     std::vector<std::string>vctIgnore = { "compact", "trim", "ignoreDeclaration", "ignoreInstruction",
         "ignoreAttributes", "ignoreComment", "ignoreCdata", "ignoreDoctype", "ignoreText" };
-    for (size_t i = 0;i < vctIgnore.size();++i) {
+    for (size_t i = 0; i < vctIgnore.size(); ++i) {
         napi_value recvTemp = nullptr;
         bool bRecv = false;
         napi_get_named_property(env_, napi_obj, vctIgnore[i].c_str(), &recvTemp);
@@ -405,7 +420,7 @@ void ConvertXml::DealOptions(napi_value napi_obj)
 {
     std::vector<std::string>vctOptions = { "declarationKey", "instructionKey", "attributesKey", "textKey",
     "cdataKey", "doctypeKey", "commentKey", "parentKey", "typeKey", "nameKey", "elementsKey" };
-    for (size_t i = 0;i < vctOptions.size();++i) {
+    for (size_t i = 0; i < vctOptions.size(); ++i) {
         napi_value recvTemp = nullptr;
         std::string strRecv = "";
         napi_get_named_property(env_, napi_obj, vctOptions[i].c_str(), &recvTemp);
