@@ -1,88 +1,88 @@
-# js_api_module子系统/组件
+# js_api_module Subsystem/Component
 
--   [简介](#简介)
--   [目录](#目录)
--   [说明](#说明)
-    -   [接口说明](#接口说明)
-    -   [使用说明](#使用说明)
+-   [Introduction](#Introduction)
+-   [Contents](#Contents)
+-   [Illustrate](#Illustrate)
+    -   [Interface Description](#Interface Description)
+    -   [Instructions for use](#Instructions for use)
 
--   [相关仓](#相关仓)
+-   [Related warehouse](#Related warehouse)
 
-## 简介
+## Introduction
 
-URL接口用于解析，构造，规范化和编码 URLs。 URL的构造函数创建新的URL对象。 以便对URL的已解析组成部分或对URL进行更改。URLSearchParams 接口定义了一些实用的方法来处理 URL 的查询字符串。
+The interface of URL is used to parse, construct, normalize, and encode URLs. The URL constructor creates a new URL object. In order to make changes to the resolved components of the URL or to the URL. The URLSearchParams interface defines some practical methods to process URL query strings.
 
-## 目录
+## Contents
 
 ```
 base/compileruntime/js_api_module/
-├── Class:URL                              # URL类
-│   ├── new URL(input[, base])             # 创建URL对象
-│   ├── hash                               # hash属性
-│   ├── host                               # host属性
-│   ├── hostname                           # hostname属性
-│   ├── href                               # href属性
-│   ├── origin                             # origin属性
-│   ├── password                           # password属性
-│   ├── pathname                           # pathname属性
-│   ├── port                               # port属性
-│   ├── protocol                           # protocol属性
-│   ├── search                             # search属性
-│   ├── searchParams                       # searchParams属性
-│   ├── username                           # username属性
-│   ├── toString()                         # toString方法
-│   └── toJSON()                           # toJSON方法
-└─── Class: URLSearchParams                # URLSearchParams类
-    ├── new URLSearchParams()              # 创建URLSearchParams对象
-    ├── new URLSearchParams(string)        # 创建URLSearchParams对象
-    ├── new URLSearchParams(obj)           # 创建URLSearchParams对象
-    ├── new URLSearchParams(iterable)      # 创建URLSearchParams对象
-    ├── append(name, value)                # append方法
-    ├── delete(name)                       # delete方法
-    ├── entries()                          # entries方法
-    ├── forEach(fn[, thisArg])             # forEach方法
-    ├── get(name)                          # get方法
-    ├── getAll(name)                       # getAll方法
-    ├── has(name)                          # has方法
-    ├── keys()                             # keys方法
-    ├── set(name, value)                   # set方法
-    ├── sort()                             # sort方法
-    ├── toString()                         # toString方法
-    ├── values()                           # values方法
-    └── urlSearchParams[Symbol.iterator]() # 创建URLSearchParams对象 
+├── Class:URL                              # URL class
+│   ├── new URL(input[, base])             # Create URL object
+│   ├── hash                               # hash attribute
+│   ├── host                               # host attribute
+│   ├── hostname                           # hostname attribute
+│   ├── href                               # href attribute
+│   ├── origin                             # origin attribute
+│   ├── password                           # password attribute
+│   ├── pathname                           # pathname attribute
+│   ├── port                               # port attribute
+│   ├── protocol                           # protocol attribute
+│   ├── search                             # search attribute
+│   ├── searchParams                       # searchParams attribute
+│   ├── username                           # username attribute
+│   ├── toString()                         # toString method
+│   └── toJSON()                           # toJSON method
+└─── Class: URLSearchParams                # URLSearchParams class
+    ├── new URLSearchParams()              # Create URLSearchParams object
+    ├── new URLSearchParams(string)        # Create URLSearchParams object
+    ├── new URLSearchParams(obj)           # Create URLSearchParams object
+    ├── new URLSearchParams(iterable)      # Create URLSearchParams object
+    ├── append(name, value)                # append method
+    ├── delete(name)                       # delete method
+    ├── entries()                          # entries method
+    ├── forEach(fn[, thisArg])             # forEach method
+    ├── get(name)                          # get method
+    ├── getAll(name)                       # getAll method
+    ├── has(name)                          # has method
+    ├── keys()                             # keys method
+    ├── set(name, value)                   # set method
+    ├── sort()                             # sort method
+    ├── toString()                         # toString method
+    ├── values()                           # values method
+    └── urlSearchParams[Symbol.iterator]() # Create URLSearchParams object
 ```
 
-## 说明
+## Illustrate
 
-### 接口说明
+### Interface Description
 
 
-| 接口名 | 说明                                                         |
+| Interface name | Illustrate                                                         |
 | -------- | -------- |
-| new URL(url: string,base?:string I URL) | 创建并返回一个URL对象，该URL对象引用使用绝对URL字符串，相对URL字符串和基本URL字符串指定的URL。 |
-| tostring():string | 该字符串化方法返回一个包含完整 URL 的 USVString。它的作用等同于只读的 URL.href。 |
-| toJSON():string | 该方法返回一个USVString，其中包含一个序列化的URL版本。 |
-| new URLSearchParams() | URLSearchParams() 构造器无入参，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。 |
-| new URLSearchParams(string) | URLSearchParams(string) 构造器的入参为string数据类型，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。 |
-| new URLSearchParams(obj) | URLSearchParams(obj) 构造器的入参为obj数据类型，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。 |
-| new URLSearchParams(iterable) | URLSearchParams(iterable) 构造器的入参为iterable数据类型，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。 |
-| has(name: string): boolean | 检索searchParams对象中是否含有name。有则返回ture，否则返回false。 |
-| set(name: string, value string): void |  检索searchParams对象中是否含有key为name的键值对。没有的话则添加该键值对，有的话则修改对象中第一个key所对应的value，并删除键为name的其余键值对。 |
-| sort(): void | 根据键的Unicode代码点，对包含在此对象中的所有键/值对进行排序，并返回undefined。 |
-| toString(): string | 根据searchParams对象,返回适用在URL中的查询字符串。 |
-| keys(): iterableIterator<string> | 返回一个iterator，遍历器允许遍历对象中包含的所有key值。 |
-| values(): iterableIterator<string> | 返回一个iterator，遍历器允许遍历对象中包含的所有value值。 |
-| append(name: string, value: string): void | 在searchParams对象中插入name, value键值对。 |
-| delete(name: string): void | 遍历searchParams对象，查找所有的name,删除对应的键值对。 |
-| get(name: string): string | 检索searchParams对象中第一个name,返回name键对应的值。 |
-| getAll(name: string): string[] | 检索searchParams对象中所有name,返回name键对应的所有值。 |
-| entries(): iterableIterator<[string, string]> | 返回一个iterator，允许遍历searchParams对象中包含的所有键/值对。 |
-| forEach(): void | 通过回调函数来遍历URLSearchParams实例对象上的键值对。 |
-| urlSearchParams[Symbol.iterator] () | 返回查询字符串中每个名称-值对的ES6迭代器。迭代器的每个项都是一个JavaScript数组。 |
+| new URL(url: string,base?:string I URL) | Create and return a URL object that references the URL specified by the absolute URL string, the relative URL string, and the basic URL string. |
+| tostring():string | The stringification method returns a USVString containing the complete URL. It is equivalent to the read-only URL.href. |
+| toJSON():string | This method returns a USVString, which contains a serialized URL version. |
+| new URLSearchParams() | The URLSearchParams() constructor has no parameters. This method creates and returns a new URLSearchParams object. The beginning'?' character will be ignored. |
+| new URLSearchParams(string) | The input parameter of URLSearchParams(string) constructor is string data type. This method creates and returns a new URLSearchParams object. The beginning'?' character will be ignored. |
+| new URLSearchParams(obj) | URLSearchParams(obj) The input parameter of the constructor is the obj data type. This method creates and returns a new URLSearchParams object. The beginning'?' character will be ignored. |
+| new URLSearchParams(iterable) | URLSearchParams(iterable) The input parameter of the constructor is the iterable data type. This method creates and returns a new URLSearchParams object. The beginning'?' character will be ignored. |
+| has(name: string): boolean | Retrieve whether the searchParams object contains name. If yes, it returns true, otherwise it returns false. |
+| set(name: string, value string): void |  Retrieve whether the searchParams object contains a key-value pair whose key is name. If not, add the key-value pair, if any, modify the value corresponding to the first key in the object, and delete the remaining key-value pairs whose key is name. |
+| sort(): void | According to the Unicode code point of the key, sort all key/value pairs contained in this object and return undefined. |
+| toString(): string | According to the searchParams object, the query string applicable in the URL is returned. |
+| keys(): iterableIterator<string> | Return an iterator, which allows iterating through all the key values contained in the object. |
+| values(): iterableIterator<string> | Returns an iterator, which allows iterating over all the value values contained in the object. |
+| append(name: string, value: string): void | Insert the name, value key-value pair in the searchParams object. |
+| delete(name: string): void | Traverse the searchParams object, find all the names, and delete the corresponding key-value pairs. |
+| get(name: string): string | Retrieve the first name in the searchParams object and return the value corresponding to the name key. |
+| getAll(name: string): string[] | Retrieve all names in the searchParams object and return all the values corresponding to the name key. |
+| entries(): iterableIterator<[string, string]> | Returns an iterator that allows iterating through all key/value pairs contained in the searchParams object. |
+| forEach(): void | Through the callback function to traverse the key-value pairs on the URLSearchParams instance object. |
+| urlSearchParams[Symbol.iterator] () | Returns an ES6 iterator for each name-value pair in the query string. Each item of the iterator is a JavaScript array. |
 
-### 使用说明
+### Instructions for use
 
-各接口使用方法如下：
+The usage of each interface is as follows:
 
 1、new URL(url: string,base?:string|URL)
 ```
@@ -207,7 +207,7 @@ for (const [name, value] of params) {
 // foo bar
 // xyz ba
 ```
-## 相关仓
-[js_api_module子系统](https://gitee.com/OHOS_STD/js_api_module)
+## Related warehouse
+[js_api_module Subsystem](https://gitee.com/OHOS_STD/js_api_module)
 
 [base/compileruntime/js_api_module/](base/compileruntime/js_api_module-readme.md)

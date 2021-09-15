@@ -14,29 +14,30 @@
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 
-base_output_path = get_label_info(":js_url", "target_out_dir")
-js_url_obj_path = base_output_path + "/url.o"
-gen_js_obj("js_url") {
-  input = "//base/compileruntime/js_api_module/url/js_url.js"
-  output = js_url_obj_path
+base_output_path = get_label_info(":js_api", "target_out_dir")
+js_api_obj_path = base_output_path + "/api.o"
+gen_js_obj("js_api") {
+  input = "//base/compileruntime/js_api_module/api/js_api.js"
+  output = js_api_obj_path
 }
 
-ohos_shared_library("url") {
+ohos_shared_library("api") {
   include_dirs = [
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
     "//foundation/ace/napi/interfaces/kits",
-    "//base/compileruntime/js_api_module/url",
+    "//base/compileruntime/js_api_module/api",
   ]
 
   sources = [
+    "js_uri.cpp",
     "js_url.cpp",
-    "native_module_url.cpp",
+    "native_module_api.cpp",
   ]
 
   deps = [
-    ":js_url",
-    "//base/compileruntime/js_api_module/url/:js_url",
+    ":js_api",
+    "//base/compileruntime/js_api_module/api/:js_api",
     "//foundation/ace/napi/:ace_napi",
     "//foundation/ace/napi/:ace_napi_quickjs",
     "//third_party/icu/icu4c:static_icuuc",
@@ -54,6 +55,6 @@ ohos_shared_library("url") {
   relative_install_dir = "module"
 }
 
-group("url_packages") {
-  deps = [ ":url" ]
+group("api_packages") {
+  deps = [ ":api" ]
 }
