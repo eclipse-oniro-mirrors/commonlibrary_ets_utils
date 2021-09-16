@@ -82,18 +82,15 @@ namespace OHOS::Api {
     void Uri::AnalysisUri()
     {
         data_ = inputUri_;
-        // Fragment
-        size_t pos = data_.find('#');
-        if (pos != std::string::npos) {
-            if (pos != 0) {
-                AnalysisFragment(pos);
-                if (!errStr_.empty()) {
-                return;
-            }
-            } else {
-                errStr_ = "#It can't be the first";
-                return;
-            }
+        size_t pos = data_.find('#'); // Fragment
+        if ((pos != std::string::npos) && (pos != 0)) {
+            AnalysisFragment(pos);
+            if (!errStr_.empty()) {
+            return;
+        }
+        if ((pos != std::string::npos) && (pos == 0))
+            errStr_ = "#It can't be the first";
+            return;
         }
         pos = data_.find('?'); // Query
         if (pos != std::string::npos) {
@@ -116,8 +113,7 @@ namespace OHOS::Api {
             uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
             return;
         }
-        // userInfo path host port ipv4 or ipv6
-        pos = data_.find("//");
+        pos = data_.find("//"); // userInfo path host port ipv4 or ipv6
         if (pos != std::string::npos && pos == 0) {
             uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
             data_ = data_.substr(2); // 2:Intercept the string from the second subscript
@@ -309,7 +305,6 @@ namespace OHOS::Api {
 
     bool Uri::AnalysisIPV4()
     {
-        HILOG_INFO("------CJX-------data_ = %{public}s  ",data_.c_str());
         std::regex ipv4("((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)");
         std::regex hostname("(([a-zA-Z0-9]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+([a-zA-Z]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?))|"
                             "([a-zA-Z0-9]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?)");
