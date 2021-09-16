@@ -111,18 +111,22 @@ void ConvertXml::GetPrevNodeList(xmlNodePtr curNode)
         curNode = curNode->prev;
         napi_value elementsObject = nullptr;
         napi_create_object(env_, &elementsObject);
-        SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
-        if (curNode->type == xmlElementType::XML_PI_NODE) {
+        if (curNode->type == xmlElementType::XML_PI_NODE && !m_Options.ignoreInstruction) {
+            SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
             SetKeyValue(elementsObject, m_Options.name, (char*)curNode->name);
             SetKeyValue(elementsObject, m_Options.instruction, (const char*)xmlNodeGetContent(curNode));
+            m_prevObj.push_back(elementsObject);
         }
-        if (curNode->type == xmlElementType::XML_COMMENT_NODE) {
+        if (curNode->type == xmlElementType::XML_COMMENT_NODE && !m_Options.ignoreComment) {
+            SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
             SetKeyValue(elementsObject, m_Options.comment, (const char*)xmlNodeGetContent(curNode));
+            m_prevObj.push_back(elementsObject);
         }
-        if (curNode->type == xmlElementType::XML_DTD_NODE) {
+        if (curNode->type == xmlElementType::XML_DTD_NODE && !m_Options.ignoreDoctype) {
+            SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
             SetKeyValue(elementsObject, m_Options.doctype, (char*)curNode->name);
+            m_prevObj.push_back(elementsObject);
         }
-        m_prevObj.push_back(elementsObject);
     }
 }
 
@@ -140,27 +144,33 @@ void ConvertXml::SetAttributes(xmlNodePtr curNode, napi_value &elementsObject)
     }
 }
 
-void ConvertXml::SetXmlElementType(xmlNodePtr curNode, napi_value &elementsObject)
+void ConvertXml::SetXmlElementType(xmlNodePtr curNode, napi_value &elementsObject, bool &bFlag)
 {
     if (curNode->type == xmlElementType::XML_PI_NODE && !m_Options.ignoreInstruction) {
         SetKeyValue(elementsObject, m_Options.instruction.c_str(), (const char*)xmlNodeGetContent(curNode));
+        bFlag = true;
     } else if (curNode->type == xmlElementType::XML_COMMENT_NODE && !m_Options.ignoreComment) {
         SetKeyValue(elementsObject, m_Options.comment.c_str(), (const char*)xmlNodeGetContent(curNode));
+        bFlag = true;
     } else if (curNode->type == xmlElementType::XML_CDATA_SECTION_NODE && !m_Options.ignoreCdata) {
         SetKeyValue(elementsObject, m_Options.cdata, (const char*)xmlNodeGetContent(curNode));
+        bFlag = true;
     }
 }
 void ConvertXml::SetNodeInfo(xmlNodePtr curNode, napi_value &elementsObject)
 {
     if (curNode->type == xmlElementType::XML_PI_NODE) {
-        SetKeyValue(elementsObject, m_Options.type, m_Options.instruction);
+        if (!m_Options.ignoreInstruction) {
+            SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
+        }
     } else {
         SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
     }
-    SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
     if ((curNode->type != xmlElementType::XML_COMMENT_NODE) &&
         (curNode->type != xmlElementType::XML_CDATA_SECTION_NODE)) {
-        SetKeyValue(elementsObject, m_Options.name, (char*)curNode->name);
+        if (!(curNode->type == xmlElementType::XML_PI_NODE && m_Options.ignoreInstruction)) {
+            SetKeyValue(elementsObject, m_Options.name, (char*)curNode->name);
+        }
     }
 }
 
@@ -192,6 +202,7 @@ void ConvertXml::SetPrevInfo(napi_value &recvElement, int flag, int32_t &index1)
             napi_set_element(env_, recvElement, index1++, m_prevObj[i]);
         }
     }
+
 }
 
 void ConvertXml::GetXMLInfo(xmlNodePtr curNode, napi_value &object, int flag)
@@ -224,8 +235,7 @@ void ConvertXml::GetXMLInfo(xmlNodePtr curNode, napi_value &object, int flag)
                 GetXMLInfo(curNode, elementsObject, 1);
                 bFlag = true;
             } else if (index % 2 != 0) { // 2:pNode
-                SetXmlElementType(pNode, elementsObject);
-                bFlag = true;
+                SetXmlElementType(pNode, elementsObject, bFlag);
             } else if (pNode->next == nullptr) {
                 SetEndInfo(pNode, elementsObject, bFlag, bText, index);
             }

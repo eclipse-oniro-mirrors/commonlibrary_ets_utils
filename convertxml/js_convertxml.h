@@ -64,7 +64,7 @@ public:
         explicit ConvertXml(napi_env env);
         virtual ~ConvertXml() {}
         void SetAttributes(xmlNodePtr curNode, napi_value &elementsObject);
-        void SetXmlElementType(xmlNodePtr curNode, napi_value &elementsObject);
+        void SetXmlElementType(xmlNodePtr curNode, napi_value &elementsObject, bool &bFlag);
         void SetNodeInfo(xmlNodePtr curNode, napi_value &elementsObject);
         void SetEndInfo(xmlNodePtr curNode, napi_value &elementsObject, bool &bFlag, bool &bText, int32_t index);
         void GetXMLInfo(xmlNodePtr curNode, napi_value &object, int flag = 0);
