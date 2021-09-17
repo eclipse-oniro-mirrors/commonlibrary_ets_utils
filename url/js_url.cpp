@@ -18,7 +18,7 @@
 #include <sstream>
 #include "securec.h"
 #include "utils/log.h"
-namespace OHOS::Api {
+namespace OHOS::Url {
     static std::map<std::string, int> g_head = {
         {"ftp:", 21}, {"file:", -1}, {"gopher:", 70}, {"http:", 80},
         {"https:", 443}, {"ws:", 80}, {"wss:", 443}

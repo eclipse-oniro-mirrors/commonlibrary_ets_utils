@@ -63,14 +63,12 @@ static napi_value Convert(napi_env env, napi_callback_info info)
         object->DealOptions(args[1]);
     }
     napi_value result = object->convert(strXml);
-    HILOG_INFO("LHC....Convert start011");
     return result;
 }
 
 
 static napi_value ConvertXmlInit(napi_env env, napi_value exports)
 {
-    HILOG_INFO("LHC....ConvertXmlInit start02");
     const char *ConvertXmlClassName = "ConvertXml";
     napi_value ConvertXmlClass = nullptr;
     static napi_property_descriptor ConvertXmlDesc[] = {
@@ -83,7 +81,6 @@ static napi_value ConvertXmlInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("ConvertXml", ConvertXmlClass)
     };
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
-    HILOG_INFO("LHC....ConvertXmlInit end02");
     return exports;
 }
 
@@ -109,8 +106,7 @@ static napi_module ConvertXmlModule = {
     .reserved = { 0 },
 };
 
-extern "C" __attribute__ ((constructor)) void RegisterModule()
-{
+extern "C" __attribute__ ((constructor)) void RegisterModule() {
     napi_module_register(&ConvertXmlModule);
 }
 
