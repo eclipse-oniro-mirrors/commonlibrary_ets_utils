@@ -202,7 +202,6 @@ void ConvertXml::SetPrevInfo(napi_value &recvElement, int flag, int32_t &index1)
             napi_set_element(env_, recvElement, index1++, m_prevObj[i]);
         }
     }
-
 }
 
 void ConvertXml::GetXMLInfo(xmlNodePtr curNode, napi_value &object, int flag)
@@ -307,7 +306,7 @@ napi_status ConvertXml::DealNapiStrValue(napi_value napi_StrValue, std::string &
     char *buffer = nullptr;
     size_t bufferSize = 0;
     napi_status status = napi_ok;
-    status = napi_get_value_string_utf8(env_, napi_StrValue, buffer, -1, &bufferSize);
+    status = napi_get_value_string_utf8(env_, napi_StrValue, nullptr, -1, &bufferSize);
     if (status != napi_ok) {
         return status;
     }

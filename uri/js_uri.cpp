@@ -83,15 +83,11 @@ namespace OHOS::Uri {
     {
         data_ = inputUri_;
         size_t pos = data_.find('#'); // Fragment
-        if ((pos != std::string::npos) && (pos != 0)) {
+        if (pos != std::string::npos) {
             AnalysisFragment(pos);
             if (!errStr_.empty()) {
                 return;
             }
-        }
-        if ((pos != std::string::npos) && (pos == 0)) {
-            errStr_ = "#It can't be the first";
-            return;
         }
         pos = data_.find('?'); // Query
         if (pos != std::string::npos) {
@@ -126,12 +122,10 @@ namespace OHOS::Uri {
             uriData_.path = data_;
             uriData_.SchemeSpecificPart = data_ + uriData_.query;
             data_ = "";
-            return;
         } else if (!data_.empty()) {
             uriData_.SchemeSpecificPart = data_ + uriData_.query;
             uriData_.query = "";
             data_ = "";
-            return;
         }
     }
 
@@ -163,6 +157,10 @@ namespace OHOS::Uri {
 
     void Uri::AnalysisFragment(size_t pos)
     {
+        if (pos == 0) {
+            errStr_ = "#It can't be the first";
+            return;
+        }
         std::string fragment = data_.substr(pos + 1);
         if (!CheckCharacter(fragment, g_ruleUrlc, true)) {
             errStr_ = "Fragment does not conform to the rule";
