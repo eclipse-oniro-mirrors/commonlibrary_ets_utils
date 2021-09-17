@@ -14,7 +14,7 @@
  */
 #include "js_uri.h"
 #include "utils/log.h"
-namespace OHOS::Api {
+namespace OHOS::Uri {
     std::bitset <MAX_BIT_SIZE> g_ruleAlpha;
     std::bitset <MAX_BIT_SIZE> g_ruleScheme;
     std::bitset <MAX_BIT_SIZE> g_ruleUrlc;
@@ -86,9 +86,10 @@ namespace OHOS::Api {
         if ((pos != std::string::npos) && (pos != 0)) {
             AnalysisFragment(pos);
             if (!errStr_.empty()) {
-            return;
+                return;
+            }
         }
-        if ((pos != std::string::npos) && (pos == 0))
+        if ((pos != std::string::npos) && (pos == 0)) {
             errStr_ = "#It can't be the first";
             return;
         }
@@ -289,10 +290,10 @@ namespace OHOS::Api {
     bool Uri::AnalysisPort(size_t pos)
     {
         std::string port = data_.substr(pos + 1);
-        if (!CheckCharacter(port, g_rulePort, true)) { // 存在非规则内字符
+        if (!CheckCharacter(port, g_rulePort, true)) {
             errStr_ = "port does not conform to the rule";
             return false;
-        } else if (CheckCharacter(port, g_ruleDigit, false)) { // 纯数字
+        } else if (CheckCharacter(port, g_ruleDigit, false)) {
             uriData_.port = std::stoi(port);
             data_ = data_.substr(0, pos);
             return true;

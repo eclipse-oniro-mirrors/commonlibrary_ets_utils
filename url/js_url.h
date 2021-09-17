@@ -25,7 +25,7 @@
 #include <vector>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-namespace OHOS::Api {
+namespace OHOS::Url {
     enum class BitsetStatusFlag {
         BIT0 = 0, // 0:Bit 0 Set to true,The URL analysis failed
         BIT1 = 1, // 1:Bit 1 Set to true,The protocol is the default protocol

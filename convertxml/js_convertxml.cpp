@@ -202,6 +202,7 @@ void ConvertXml::SetPrevInfo(napi_value &recvElement, int flag, int32_t &index1)
             napi_set_element(env_, recvElement, index1++, m_prevObj[i]);
         }
     }
+
 }
 
 void ConvertXml::GetXMLInfo(xmlNodePtr curNode, napi_value &object, int flag)

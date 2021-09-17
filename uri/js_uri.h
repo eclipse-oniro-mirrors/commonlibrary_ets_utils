@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-namespace OHOS::Api {
+namespace OHOS::Uri {
     constexpr int MAX_BIT_SIZE = 128;
     struct uri_data {
         int port = -1;
