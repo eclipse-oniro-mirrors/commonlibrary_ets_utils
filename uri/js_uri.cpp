@@ -14,7 +14,7 @@
  */
 #include "js_uri.h"
 #include "utils/log.h"
-namespace OHOS::Api {
+namespace OHOS::Uri {
     std::bitset <MAX_BIT_SIZE> g_ruleAlpha;
     std::bitset <MAX_BIT_SIZE> g_ruleScheme;
     std::bitset <MAX_BIT_SIZE> g_ruleUrlc;
@@ -82,13 +82,10 @@ namespace OHOS::Api {
     void Uri::AnalysisUri()
     {
         data_ = inputUri_;
-        // Fragment
-        size_t pos = data_.find('#');
+        size_t pos = data_.find('#'); // Fragment
         if (pos != std::string::npos) {
-            if (pos != 0) {
-                AnalysisFragment(pos);
-            } else {
-                errStr_ = "#It can't be the first";
+            AnalysisFragment(pos);
+            if (!errStr_.empty()) {
                 return;
             }
         }
@@ -113,8 +110,7 @@ namespace OHOS::Api {
             uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
             return;
         }
-        // userInfo path host port ipv4 or ipv6
-        pos = data_.find("//");
+        pos = data_.find("//"); // userInfo path host port ipv4 or ipv6
         if (pos != std::string::npos && pos == 0) {
             uriData_.SchemeSpecificPart = data_ + "?" + uriData_.query;
             data_ = data_.substr(2); // 2:Intercept the string from the second subscript
@@ -126,12 +122,10 @@ namespace OHOS::Api {
             uriData_.path = data_;
             uriData_.SchemeSpecificPart = data_ + uriData_.query;
             data_ = "";
-            return;
         } else if (!data_.empty()) {
             uriData_.SchemeSpecificPart = data_ + uriData_.query;
             uriData_.query = "";
             data_ = "";
-            return;
         }
     }
 
@@ -163,6 +157,10 @@ namespace OHOS::Api {
 
     void Uri::AnalysisFragment(size_t pos)
     {
+        if (pos == 0) {
+            errStr_ = "#It can't be the first";
+            return;
+        }
         std::string fragment = data_.substr(pos + 1);
         if (!CheckCharacter(fragment, g_ruleUrlc, true)) {
             errStr_ = "Fragment does not conform to the rule";
@@ -229,11 +227,14 @@ namespace OHOS::Api {
                 return;
             }
         }
-        bool isLawfulProt = false;
+        bool isLawfulProt = true;
         // find port
         pos = data_.rfind(':');
         if (pos != std::string::npos) {
-            isLawfulProt = AnalysisPort(pos);
+            size_t pos1 = data_.rfind(']');
+            if (pos1 == std::string::npos || pos > pos1) {
+                isLawfulProt = AnalysisPort(pos);
+            }
             if (!errStr_.empty()) {
             return;
             }
@@ -244,12 +245,12 @@ namespace OHOS::Api {
             if (data_[data_.size() - 1] == ']') {
                 // IPV6
                 if (!isLawfulProt) {
-                    errStr_ = "ipv6 does not conform to the rule";
+                    errStr_ = "Prot does not conform to the rule";
                     return;
                 }
                 AnalysisIPV6();
             } else {
-                errStr_ = "ipv6 does not conform to the rule";
+                errStr_ = "IPv6 is missing a closing bracket";
                 return;
             }
         } else {
@@ -287,10 +288,10 @@ namespace OHOS::Api {
     bool Uri::AnalysisPort(size_t pos)
     {
         std::string port = data_.substr(pos + 1);
-        if (!CheckCharacter(port, g_rulePort, true)) { // 存在非规则内字符
+        if (!CheckCharacter(port, g_rulePort, true)) {
             errStr_ = "port does not conform to the rule";
             return false;
-        } else if (CheckCharacter(port, g_ruleDigit, false)) { // 纯数字
+        } else if (CheckCharacter(port, g_ruleDigit, false)) {
             uriData_.port = std::stoi(port);
             data_ = data_.substr(0, pos);
             return true;
@@ -304,7 +305,8 @@ namespace OHOS::Api {
     bool Uri::AnalysisIPV4()
     {
         std::regex ipv4("((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)");
-        std::regex hostname("([a-zA-Z0-9]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+([a-zA-Z]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?)");
+        std::regex hostname("(([a-zA-Z0-9]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+([a-zA-Z]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?))|"
+                            "([a-zA-Z0-9]([a-zA-Z0-9\\-]*[a-zA-Z0-9])?)");
         bool isIpv4 = std::regex_match(data_, ipv4);
         bool isHosName = std::regex_match(data_, hostname);
         if (!isIpv4 && !isHosName) {
@@ -319,7 +321,7 @@ namespace OHOS::Api {
     void Uri::AnalysisIPV6()
     {
         std::string str = data_.substr(1, data_.size() - 2); // 2:Intercept the string from the second subscript
-        std::regex ipv6("^(::|(:((:[0-9A-Fa-f]{1,4}){1,7}))|(([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|"
+        std::regex ipv6("(::|(:((:[0-9A-Fa-f]{1,4}){1,7}))|(([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|"
                         "(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|:))|(([0-9A-Fa-f]{1,4}:){2}"
                         "(((:[0-9A-Fa-f]{1,4}){1,5})|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})"
                         "|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|:))|(([0-9A-Fa-f]{1,4}:){5}"
@@ -328,7 +330,7 @@ namespace OHOS::Api {
                         "|(([0-9A-Fa-f]{1,4}:){2}(:[0-9A-Fa-f]{1,4}){0,3}:)|(([0-9A-Fa-f]{1,4}:){3}"
                         "(:[0-9A-Fa-f]{1,4}){0,2}:)|(([0-9A-Fa-f]{1,4}:){4}(:[0-9A-Fa-f]{1,4})?:)|"
                         "(([0-9A-Fa-f]{1,4}:){5}:)|(([0-9A-Fa-f]{1,4}:){6}))((25[0-5]|2[0-4]\\d|1\\d{2}|"
-                        "[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)))(%[a-zA-Z0-9._]+)?$");
+                        "[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)))(%[a-zA-Z0-9._]+)?");
         if (!std::regex_match(str, ipv6)) {
             errStr_ = "ipv6 does not conform to the rule";
             return;
