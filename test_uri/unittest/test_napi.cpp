@@ -140,10 +140,12 @@ HWTEST_F(NativeEngineTest, ConstructorTest007, testing::ext::TestSize.Level0)
 HWTEST_F(NativeEngineTest, ConstructorTest008, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
-    OHOS::Uri::Uri uri(env, "http://username:password@[fe80:0000:0001:0000:0440:44ff:1233:5678]:99/path/path?query#fagment");
+    OHOS::Uri::Uri uri(env, "http://username:password@[fe80:0000:0001:0000:0440:44ff:1233:5678]"
+                        ":99/path/path?query#fagment");
     ASSERT_STREQ(uri.GetScheme().c_str(), "http");
     ASSERT_STREQ(uri.GetAuthority().c_str(), "username:password@[fe80:0000:0001:0000:0440:44ff:1233:5678]:99");
-    ASSERT_STREQ(uri.GetSsp().c_str(), "//username:password@[fe80:0000:0001:0000:0440:44ff:1233:5678]:99/path/path?query");
+    ASSERT_STREQ(uri.GetSsp().c_str(), "//username:password@[fe80:0000:0001:0000:0440:44ff:1233:5678]"
+                ":99/path/path?query");
     ASSERT_STREQ(uri.GetUserinfo().c_str(), "username:password");
     ASSERT_STREQ(uri.GetHost().c_str(), "[fe80:0000:0001:0000:0440:44ff:1233:5678]");
     ASSERT_STREQ(uri.GetPort().c_str(), "99");

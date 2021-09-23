@@ -17,7 +17,7 @@
 
 #include "quickjs_native_engine.h"
 
-static NativeEngine* g_nativeEngine = nullptr;
+static NativeEngine *g_nativeEngine = nullptr;
 
 NativeEngineTest::NativeEngineTest()
 {
@@ -26,17 +26,17 @@ NativeEngineTest::NativeEngineTest()
 
 NativeEngineTest::~NativeEngineTest() {}
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     testing::GTEST_FLAG(output) = "xml:./";
     testing::InitGoogleTest(&argc, argv);
 
-    JSRuntime* rt = JS_NewRuntime();
+    JSRuntime *rt = JS_NewRuntime();
     if (rt == nullptr) {
         return 0;
     }
 
-    JSContext* ctx = JS_NewContext(rt);
+    JSContext *ctx = JS_NewContext(rt);
     if (ctx == nullptr) {
         return 0;
     }

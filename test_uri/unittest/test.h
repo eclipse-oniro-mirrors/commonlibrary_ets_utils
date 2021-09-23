@@ -27,7 +27,7 @@ public:
     void SetUp() override {}
     void TearDown() override {}
 protected:
-    NativeEngine* engine_;
+    NativeEngine *engine_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H */
