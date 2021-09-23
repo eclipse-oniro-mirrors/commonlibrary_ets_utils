@@ -14,6 +14,7 @@
       "inner_kits": [
       ],
       "test_list": [
+          "//base/compileruntime/js_api_module/test_uri/unittest:unittest"
       ]
     }
   }

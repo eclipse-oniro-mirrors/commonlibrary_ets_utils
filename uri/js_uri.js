@@ -40,7 +40,8 @@ class URI {
     }
 
     normalize() {
-        return this.uricalss.normalize();
+        let uriStr = this.uricalss.normalize();
+        return createNewUri(uriStr);
     }
 
     get scheme() {
@@ -93,6 +94,10 @@ function toAscllString(uriStr) {
     } else {
         return encodeURI(uriStr);
     }
+}
+
+function createNewUri(uriStr) {
+    return new URI(uriStr);
 }
 
 export default {

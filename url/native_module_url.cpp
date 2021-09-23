@@ -29,8 +29,8 @@ namespace OHOS::Url {
         void *data = nullptr;
         napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data);
         napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
-        napi_valuetype valuetype1;
-        napi_valuetype valuetype2;
+        napi_valuetype valuetype1 = napi_null;
+        napi_valuetype valuetype2 = napi_null;
         std::string input = "";
         napi_typeof(env, argv[0], &valuetype1);
         if (valuetype1 == napi_string) {
@@ -80,7 +80,7 @@ namespace OHOS::Url {
         if (argc == 1) {
             std::string input = "";
             NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, &data));
-            napi_valuetype valuetype;
+            napi_valuetype valuetype = napi_null;
             NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype));
             if (valuetype == napi_string) {
             char *type = nullptr;
@@ -102,9 +102,9 @@ namespace OHOS::Url {
         napi_wrap(
             env, thisVar, object,
             [](napi_env env, void *data, void *hint) {
-                auto object = (URL*)data;
-                if (object != nullptr) {
-                    delete object;
+                auto obj = (URL*)data;
+                if (obj != nullptr) {
+                    delete obj;
                 }
             },
             nullptr, nullptr);
