@@ -405,11 +405,14 @@ namespace OHOS::Url {
     }
 
     void DealWithtempIpv6(std::vector<std::string> &tempIpv6, std::stringstream &ss,
-        std::string &numberHex, const int tempProt[4])
+        std::string &numberHex, const int tempProt[4], int len)
     {
         tempIpv6.push_back(numberHex);
         ss.clear();
         numberHex.clear();
+        if (len == 0) {
+            return;
+        }
         ss << std::hex << tempProt[2] * 0x100 + tempProt[3]; // 2: 3:subscript position
         ss >> numberHex;
         tempIpv6.push_back(numberHex);
@@ -531,7 +534,7 @@ namespace OHOS::Url {
             DealWithProt(tempEnd, val, flags, number, tempProt);
             ss << std::hex << tempProt[0] * 0x100 + tempProt[1];
             ss >> numberHex;
-            DealWithtempIpv6(tempIpv6, ss, numberHex, tempProt);
+            DealWithtempIpv6(tempIpv6, ss, numberHex, tempProt, 4); // 4:tempProtlen
         }
         strInput = IPv6HostCompress(tempIpv6, flag);
         host = '[' + strInput + ']';
