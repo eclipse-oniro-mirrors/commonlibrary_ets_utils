@@ -114,12 +114,16 @@ void ConvertXml::GetPrevNodeList(xmlNodePtr curNode)
         if (curNode->type == xmlElementType::XML_PI_NODE && !m_Options.ignoreInstruction) {
             SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
             SetKeyValue(elementsObject, m_Options.name, (char*)curNode->name);
-            SetKeyValue(elementsObject, m_Options.instruction, (const char*)xmlNodeGetContent(curNode));
+            if (xmlNodeGetContent(curNode) != nullptr) {
+                SetKeyValue(elementsObject, m_Options.instruction, (const char*)xmlNodeGetContent(curNode));
+            }
             m_prevObj.push_back(elementsObject);
         }
         if (curNode->type == xmlElementType::XML_COMMENT_NODE && !m_Options.ignoreComment) {
             SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
-            SetKeyValue(elementsObject, m_Options.comment, (const char*)xmlNodeGetContent(curNode));
+            if (xmlNodeGetContent(curNode) != nullptr) {
+                SetKeyValue(elementsObject, m_Options.comment, (const char*)xmlNodeGetContent(curNode));
+            }
             m_prevObj.push_back(elementsObject);
         }
         if (curNode->type == xmlElementType::XML_DTD_NODE && !m_Options.ignoreDoctype) {
@@ -147,34 +151,44 @@ void ConvertXml::SetAttributes(xmlNodePtr curNode, napi_value &elementsObject)
 void ConvertXml::SetXmlElementType(xmlNodePtr curNode, napi_value &elementsObject, bool &bFlag)
 {
     if (curNode->type == xmlElementType::XML_PI_NODE && !m_Options.ignoreInstruction) {
-        SetKeyValue(elementsObject, m_Options.instruction.c_str(), (const char*)xmlNodeGetContent(curNode));
-        bFlag = true;
+        if (xmlNodeGetContent(curNode) != nullptr) {
+            SetKeyValue(elementsObject, m_Options.instruction.c_str(), (const char*)xmlNodeGetContent(curNode));
+            bFlag = true;
+        }
     } else if (curNode->type == xmlElementType::XML_COMMENT_NODE && !m_Options.ignoreComment) {
-        SetKeyValue(elementsObject, m_Options.comment.c_str(), (const char*)xmlNodeGetContent(curNode));
-        bFlag = true;
+        if (xmlNodeGetContent(curNode) != nullptr) {
+            SetKeyValue(elementsObject, m_Options.comment.c_str(), (const char*)xmlNodeGetContent(curNode));
+            bFlag = true;
+        }
     } else if (curNode->type == xmlElementType::XML_CDATA_SECTION_NODE && !m_Options.ignoreCdata) {
-        SetKeyValue(elementsObject, m_Options.cdata, (const char*)xmlNodeGetContent(curNode));
-        bFlag = true;
+        if (xmlNodeGetContent(curNode) != nullptr) {
+            SetKeyValue(elementsObject, m_Options.cdata, (const char*)xmlNodeGetContent(curNode));
+            bFlag = true;
+        }
     }
 }
 void ConvertXml::SetNodeInfo(xmlNodePtr curNode, napi_value &elementsObject)
 {
-    if (curNode->type == xmlElementType::XML_PI_NODE) {
-        if (!m_Options.ignoreInstruction) {
-            SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
-        }
+    if (curNode->type == xmlElementType::XML_TEXT_NODE) {
+        return;
     } else {
-        SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
-    }
-    if ((curNode->type != xmlElementType::XML_COMMENT_NODE) &&
-        (curNode->type != xmlElementType::XML_CDATA_SECTION_NODE)) {
-        if (!(curNode->type == xmlElementType::XML_PI_NODE && m_Options.ignoreInstruction)) {
-            SetKeyValue(elementsObject, m_Options.name, (char*)curNode->name);
+        if (curNode->type == xmlElementType::XML_PI_NODE) {
+            if (!m_Options.ignoreInstruction) {
+                SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
+            }
+        } else {
+                SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
+        }
+        if ((curNode->type != xmlElementType::XML_COMMENT_NODE) &&
+            (curNode->type != xmlElementType::XML_CDATA_SECTION_NODE)) {
+            if (!(curNode->type == xmlElementType::XML_PI_NODE && m_Options.ignoreInstruction)) {
+                SetKeyValue(elementsObject, m_Options.name, (char*)curNode->name);
+            }
         }
     }
 }
 
-void ConvertXml::SetEndInfo(xmlNodePtr curNode, napi_value &elementsObject, bool &bFlag, bool &bText, int32_t index)
+void ConvertXml::SetEndInfo(xmlNodePtr curNode, napi_value &elementsObject, bool &bFlag)
 {
     SetKeyValue(elementsObject, m_Options.type, GetNodeType(curNode->type));
     if (curNode->type == xmlElementType::XML_ELEMENT_NODE) {
@@ -182,15 +196,16 @@ void ConvertXml::SetEndInfo(xmlNodePtr curNode, napi_value &elementsObject, bool
         bFlag = true;
     } else if (curNode->type == xmlElementType::XML_TEXT_NODE) {
         if (m_Options.trim) {
-            SetKeyValue(elementsObject, m_Options.text, Trim((const char*)xmlNodeGetContent(curNode)));
+            if (xmlNodeGetContent(curNode) != nullptr) {
+                SetKeyValue(elementsObject, m_Options.text, Trim((const char*)xmlNodeGetContent(curNode)));
+            }
         } else {
-            SetKeyValue(elementsObject, m_Options.text, (const char*)xmlNodeGetContent(curNode));
+            if (xmlNodeGetContent(curNode) != nullptr) {
+                SetKeyValue(elementsObject, m_Options.text, (const char*)xmlNodeGetContent(curNode));
+            }
         }
         if (!m_Options.ignoreText) {
             bFlag = true;
-        }
-        if (index != 0) {
-            bText = false;
         }
     }
 }
@@ -208,21 +223,17 @@ void ConvertXml::GetXMLInfo(xmlNodePtr curNode, napi_value &object, int flag)
 {
     napi_value elements = nullptr;
     napi_create_array(env_, &elements);
-    napi_value recvElement;
+    napi_value recvElement = nullptr;
     napi_create_array(env_, &recvElement);
     xmlNodePtr pNode = curNode;
     int32_t index = 0;
     int32_t index1 = 0;
     bool bFlag = false;
-    bool bText = true;
     while (pNode != nullptr) {
         bFlag = false;
-        bText = true;
         napi_value elementsObject = nullptr;
         napi_create_object(env_, &elementsObject);
-        if (flag == 0 || (index % 2 != 0)) { // 2:pNode
-            SetNodeInfo(pNode, elementsObject);
-        }
+        SetNodeInfo(pNode, elementsObject);
         SetAttributes(pNode, elementsObject);
         napi_value tempElement = nullptr;
         napi_create_array(env_, &tempElement);
@@ -233,16 +244,15 @@ void ConvertXml::GetXMLInfo(xmlNodePtr curNode, napi_value &object, int flag)
                 curNode = pNode->children;
                 GetXMLInfo(curNode, elementsObject, 1);
                 bFlag = true;
-            } else if (index % 2 != 0) { // 2:pNode
+            } else {
                 SetXmlElementType(pNode, elementsObject, bFlag);
-            } else if (pNode->next == nullptr) {
-                SetEndInfo(pNode, elementsObject, bFlag, bText, index);
+                SetEndInfo(pNode, elementsObject, bFlag);
             }
         }
         SetPrevInfo(recvElement, flag, index1);
-        if (elementsObject != nullptr && bFlag && bText) {
-                napi_set_element(env_, recvElement, index1++, elementsObject);
-                elementsObject = nullptr;
+        if (elementsObject != nullptr && bFlag) {
+            napi_set_element(env_, recvElement, index1++, elementsObject);
+            elementsObject = nullptr;
         }
         index++;
         pNode = pNode->next;
@@ -252,37 +262,8 @@ void ConvertXml::GetXMLInfo(xmlNodePtr curNode, napi_value &object, int flag)
     }
 }
 
-napi_value ConvertXml::convert(std::string strXml)
+void ConvertXml::SetSpacesInfo(napi_value &object)
 {
-    xmlDocPtr doc = NULL;
-    xmlNodePtr curNode = NULL;
-    napi_status status = napi_ok;
-    size_t len = strXml.size();
-    doc = xmlParseMemory(strXml.c_str(), len);
-    if (!doc) {
-        xmlFreeDoc(doc);
-    }
-    napi_value object = nullptr;
-    status = napi_create_object(env_, &object);
-    if (status != napi_ok) {
-        return NULL;
-    }
-    napi_value subObject = nullptr;
-    napi_value subSubObject = nullptr;
-    napi_value napiKey = nullptr;
-    napi_create_object(env_, &subSubObject);
-    napi_create_object(env_, &subObject);
-    napi_create_string_utf8(env_, (const char*)doc->version, NAPI_AUTO_LENGTH, &napiKey);
-    napi_set_named_property(env_, subSubObject, "version", napiKey);
-    napi_create_string_utf8(env_, (const char*)doc->encoding, NAPI_AUTO_LENGTH, &napiKey);
-    napi_set_named_property(env_, subSubObject, "encoding", napiKey);
-    if (!m_Options.ignoreDeclaration) {
-        napi_set_named_property(env_, subObject, m_Options.attributes.c_str(), subSubObject);
-        napi_set_named_property(env_, object, m_Options.declaration.c_str(), subObject);
-    }
-    curNode = xmlDocGetRootElement(doc);
-    GetPrevNodeList(curNode);
-    GetXMLInfo(curNode, object, 0);
     napi_value iTemp = nullptr;
     switch (m_SpaceType) {
         case (SpaceType::T_INT32):
@@ -297,7 +278,44 @@ napi_value ConvertXml::convert(std::string strXml)
             break;
         default:
             break;
+        }
+}
+
+napi_value ConvertXml::convert(std::string strXml)
+{
+    xmlDocPtr doc = NULL;
+    xmlNodePtr curNode = NULL;
+    napi_status status = napi_ok;
+    napi_value object = nullptr;
+    status = napi_create_object(env_, &object);
+    if (status != napi_ok) {
+        return NULL;
     }
+    size_t len = strXml.size();
+    doc = xmlParseMemory(strXml.c_str(), len);
+    if (!doc) {
+        xmlFreeDoc(doc);
+        return object;
+    }
+    napi_value subObject = nullptr;
+    napi_value subSubObject = nullptr;
+    napi_create_object(env_, &subSubObject);
+    napi_create_object(env_, &subObject);
+    if (doc->version != nullptr) {
+        SetKeyValue(subSubObject, "version", (const char*)doc->version);
+    }
+    if (doc->encoding != nullptr) {
+        SetKeyValue(subSubObject, "encoding", (const char*)doc->encoding);
+    }
+
+    if (!m_Options.ignoreDeclaration && strXml.find("xml")!=std::string::npos) {
+        napi_set_named_property(env_, subObject, m_Options.attributes.c_str(), subSubObject);
+        napi_set_named_property(env_, object, m_Options.declaration.c_str(), subObject);
+    }
+    curNode = xmlDocGetRootElement(doc);
+    GetPrevNodeList(curNode);
+    GetXMLInfo(curNode, object, 0);
+    SetSpacesInfo(object);
     return object;
 }
 
@@ -310,9 +328,10 @@ napi_status ConvertXml::DealNapiStrValue(napi_value napi_StrValue, std::string &
     if (status != napi_ok) {
         return status;
     }
-    buffer = new char[bufferSize + 1];
-    napi_get_value_string_utf8(env_, napi_StrValue, buffer, bufferSize + 1, &bufferSize);
-
+    if (bufferSize > 0) {
+        buffer = new char[bufferSize + 1];
+        napi_get_value_string_utf8(env_, napi_StrValue, buffer, bufferSize + 1, &bufferSize);
+    }
     if (buffer != nullptr) {
         result = buffer;
         delete []buffer;
@@ -341,8 +360,9 @@ void ConvertXml::DealSpaces(napi_value napi_obj)
 
 void ConvertXml::DealIgnore(napi_value napi_obj)
 {
-    std::vector<std::string>vctIgnore = { "compact", "trim", "ignoreDeclaration", "ignoreInstruction",
-        "ignoreAttributes", "ignoreComment", "ignoreCdata", "ignoreDoctype", "ignoreText" };
+    std::vector<std::string> vctIgnore = {"compact", "trim", "ignoreDeclaration", "ignoreInstruction",
+                                          "ignoreAttributes", "ignoreComment", "ignoreCdata",
+                                          "ignoreDoctype", "ignoreText"};
     for (size_t i = 0; i < vctIgnore.size(); ++i) {
         napi_value recvTemp = nullptr;
         bool bRecv = false;
@@ -426,8 +446,9 @@ void ConvertXml::SetDefaultKey(size_t i, std::string strRecv)
 
 void ConvertXml::DealOptions(napi_value napi_obj)
 {
-    std::vector<std::string>vctOptions = { "declarationKey", "instructionKey", "attributesKey", "textKey",
-    "cdataKey", "doctypeKey", "commentKey", "parentKey", "typeKey", "nameKey", "elementsKey" };
+    std::vector<std::string> vctOptions = {"declarationKey", "instructionKey", "attributesKey", "textKey",
+                                           "cdataKey", "doctypeKey", "commentKey", "parentKey", "typeKey",
+                                           "nameKey", "elementsKey"};
     for (size_t i = 0; i < vctOptions.size(); ++i) {
         napi_value recvTemp = nullptr;
         std::string strRecv = "";

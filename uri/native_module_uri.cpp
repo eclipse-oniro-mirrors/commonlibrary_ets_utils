@@ -264,7 +264,7 @@ namespace OHOS::Uri {
             DECLARE_NAPI_GETTER("isFailed", IsFailed),
         };
         NAPI_CALL(env, napi_define_class(env, uriClassName, strlen(uriClassName), UriConstructor,
-        nullptr, sizeof(uriDesc) / sizeof(uriDesc[0]), uriDesc, &uriClass));
+                                         nullptr, sizeof(uriDesc) / sizeof(uriDesc[0]), uriDesc, &uriClass));
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("Uri", uriClass)
         };

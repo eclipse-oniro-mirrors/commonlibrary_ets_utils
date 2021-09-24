@@ -106,7 +106,8 @@ static napi_module ConvertXmlModule = {
     .reserved = { 0 },
 };
 
-extern "C" __attribute__ ((constructor)) void RegisterModule() {
+extern "C" __attribute__ ((constructor)) void RegisterModule()
+{
     napi_module_register(&ConvertXmlModule);
 }
 
