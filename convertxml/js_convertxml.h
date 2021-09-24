@@ -66,7 +66,7 @@ public:
         void SetAttributes(xmlNodePtr curNode, napi_value &elementsObject);
         void SetXmlElementType(xmlNodePtr curNode, napi_value &elementsObject, bool &bFlag);
         void SetNodeInfo(xmlNodePtr curNode, napi_value &elementsObject);
-        void SetEndInfo(xmlNodePtr curNode, napi_value &elementsObject, bool &bFlag, bool &bText, int32_t index);
+        void SetEndInfo(xmlNodePtr curNode, napi_value &elementsObject, bool &bFlag);
         void GetXMLInfo(xmlNodePtr curNode, napi_value &object, int flag = 0);
         napi_value convert(std::string strXml);
         std::string GetNodeType(xmlElementType enumType);
@@ -79,6 +79,7 @@ public:
         void DealIgnore(napi_value napi_obj);
         void SetPrevInfo(napi_value &recvElement, int flag, int32_t &index1);
         void SetDefaultKey(size_t i, std::string strRecv);
+        void SetSpacesInfo(napi_value &object);
 private:
         napi_env env_;
         SpaceType m_SpaceType;

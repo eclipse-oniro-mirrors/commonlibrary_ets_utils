@@ -884,7 +884,7 @@ namespace OHOS::Url {
             DECLARE_NAPI_GETTER("GetIsIpv6", GetIsIpv6),
         };
         NAPI_CALL(env, napi_define_class(env, urlClassName, strlen(urlClassName), UrlConstructor,
-        nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc, &urlClass));
+                                         nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc, &urlClass));
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("Url", urlClass)
         };

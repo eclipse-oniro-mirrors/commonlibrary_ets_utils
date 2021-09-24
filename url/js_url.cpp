@@ -1705,7 +1705,7 @@ namespace OHOS::Url {
                     (charaEncode & 0x0000003F)]; // Acquisition method of the second byte
                 output += output1 + output2;
             } else if ((charaEncode >= 0x0000E000) ||
-                        (charaEncode <= 0x0000D7FF)) { // Convert the Unicode code into three bytes
+                       (charaEncode <= 0x0000D7FF)) { // Convert the Unicode code into three bytes
                 std::string output1 = reviseChar[0x000000E0 |
                     (charaEncode / 4096)]; // 4096:Acquisition method of the first byte
                 std::string output2 = reviseChar[numOfAscii |
@@ -1935,7 +1935,7 @@ namespace OHOS::Url {
             sname = ToUSVString(name);
         }
         delete[] name;
-        for (std::vector<std::string>::iterator iter = searchParams.begin(); iter != searchParams.end();) {
+        for (auto iter = searchParams.begin(); iter != searchParams.end();) {
             if (*iter == sname) {
                 iter = searchParams.erase(iter, iter + 2); // 2:Searching for the number and number of keys and values
             } else {
@@ -2032,7 +2032,7 @@ namespace OHOS::Url {
             delete[] buffer1;
         }
         bool flag = false;
-        for (std::vector<std::string>::iterator it = searchParams.begin(); it < searchParams.end() - 1;) {
+        for (auto it = searchParams.begin(); it < (searchParams.end() - 1);) {
             if (*it == cppName) {
                 if (!flag) {
                     *(it + 1) = cppValue;
