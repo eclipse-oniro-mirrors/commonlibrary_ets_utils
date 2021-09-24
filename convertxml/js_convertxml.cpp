@@ -308,7 +308,7 @@ napi_value ConvertXml::convert(std::string strXml)
         SetKeyValue(subSubObject, "encoding", (const char*)doc->encoding);
     }
 
-    if (!m_Options.ignoreDeclaration && strXml.find("xml")!=std::string::npos) {
+    if (!m_Options.ignoreDeclaration && strXml.find("xml") != std::string::npos) {
         napi_set_named_property(env_, subObject, m_Options.attributes.c_str(), subSubObject);
         napi_set_named_property(env_, object, m_Options.declaration.c_str(), subObject);
     }
