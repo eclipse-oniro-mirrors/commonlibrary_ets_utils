@@ -301,10 +301,10 @@ napi_value ConvertXml::convert(std::string strXml)
     napi_value subSubObject = nullptr;
     napi_create_object(env_, &subSubObject);
     napi_create_object(env_, &subObject);
-    if (doc->version != nullptr) {
+    if (doc != nullptr && doc->version != nullptr) {
         SetKeyValue(subSubObject, "version", (const char*)doc->version);
     }
-    if (doc->encoding != nullptr) {
+    if (doc != nullptr && doc->encoding != nullptr) {
         SetKeyValue(subSubObject, "encoding", (const char*)doc->encoding);
     }
 
