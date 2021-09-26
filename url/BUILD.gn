@@ -32,7 +32,7 @@ action("gen_url_abc") {
     "--node-modules",
     rebase_path("${node_modules}"),
   ]
-  deps = [ "//ark/ts2abc/ts2panda:ark_ts2abc_build"]
+  deps = [ "//ark/ts2abc/ts2panda:ark_ts2abc_build" ]
 
   inputs = [ "//base/compileruntime/js_api_module/url/js_url.js" ]
   outputs = [ target_out_dir + "/url.abc" ]
@@ -68,6 +68,7 @@ ohos_shared_library("url") {
 
   deps = [
     ":js_url",
+    ":url_abc",
     "//base/compileruntime/js_api_module/url/:js_url",
     "//foundation/ace/napi/:ace_napi",
     "//foundation/ace/napi/:ace_napi_quickjs",

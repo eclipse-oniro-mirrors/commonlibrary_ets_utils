@@ -15,15 +15,15 @@
 #include "js_uri.h"
 #include "utils/log.h"
 namespace OHOS::Uri {
-    std::bitset <MAX_BIT_SIZE> g_ruleAlpha;
-    std::bitset <MAX_BIT_SIZE> g_ruleScheme;
-    std::bitset <MAX_BIT_SIZE> g_ruleUrlc;
-    std::bitset <MAX_BIT_SIZE> g_rulePath;
-    std::bitset <MAX_BIT_SIZE> g_ruleUserInfo;
-    std::bitset <MAX_BIT_SIZE> g_ruleScope;
-    std::bitset <MAX_BIT_SIZE> g_ruleDigit;
-    std::bitset <MAX_BIT_SIZE> g_rulePort;
-    void Uri::PreliminaryWork()
+    std::bitset<MAX_BIT_SIZE> g_ruleAlpha;
+    std::bitset<MAX_BIT_SIZE> g_ruleScheme;
+    std::bitset<MAX_BIT_SIZE> g_ruleUrlc;
+    std::bitset<MAX_BIT_SIZE> g_rulePath;
+    std::bitset<MAX_BIT_SIZE> g_ruleUserInfo;
+    std::bitset<MAX_BIT_SIZE> g_ruleScope;
+    std::bitset<MAX_BIT_SIZE> g_ruleDigit;
+    std::bitset<MAX_BIT_SIZE> g_rulePort;
+    void Uri::PreliminaryWork() const
     {
         std::string digitAggregate = "0123456789";
         for (size_t i = 0; i < digitAggregate.size(); ++i) {
@@ -129,11 +129,11 @@ namespace OHOS::Uri {
         }
     }
 
-    bool Uri::CheckCharacter(std::string data, std::bitset <MAX_BIT_SIZE> rule, bool flag)
+    bool Uri::CheckCharacter(std::string data, std::bitset<MAX_BIT_SIZE> rule, bool flag) const
     {
         size_t dataLen = data.size();
         for (size_t i = 0; i < dataLen; ++i) {
-            if (data[i] >= 0 && data[i] < 128) { // 128:Number of ASCII characters
+            if (data[i] >= 0 && data[i] < 128) { // 128:Maximum value of char
                 bool isLegal = rule.test(data[i]);
                 if (!isLegal) {
                     return false;
@@ -255,7 +255,7 @@ namespace OHOS::Uri {
             }
         } else {
             // ipv4
-            if (!isLawfulProt | !AnalysisIPV4()) {
+            if (!isLawfulProt || !AnalysisIPV4()) {
                 uriData_.port = -1;
                 uriData_.host = "";
                 uriData_.userInfo = "";

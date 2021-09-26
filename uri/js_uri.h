@@ -16,17 +16,17 @@
 #ifndef COMPILERUNTIME_JS_API_URI_H
 #define COMPILERUNTIME_JS_API_URI_H
 
+#include <bitset>
+#include <cstdlib>
+#include <regex>
 #include <string>
 #include <vector>
-#include <iostream>
-#include <bitset>
-#include <regex>
-#include <cstdlib>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+
 namespace OHOS::Uri {
     constexpr int MAX_BIT_SIZE = 128;
-    struct uri_data {
+    struct UriData {
         int port = -1;
         std::string scheme = "";
         std::string userInfo = "";
@@ -59,7 +59,7 @@ namespace OHOS::Uri {
         std::string GetQuery() const;
         std::string GetFragment() const;
     private:
-        void PreliminaryWork();
+        void PreliminaryWork() const;
         void AnalysisUri();
         void SpecialPath();
         void AnalysisFragment(size_t pos);
@@ -70,13 +70,13 @@ namespace OHOS::Uri {
         void AnalysisUserInfo(size_t pos);
         void AnalysisIPV6();
 
-        bool CheckCharacter(std::string data, std::bitset <MAX_BIT_SIZE> rule, bool flag);
+        bool CheckCharacter(std::string data, std::bitset<MAX_BIT_SIZE> rule, bool flag) const;
         bool AnalysisPort(size_t pos);
         bool AnalysisIPV4();
 
         std::string Split(std::string path) const;
     private:
-        uri_data uriData_;
+        UriData uriData_;
         std::string data_;
         std::string inputUri_;
         std::string errStr_;

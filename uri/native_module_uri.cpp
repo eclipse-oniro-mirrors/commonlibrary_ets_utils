@@ -13,17 +13,18 @@
  * limitations under the License.
  */
 
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
+
 #include "js_uri.h"
 #include "utils/log.h"
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
 
 extern const char _binary_js_uri_js_start[];
 extern const char _binary_js_uri_js_end[];
 extern const char _binary_uri_abc_start[];
 extern const char _binary_uri_abc_end[];
+
 namespace OHOS::Uri {
-    napi_value g_uriClass = nullptr;
     static napi_value UriConstructor(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -36,20 +37,24 @@ namespace OHOS::Uri {
         NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype));
         if (valuetype == napi_string) {
             char *type = nullptr;
+            std::string input = "";
             size_t typelen = 0;
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
-            type = new char[typelen + 1];
-            NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
-            object = new Uri(env, type);
-            delete[] type;
+            if (typelen > 0) {
+                type = new char[typelen + 1];
+                NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], type, typelen + 1, &typelen));
+                input = type;
+                delete[] type;
+            }
+            object = new Uri(env, input);
         } else {
             napi_throw_error(env, nullptr, "parameter type is error");
         }
         NAPI_CALL(env, napi_wrap(env, thisVar, object,
             [](napi_env env, void *data, void *hint) {
-            auto object = (Uri*)data;
-            if (object != nullptr) {
-                delete object;
+            auto obj = (Uri*)data;
+            if (obj != nullptr) {
+                delete obj;
             }
         }, nullptr, nullptr));
         return thisVar;
@@ -62,11 +67,9 @@ namespace OHOS::Uri {
         Uri *muri = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&muri));
         std::string normalizeUri = muri->Normalize();
-        size_t argc = 1;
-        napi_value args[1] = { 0 };
         napi_value result = nullptr;
-        NAPI_CALL(env, napi_create_string_utf8(env, normalizeUri.c_str(), normalizeUri.size(), args));
-        NAPI_CALL(env, napi_new_instance(env, g_uriClass, argc, args, &result));
+        size_t tempLen = normalizeUri.size();
+        NAPI_CALL(env, napi_create_string_utf8(env, normalizeUri.c_str(), tempLen, &result));
         return result;
     }
 
@@ -264,8 +267,7 @@ namespace OHOS::Uri {
             DECLARE_NAPI_GETTER("isFailed", IsFailed),
         };
         NAPI_CALL(env, napi_define_class(env, uriClassName, strlen(uriClassName), UriConstructor,
-        nullptr, sizeof(uriDesc) / sizeof(uriDesc[0]), uriDesc, &uriClass));
-        g_uriClass = uriClass;
+                                         nullptr, sizeof(uriDesc) / sizeof(uriDesc[0]), uriDesc, &uriClass));
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("Uri", uriClass)
         };

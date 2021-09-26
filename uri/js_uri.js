@@ -12,12 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-declare function requireInternal(s : string) : any;
+
+'use strict';
 const uri = requireInternal("uri");
 
 class URI {
-    uricalss : any
-    constructor(input:any) {
+    constructor(input) {
         if (typeof input !== 'string' || input.length === 0) {
             throw new Error("input type err");
         }
@@ -31,7 +31,7 @@ class URI {
         return toAscllString(this.uricalss.toString());
     }
 
-    equals(other:any) {
+    equals(other) {
         return this.uricalss.equals(other.uricalss);
     }
 
@@ -40,7 +40,8 @@ class URI {
     }
 
     normalize() {
-        return this.uricalss.normalize();
+        let uriStr = this.uricalss.normalize();
+        return createNewUri(uriStr);
     }
 
     get scheme() {
@@ -81,7 +82,7 @@ class URI {
 
 }
 
-function toAscllString(uriStr:any) {
+function toAscllString(uriStr) {
     if (uriStr.indexOf('[') !== -1) {
         let arr = uriStr.split("[");
         let brr = arr[1].split("]");
@@ -93,6 +94,10 @@ function toAscllString(uriStr:any) {
     } else {
         return encodeURI(uriStr);
     }
+}
+
+function createNewUri(uriStr) {
+    return new URI(uriStr);
 }
 
 export default {
