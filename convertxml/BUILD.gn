@@ -14,11 +14,19 @@
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 
+action("build_ts_js") {
+  script = "//base/compileruntime/js_api_module/convertxml/build_ts_js.py"
+  depfile = "$target_gen_dir/$target_name.d"
+  outputs = [target_out_dir + "/js_convertxml.js"
+  ]
+}
+
 base_output_path = get_label_info(":js_convertxml", "target_out_dir")
 js_xml_obj_path = base_output_path + "/convertxml.o"
 gen_js_obj("js_convertxml") {
-  input = "//base/compileruntime/js_api_module/convertxml/js_convertxml.js"
+  input = "$target_out_dir/js_convertxml.js"
   output = js_xml_obj_path
+  dep = ":build_ts_js"
 }
 
 ohos_shared_library("convertxml") {

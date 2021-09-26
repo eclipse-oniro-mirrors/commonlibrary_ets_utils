@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-'use strict';
+declare function requireInternal(s : string) : any;
 const convertXml = requireInternal("ConvertXML");
 class ConvertXml {
     convertxmlclass;
     constructor() {
         this.convertxmlclass = new convertXml.ConvertXml();
     }
-    convert(strXml, options) {
+    convert(strXml : string, options : any) {
         strXml = DealXml(strXml);
         let converted = this.convertxmlclass.convert(strXml, options);
         let space = 0;
@@ -43,7 +43,7 @@ class ConvertXml {
     }
 }
 
-function DealXml(strXml)
+function DealXml(strXml : string)
 {
     var idx = 0;
     var idxSec = 0;
@@ -88,7 +88,7 @@ function DealXml(strXml)
     return strXml;
 }
 
-function DealReplace(strXml, idx, idxThir)
+function DealReplace(strXml : string, idx : any, idxThir : any)
 {
     var i = idx + 1;
     for (; i < idxThir ; i++) {
