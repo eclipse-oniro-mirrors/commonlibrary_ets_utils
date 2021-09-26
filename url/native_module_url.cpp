@@ -20,6 +20,8 @@
 
 extern const char _binary_js_url_js_start[];
 extern const char _binary_js_url_js_end[];
+extern const char _binary_url_abc_start[];
+extern const char _binary_url_abc_end[];
 namespace OHOS::Url {
     static void UrlStructor(napi_env &env, napi_callback_info &info, URL *&object)
     {
@@ -29,8 +31,8 @@ namespace OHOS::Url {
         void *data = nullptr;
         napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data);
         napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
-        napi_valuetype valuetype1 = napi_null;
-        napi_valuetype valuetype2 = napi_null;
+        napi_valuetype valuetype1;
+        napi_valuetype valuetype2;
         std::string input = "";
         napi_typeof(env, argv[0], &valuetype1);
         if (valuetype1 == napi_string) {
@@ -80,7 +82,7 @@ namespace OHOS::Url {
         if (argc == 1) {
             std::string input = "";
             NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, &data));
-            napi_valuetype valuetype = napi_null;
+            napi_valuetype valuetype;
             NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype));
             if (valuetype == napi_string) {
             char *type = nullptr;
@@ -102,9 +104,9 @@ namespace OHOS::Url {
         napi_wrap(
             env, thisVar, object,
             [](napi_env env, void *data, void *hint) {
-                auto obj = (URL*)data;
-                if (obj != nullptr) {
-                    delete obj;
+                auto object = (URL*)data;
+                if (object != nullptr) {
+                    delete object;
                 }
             },
             nullptr, nullptr);
@@ -884,7 +886,7 @@ namespace OHOS::Url {
             DECLARE_NAPI_GETTER("GetIsIpv6", GetIsIpv6),
         };
         NAPI_CALL(env, napi_define_class(env, urlClassName, strlen(urlClassName), UrlConstructor,
-                                         nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc, &urlClass));
+        nullptr, sizeof(UrlDesc) / sizeof(UrlDesc[0]), UrlDesc, &urlClass));
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("Url", urlClass)
         };
@@ -912,6 +914,16 @@ namespace OHOS::Url {
 
         if (bufLen != nullptr) {
             *bufLen = _binary_js_url_js_end - _binary_js_url_js_start;
+        }
+    }
+    extern "C"
+    __attribute__((visibility("default"))) void NAPI_url_GetABCCode(const char** buf, int* buflen)
+    {
+        if (buf != nullptr) {
+            *buf = _binary_url_abc_start;
+        }
+        if (buflen != nullptr) {
+            *buflen = _binary_url_abc_end - _binary_url_abc_start;
         }
     }
 

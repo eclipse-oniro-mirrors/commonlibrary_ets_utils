@@ -21,6 +21,8 @@
 
 extern const char _binary_js_uri_js_start[];
 extern const char _binary_js_uri_js_end[];
+extern const char _binary_uri_abc_start[];
+extern const char _binary_uri_abc_end[];
 namespace OHOS::Uri {
     static napi_value UriConstructor(napi_env env, napi_callback_info info)
     {
@@ -281,6 +283,16 @@ namespace OHOS::Uri {
 
         if (bufLen != nullptr) {
             *bufLen = _binary_js_uri_js_end - _binary_js_uri_js_start;
+        }
+    }
+    extern "C"
+    __attribute__((visibility("default"))) void NAPI_uri_GetABCCode(const char** buf, int* buflen)
+    {
+        if (buf != nullptr) {
+            *buf = _binary_uri_abc_start;
+        }
+        if (buflen != nullptr) {
+            *buflen = _binary_uri_abc_end - _binary_uri_abc_start;
         }
     }
 
