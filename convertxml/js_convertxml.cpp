@@ -283,18 +283,23 @@ void ConvertXml::SetSpacesInfo(napi_value &object)
 
 napi_value ConvertXml::convert(std::string strXml)
 {
-    xmlDocPtr doc = NULL;
-    xmlNodePtr curNode = NULL;
+    xmlDocPtr doc = nullptr;
+    xmlNodePtr curNode = nullptr;
     napi_status status = napi_ok;
     napi_value object = nullptr;
     status = napi_create_object(env_, &object);
     if (status != napi_ok) {
-        return NULL;
+        return nullptr;
     }
+    Replace(strXml, "\\r", "\r");
+    Replace(strXml, "\\n", "\n");
+    Replace(strXml, "\\v", "\v");
+    Replace(strXml, "]]><![CDATA", "]]> <![CDATA");
     size_t len = strXml.size();
     doc = xmlParseMemory(strXml.c_str(), len);
     if (!doc) {
         xmlFreeDoc(doc);
+        DealSingleLine(strXml, object);
         return object;
     }
     napi_value subObject = nullptr;
@@ -307,14 +312,15 @@ napi_value ConvertXml::convert(std::string strXml)
     if (doc != nullptr && doc->encoding != nullptr) {
         SetKeyValue(subSubObject, "encoding", (const char*)doc->encoding);
     }
-
     if (!m_Options.ignoreDeclaration && strXml.find("xml") != std::string::npos) {
         napi_set_named_property(env_, subObject, m_Options.attributes.c_str(), subSubObject);
         napi_set_named_property(env_, object, m_Options.declaration.c_str(), subObject);
     }
-    curNode = xmlDocGetRootElement(doc);
-    GetPrevNodeList(curNode);
-    GetXMLInfo(curNode, object, 0);
+    if (doc != nullptr) {
+        curNode = xmlDocGetRootElement(doc);
+        GetPrevNodeList(curNode);
+        GetXMLInfo(curNode, object, 0);
+    }
     SetSpacesInfo(object);
     return object;
 }
@@ -459,4 +465,118 @@ void ConvertXml::DealOptions(napi_value napi_obj)
     }
     DealIgnore(napi_obj);
     DealSpaces(napi_obj);
+}
+
+void ConvertXml::DealSingleLine(std::string &strXml, napi_value &object)
+{
+    size_t iXml = 0;
+    if ((iXml = strXml.find("xml")) != std::string::npos) {
+        m_XmlInfo.bXml = true;
+        napi_value declObj = nullptr;
+        napi_create_object(env_, &declObj);
+        napi_value attrObj = nullptr;
+        bool bFlag = false;
+        napi_create_object(env_, &attrObj);
+        if (strXml.find("version=") != std::string::npos) {
+            m_XmlInfo.bVersion = true;
+            SetKeyValue(attrObj, "version", "1.0");
+            bFlag = true;
+        }
+        if (strXml.find("encoding=") != std::string::npos) {
+            m_XmlInfo.bEncoding = false;
+            SetKeyValue(attrObj, "encoding", "utf-8");
+            bFlag = true;
+        }
+        if (bFlag) {
+            napi_set_named_property(env_, declObj, m_Options.attributes.c_str(), attrObj);
+            napi_set_named_property(env_, object, m_Options.declaration.c_str(), declObj);
+        } else {
+            napi_set_named_property(env_, object, m_Options.declaration.c_str(), declObj);
+        }
+        if (strXml.find(">", iXml) == strXml.size() - 1) {
+            strXml = "";
+        } else {
+            strXml = strXml.substr(0, strXml.rfind("<", iXml)) + strXml.substr(strXml.find(">", iXml) + 1);
+        }
+    }
+    size_t iCount = 0;
+    size_t iLen = strXml.size();
+    for (; iCount < iLen; ++iCount) {
+        if (strXml[iCount] != ' ' && strXml[iCount] != '\v' &&
+            strXml[iCount] != '\t' && strXml[iCount] != '\n') {
+            break;
+        }
+    }
+    if (iCount < iLen) {
+        DealComplex(strXml, object);
+    }
+}
+
+void ConvertXml::DealComplex(std::string &strXml, napi_value &object)
+{
+    if (strXml.find("<!DOCTYPE") != std::string::npos) {
+        strXml = strXml + "<node></node>";
+    } else {
+        strXml = "<node>" + strXml + "</node>";
+    }
+    xmlDocPtr doc = nullptr;
+    xmlNodePtr curNode = nullptr;
+    size_t len = strXml.size();
+    doc = xmlParseMemory(strXml.c_str(), len);
+    if (!doc) {
+        xmlFreeDoc(doc);
+    }
+    if (doc) {
+        curNode = xmlDocGetRootElement(doc);
+        curNode = curNode->children;
+        napi_value elements = nullptr;
+        napi_create_array(env_, &elements);
+        bool bHasEle = false;
+        int index = 0;
+        bool bCData = false;
+        if (strXml.find("<![CDATA") != strXml.rfind("<![CDATA")) {
+            bCData = true;
+        }
+        while (curNode != nullptr) {
+            napi_value elementsObject = nullptr;
+            napi_create_object(env_, &elementsObject);
+            SetNodeInfo(curNode, elementsObject);
+            SetXmlElementType(curNode, elementsObject, bHasEle);
+            SetEndInfo(curNode, elementsObject, bHasEle);
+            napi_set_element(env_, elements, index++, elementsObject);
+            DealCDataInfo(bCData, curNode);
+        }
+        if (bHasEle) {
+            napi_set_named_property(env_, object, m_Options.elements.c_str(), elements);
+        }
+        xmlFreeDoc(doc);
+    }
+}
+
+void ConvertXml::Replace(std::string &str, const std::string src, const std::string dst)
+{
+    size_t index = 0;
+    while ((index = str.find(src)) != std::string::npos) {
+        str.replace(index, src.size(), dst);
+    }
+}
+
+void ConvertXml::DealCDataInfo(bool bCData, xmlNodePtr &curNode)
+{
+    if (bCData && curNode->type == xmlElementType::XML_CDATA_SECTION_NODE &&
+        curNode->next && curNode->next->type == xmlElementType::XML_TEXT_NODE &&
+        curNode->next->next && curNode->next->next->type == xmlElementType::XML_CDATA_SECTION_NODE) {
+            if (xmlNodeGetContent(curNode->next) != nullptr) {
+                std::string strTemp = (char*)xmlNodeGetContent(curNode->next);
+                Replace(strTemp, " ", "");
+                Replace(strTemp, "\v", "");
+                Replace(strTemp, "\t", "");
+                Replace(strTemp, "\n", "");
+                if (strTemp == "") {
+                    curNode = curNode->next->next;
+                }
+            }
+        } else {
+            curNode = curNode->next;
+        }
 }
