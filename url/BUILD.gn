@@ -67,7 +67,6 @@ ohos_shared_library("url") {
   ]
 
   deps = [
-    ":url_abc",
     ":js_url",
     "//base/compileruntime/js_api_module/url/:js_url",
     "//foundation/ace/napi/:ace_napi",

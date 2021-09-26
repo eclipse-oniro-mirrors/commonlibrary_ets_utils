@@ -23,8 +23,7 @@ action("gen_convertxml_abc") {
 
   args = [
     "--src-js",
-    rebase_path(
-        "//base/compileruntime/js_api_module/convertxml/js_convertxml.js"),
+    rebase_path("//base/compileruntime/js_api_module/convertxml/js_convertxml.js"),
     "--dst-file",
     rebase_path(target_out_dir + "/convertxml.abc"),
     "--node",
