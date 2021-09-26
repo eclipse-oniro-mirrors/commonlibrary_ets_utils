@@ -86,7 +86,7 @@ std::string ConvertXml::Trim(std::string strXmltrim)
     }
     size_t i = 0;
     size_t strlen = strXmltrim.size();
-    for (; i < strlen; ) {
+    for (; i < strlen;) {
         if (strXmltrim[i] == ' ') {
             i++;
         } else {
@@ -467,7 +467,7 @@ void ConvertXml::DealOptions(napi_value napi_obj)
     DealSpaces(napi_obj);
 }
 
-void ConvertXml::DealSingleLine(std::string &strXml,napi_value &object)
+void ConvertXml::DealSingleLine(std::string &strXml, napi_value &object)
 {
     size_t iXml = 0;
     if ((iXml = strXml.find("xml")) != std::string::npos) {
@@ -499,7 +499,6 @@ void ConvertXml::DealSingleLine(std::string &strXml,napi_value &object)
             strXml = strXml.substr(0, strXml.rfind("<", iXml)) + strXml.substr(strXml.find(">", iXml) + 1);
         }
     }
-    
     size_t iCount = 0;
     size_t iLen = strXml.size();
     for (; iCount < iLen; ++iCount) {
@@ -569,12 +568,11 @@ void ConvertXml::DealCDataInfo(bool bCData, xmlNodePtr &curNode)
         curNode->next->next && curNode->next->next->type == xmlElementType::XML_CDATA_SECTION_NODE) {
             if (xmlNodeGetContent(curNode->next) != nullptr) {
                 std::string strTemp = (char*)xmlNodeGetContent(curNode->next);
-                Replace(strTemp, " ","");
-                Replace(strTemp, "\v","");
-                Replace(strTemp, "\t","");
-                Replace(strTemp, "\n","");
-                if (strTemp == "")
-                {
+                Replace(strTemp, " ", "");
+                Replace(strTemp, "\v", "");
+                Replace(strTemp, "\t", "");
+                Replace(strTemp, "\n", "");
+                if (strTemp == "") {
                     curNode = curNode->next->next;
                 }
             }
