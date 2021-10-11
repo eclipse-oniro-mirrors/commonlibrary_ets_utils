@@ -115,22 +115,23 @@ ConvertXml::ConvertXml(napi_env env): env_(env)
                 SetKeyValue(elementsObject, options_.type, GetNodeType(curNode->type));
                 SetKeyValue(elementsObject, options_.name, reinterpret_cast<const char*>(curNode->name));
                 if (xmlNodeGetContent(curNode) != nullptr) {
-                    SetKeyValue(elementsObject, options_.instruction, 
-					            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+                    SetKeyValue(elementsObject, options_.instruction,
+                                reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
                 }
                 prevObj_.push_back(elementsObject);
             }
             if (curNode->type == xmlElementType::XML_COMMENT_NODE && !options_.ignoreComment) {
                 SetKeyValue(elementsObject, options_.type, GetNodeType(curNode->type));
                 if (xmlNodeGetContent(curNode) != nullptr) {
-                    SetKeyValue(elementsObject, options_.comment, 
-					            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+                    SetKeyValue(elementsObject, options_.comment,
+                                reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
                 }
                 prevObj_.push_back(elementsObject);
             }
             if (curNode->type == xmlElementType::XML_DTD_NODE && !options_.ignoreDoctype) {
                 SetKeyValue(elementsObject, options_.type, GetNodeType(curNode->type));
-                SetKeyValue(elementsObject, options_.doctype, reinterpret_cast<const char*>(curNode->name));
+                SetKeyValue(elementsObject, options_.doctype,
+                            reinterpret_cast<const char*>(curNode->name));
                 prevObj_.push_back(elementsObject);
             }
         }
@@ -143,8 +144,8 @@ ConvertXml::ConvertXml(napi_env env): env_(env)
             napi_value attrTitleObj = nullptr;
             napi_create_object(env_, &attrTitleObj);
             while (attr) {
-                SetKeyValue(attrTitleObj, reinterpret_cast<const char*>(attr->name), 
-				            reinterpret_cast<const char*>(attr->children->content));
+                SetKeyValue(attrTitleObj, reinterpret_cast<const char*>(attr->name),
+                            reinterpret_cast<const char*>(attr->children->content));
                 attr = attr->next;
             }
             napi_set_named_property(env_, elementsObject, options_.attributes.c_str(), attrTitleObj);
@@ -155,20 +156,20 @@ ConvertXml::ConvertXml(napi_env env): env_(env)
     {
         if (curNode->type == xmlElementType::XML_PI_NODE && !options_.ignoreInstruction) {
             if (xmlNodeGetContent(curNode) != nullptr) {
-                SetKeyValue(elementsObject, options_.instruction.c_str(), 
-				            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+                SetKeyValue(elementsObject, options_.instruction.c_str(),
+                            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
                 bFlag = true;
             }
         } else if (curNode->type == xmlElementType::XML_COMMENT_NODE && !options_.ignoreComment) {
             if (xmlNodeGetContent(curNode) != nullptr) {
-                SetKeyValue(elementsObject, options_.comment.c_str(), 
-				            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+                SetKeyValue(elementsObject, options_.comment.c_str(),
+                            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
                 bFlag = true;
             }
         } else if (curNode->type == xmlElementType::XML_CDATA_SECTION_NODE && !options_.ignoreCdata) {
             if (xmlNodeGetContent(curNode) != nullptr) {
-                SetKeyValue(elementsObject, options_.cdata, 
-				            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+                SetKeyValue(elementsObject, options_.cdata,
+                            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
                 bFlag = true;
             }
         }
@@ -198,18 +199,19 @@ ConvertXml::ConvertXml(napi_env env): env_(env)
     {
         SetKeyValue(elementsObject, options_.type, GetNodeType(curNode->type));
         if (curNode->type == xmlElementType::XML_ELEMENT_NODE) {
-            SetKeyValue(elementsObject, options_.name.c_str(), reinterpret_cast<const char*>(curNode->name));
+            SetKeyValue(elementsObject, options_.name.c_str(),
+                        reinterpret_cast<const char*>(curNode->name));
             bFlag = true;
         } else if (curNode->type == xmlElementType::XML_TEXT_NODE) {
             if (options_.trim) {
                 if (xmlNodeGetContent(curNode) != nullptr) {
-                    SetKeyValue(elementsObject, options_.text, 
-					            Trim(reinterpret_cast<const char*>(xmlNodeGetContent(curNode))));
+                    SetKeyValue(elementsObject, options_.text,
+                                Trim(reinterpret_cast<const char*>(xmlNodeGetContent(curNode))));
                 }
             } else {
                 if (xmlNodeGetContent(curNode) != nullptr) {
-                    SetKeyValue(elementsObject, options_.text, 
-					            reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
+                    SetKeyValue(elementsObject, options_.text,
+                                reinterpret_cast<const char*>(xmlNodeGetContent(curNode)));
                 }
             }
             if (!options_.ignoreText) {
@@ -375,8 +377,8 @@ ConvertXml::ConvertXml(napi_env env): env_(env)
     void ConvertXml::DealIgnore(const napi_value napiObj)
     {
         std::vector<std::string> vctIgnore = {"compact", "trim", "ignoreDeclaration", "ignoreInstruction",
-                                             "ignoreAttributes", "ignoreComment", "ignoreCdata",
-                                             "ignoreDoctype", "ignoreText"};
+                                              "ignoreAttributes", "ignoreComment", "ignoreCdata",
+                                              "ignoreDoctype", "ignoreText"};
         size_t vctLength = vctIgnore.size();
         for (size_t i = 0; i < vctLength; ++i) {
             napi_value recvTemp = nullptr;
@@ -462,8 +464,8 @@ ConvertXml::ConvertXml(napi_env env): env_(env)
     void ConvertXml::DealOptions(const napi_value napiObj)
     {
         std::vector<std::string> vctOptions = {"declarationKey", "instructionKey", "attributesKey", "textKey",
-                                             "cdataKey", "doctypeKey", "commentKey", "parentKey", "typeKey",
-                                             "nameKey", "elementsKey"};
+                                              "cdataKey", "doctypeKey", "commentKey", "parentKey", "typeKey",
+                                              "nameKey", "elementsKey"};
         size_t vctLength = vctOptions.size();
         for (size_t i = 0; i < vctLength; ++i) {
             napi_value recvTemp = nullptr;
