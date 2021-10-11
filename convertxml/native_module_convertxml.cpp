@@ -19,6 +19,8 @@
 
 extern const char _binary_js_convertxml_js_start[];
 extern const char _binary_js_convertxml_js_end[];
+extern const char _binary_convertxml_abc_start[];
+extern const char _binary_convertxml_abc_end[];
 
 static napi_value ConvertXmlConstructor(napi_env env, napi_callback_info info)
 {
@@ -29,7 +31,7 @@ static napi_value ConvertXmlConstructor(napi_env env, napi_callback_info info)
     napi_wrap(
         env, thisVar, objectInfo,
         [](napi_env env, void *data, void *hint) {
-            auto obj = (ConvertXml*)data;
+            auto obj = reinterpret_cast<ConvertXml*>(data);
             if (obj != nullptr) {
                 delete obj;
             }
@@ -51,7 +53,7 @@ static napi_value Convert(napi_env env, napi_callback_info info)
     std::string strXml;
     napi_valuetype valuetype;
     ConvertXml *object = nullptr;
-    NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
+    NAPI_CALL(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object)));
     if (args[0] == nullptr) {
         NAPI_CALL(env, napi_throw_error(env, "", "parameter is empty"));
     } else {
@@ -95,6 +97,16 @@ __attribute__((visibility("default"))) void NAPI_convertxml_GetJSCode(const char
         *bufLen = _binary_js_convertxml_js_end - _binary_js_convertxml_js_start;
     }
 }
+extern "C"
+__attribute__((visibility("default"))) void NAPI_convertxml_GetABCCode(const char **buf, int *buflen)
+{
+    if (buf != nullptr) {
+        *buf = _binary_convertxml_abc_start;
+    }
+    if (buflen != nullptr) {
+        *buflen = _binary_convertxml_abc_end - _binary_convertxml_abc_start;
+    }
+}
 
 static napi_module ConvertXmlModule = {
     .nm_version = 1,
@@ -106,7 +118,8 @@ static napi_module ConvertXmlModule = {
     .reserved = { 0 },
 };
 
-extern "C" __attribute__ ((constructor)) void RegisterModule() {
+extern "C" __attribute__ ((constructor)) void RegisterModule()
+{
     napi_module_register(&ConvertXmlModule);
 }
 
