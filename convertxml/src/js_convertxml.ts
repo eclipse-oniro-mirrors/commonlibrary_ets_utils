@@ -55,29 +55,13 @@ function DealXml(strXml : string)
     }
     while ((idx = strXml.indexOf('>', idxSec)) != -1) {
         idxThir = strXml.indexOf('<', idx);
-        strXml = DealReplace(strXml, idx, idxThir);
+        strXml = DealPriorReplace(strXml, idx, idxThir);
         if (strXml.indexOf('<', idx) != -1) {
             idxCData = strXml.indexOf('<![CDATA', idxCDataSec);
             idxSec = strXml.indexOf('<', idx);
             if (idxSec == idxCData) {
                 idxSec = strXml.indexOf(']]>', idxCData);
-                var i = idx + 1;
-                for (; i < idxThir ; i++) {
-                    var cXml = strXml.charAt(i)
-                    switch (cXml) {
-                        case '\n':
-                            strXml = strXml.substring(0, i) + '\\n' + strXml.substring(i + 1);
-                            break;
-                        case '\v':
-                            strXml = strXml.substring(0, i) + '\\v' + strXml.substring(i + 1);
-                            break;
-                        case '\t':
-                            strXml = strXml.substring(0, i) + '\\t' + strXml.substring(i + 1);
-                            break;
-                        default:
-                            break;
-                    }
-                }
+                strXml = DealLaterReplace(strXml, idx, idxThir);
                 idxCDataSec = idxSec;
             }
         }
@@ -88,7 +72,7 @@ function DealXml(strXml : string)
     return strXml;
 }
 
-function DealReplace(strXml : string, idx : any, idxThir : any)
+function DealPriorReplace(strXml : string, idx : any, idxThir : any)
 {
     var i = idx + 1;
     for (; i < idxThir ; i++) {
@@ -118,6 +102,28 @@ function DealReplace(strXml : string, idx : any, idxThir : any)
         } else {
             strXml = strXml.substring(0, j) + strXml.substring(j + 1);
             --j;
+        }
+    }
+    return strXml;
+}
+
+function DealLaterReplace(strXml, idx, idxThir)
+{
+    var i = idx + 1;
+    for (; i < idxThir ; i++) {
+        var cXml = strXml.charAt(i)
+        switch (cXml) {
+            case '\n':
+                strXml = strXml.substring(0, i) + '\\n' + strXml.substring(i + 1);
+                break;
+            case '\v':
+                strXml = strXml.substring(0, i) + '\\v' + strXml.substring(i + 1);
+                break;
+            case '\t':
+                strXml = strXml.substring(0, i) + '\\t' + strXml.substring(i + 1);
+                break;
+            default:
+                break;
         }
     }
     return strXml;
