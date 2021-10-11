@@ -14,7 +14,7 @@ The interface of URL is used to parse, construct, normalize, and encode URLs. Th
 
 URI Represents a Uniform Resource Identifier (URI) reference.
 
-XML representation refers to extensible markup language。
+XML representation refers to extensible markup language.
 
 ## Contents
 
@@ -36,7 +36,7 @@ base/compileruntime/js_api_module/
 │   ├── username                                 # username attribute
 │   ├── toString()                               # toString method
 │   └── toJSON()                                 # toJSON method
-├── Class: URLSearchParams                    # URLSearchParams class
+├── Class: URLSearchParams                       # URLSearchParams class
 │   ├── new URLSearchParams()                    # Create URLSearchParams object
 │   ├── new URLSearchParams(string)              # Create URLSearchParams object
 │   ├── new URLSearchParams(obj)                 # Create URLSearchParams object
@@ -54,9 +54,9 @@ base/compileruntime/js_api_module/
 │   ├── toString()                               # toString method
 │   ├── values()                                 # values method
 │   └── urlSearchParams[Symbol.iterator]()       # Create URLSearchParams object
-├── Class:URI                                 # URI class
-│   ├── URI​(String str)                    		 # URI class
-│   ├── scheme                             		 # Create URI object
+├── Class:URI                                    # URI class
+│   ├── URI(String str)                          # URI class
+│   ├── scheme                                   # Create URI object
 │   ├── authority                                # scheme attribute
 │   ├── ssp                                      # authority attribute
 │   ├── userinfo                                 # ssp attribute
@@ -66,13 +66,13 @@ base/compileruntime/js_api_module/
 │   ├── fragment                                 # query attribute
 │   ├── path                                     # fragment attribute
 │   ├── equals(Object ob)                        # path method
-│   ├── normalize​()                              # equals method
-│   ├── isAbsolute​()                             # normalize method
-│   ├── normalize​()                              # isAbsolute method
+│   ├── normalize()                              # equals method
+│   ├── isAbsolute()                             # normalize method
+│   ├── normalize()                              # isAbsolute method
 │   └── toString()                               # normalize method
-└── Class:ConvertXml                          # ConvertXml class
-	├── ConvertXml()                             # Create convertxml class object
-	└── convert(String xml, Object options)      # Convert method
+└── Class:ConvertXml                             # ConvertXml class
+    ├── ConvertXml()                             # Create convertxml class object
+    └── convert(String xml, Object options)      # Convert method
 ```
 
 ## Illustrate
@@ -80,10 +80,9 @@ base/compileruntime/js_api_module/
 ### Interface Description
 
 
-| Interface name | Illustrate                                                         |
+| Interface name | Illustrate |
 | -------- | -------- |
-//URL
-| new URL(url: string,base?:string I URL) | Create and return a URL object that references the URL specified by the absolute URL string, the relative URL string, and the basic URL string. |
+| new URL(url: string,base?:string \| URL) | Create and return a URL object that references the URL specified by the absolute URL string, the relative URL string, and the basic URL string. |
 | tostring():string | The stringification method returns a USVString containing the complete URL. It is equivalent to the read-only URL.href. |
 | toJSON():string | This method returns a USVString, which contains a serialized URL version. |
 | new URLSearchParams() | The URLSearchParams() constructor has no parameters. This method creates and returns a new URLSearchParams object. The beginning'?' character will be ignored. |
@@ -94,18 +93,17 @@ base/compileruntime/js_api_module/
 | set(name: string, value string): void |  Retrieve whether the searchParams object contains a key-value pair whose key is name. If not, add the key-value pair, if any, modify the value corresponding to the first key in the object, and delete the remaining key-value pairs whose key is name. |
 | sort(): void | According to the Unicode code point of the key, sort all key/value pairs contained in this object and return undefined. |
 | toString(): string | According to the searchParams object, the query string applicable in the URL is returned. |
-| keys(): iterableIterator<string> | Return an iterator, which allows iterating through all the key values contained in the object. |
-| values(): iterableIterator<string> | Returns an iterator, which allows iterating over all the value values contained in the object. |
+| keys(): iterableIterator\<string> | Return an iterator, which allows iterating through all the key values contained in the object. |
+| values(): iterableIterator\<string> | Returns an iterator, which allows iterating over all the value values contained in the object. |
 | append(name: string, value: string): void | Insert the name, value key-value pair in the searchParams object. |
 | delete(name: string): void | Traverse the searchParams object, find all the names, and delete the corresponding key-value pairs. |
 | get(name: string): string | Retrieve the first name in the searchParams object and return the value corresponding to the name key. |
 | getAll(name: string): string[] | Retrieve all names in the searchParams object and return all the values corresponding to the name key. |
 | entries(): iterableIterator<[string, string]> | Returns an iterator that allows iterating through all key/value pairs contained in the searchParams object. |
 | forEach(): void | Through the callback function to traverse the key-value pairs on the URLSearchParams instance object. |
-| urlSearchParams[Symbol.iterator] () | Returns an ES6 iterator for each name-value pair in the query string. Each item of the iterator is a JavaScript array. |
-//URI
+| urlSearchParams\[Symbol.iterator]() | Returns an ES6 iterator for each name-value pair in the query string. Each item of the iterator is a JavaScript array. |
 | URI​(String str) | Construct the URI by parsing the given input parameter (String str). This constructor parses the given string strictly in accordance with the grammatical provisions in RFC 2396 Appendix A. |
-| getScheme​() | Return the scheme component of this URI, or null if the scheme is not defined |
+| getScheme​() | Return the scheme component of this URI, or null if the scheme is not defined. |
 | getAuthority​() | Returns the decoded authority component of this URI, or null if authority is not defined. The string returned by this method is the same as the string returned by the getRawAuthority method, except that all escaped octet sequences are decoded. |
 | getSchemeSpecificPart​() |  Returns the decoding scheme-specific part of this URI. The string returned by this method is the same as the string returned by the getRawSchemeSpecificPart method, except that all escaped octet sequences are decoded. |
 | getUserInfo​() | Returns the decoded userinfo component of this URI. The userinfo component of the URI (if defined) only contains characters in unreserved, punctuation, escape, and other categories. |
@@ -118,15 +116,12 @@ base/compileruntime/js_api_module/
 | normalize​() | Normalize the path of this URI. If this URI is opaque, or its path is already in normal form, then this URI is returned. Otherwise, a new URI identical to this URI will be constructed. |
 | isAbsolute​() | Determine whether this URI is absolute. If and only if it has a scheme component, the URI is absolute and the return value is true, otherwise the return value is false. |
 | toString() | Return the content of this URI as a string. |
-//ConvertXml
 | ConvertXml() | The constructor used to construct the convertxml class object. This constructor does not need to pass in parameters. |
 | convert(String xml, Object options)  | Returns a JavaScript object that converts an XML string as required by the option. |
 
 ### Instructions for use
 
 The usage of each interface is as follows:
-
-1.URL
 
 1、new URL(url: string,base?:string|URL)
 ```
@@ -173,7 +168,6 @@ console.log(params.getAll('query'));
 7、new URLSearchParams(iterable)
 ```
 let params;
-
 // Using an array
 params = new URLSearchParams([
     ['user', 'abc'],
@@ -199,13 +193,13 @@ params .sort();
 ```
 console.log(params .toString()); // =>bar=2&baz=3&foo=1'
 ```
-12、keys(): iterableIterator<string>
+12、keys(): iterableIterator\<string>
 ```
 for(var key of params.keys()) {
   console.log(key);
 } // =>bar  baz  foo
 ```
-13、values(): iterableIterator<string>
+13、values(): iterableIterator\<string>
 ```
 for(var value of params.values()) {
   console.log(value);
@@ -252,93 +246,89 @@ for (const [name, value] of params) {
 // xyz ba
 ```
 
-2.URI
-
-1、URI​(String str)
+21、URI​(String str)
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 ```
-2、scheme
+22、scheme
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.scheme        // => "http";
 ```
-3、authority
+23、authority
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.authority     // => "gg:gaogao@www.baidu.com:99";
 ```
-4、ssp
+24、ssp
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.ssp "         // => gg:gaogao@www.baidu.com:99/path/path?query";
 ```
-5、userinfo
+25、userinfo
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.userinfo      // => "gg:gaogao";
 ```
-6、host
+26、host
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.host          // => "www.baidu.com";
 ```
-7、port
+27、port
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.port          // => "99";
 ```
-8、query
+28、query
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.query         // => "query";
 ```
-9、fragment
+29、fragment
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.fragment      // => "fagment";
 ```
-10、path
+30、path
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.path          // => "/path/path";
 ```
-11、equals(Object ob)
+31、equals(Object ob)
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path1?query#fagment');
 let gaogao1 = gaogao;
 let res = gaogao.equals(gaogao1);
 console.log(res);      // => true;
 ```
-12、normalize​()
+32、normalize​()
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path/66./../././mm/.././path1?query#fagment');
 let res = gaogao.normalize();
 console.log(res.path);        // => "/path/path1"
 console.log(res.toString());  // => "http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path/path1?query#fagment"
 ```
-13、isAbsolute​()
+33、isAbsolute​()
 ```
 let gaogao = new Uri.URI('f/tp://username:password@www.baidu.com:88/path?query#fagment');
 let res = gaogao.isAbsolute();
 console.log(res);              //=> false;
 ```
-14、toString()
+34、toString()
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/../../path/.././../aa/bb/cc?query#fagment');
 let res = gaogao.toString();
 console.log(res.toString());     // => 'http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/../../path/.././../aa/bb/cc?query#fagment';
 ```
-
-3.ConvertXml
-
-1、ConvertXml()
+35、ConvertXml()
 ```
 var convertml = new convertXml.ConvertXml();
 ```
-2、convert(String xml, Object options)
+36、convert(String xml, Object options)
 ```
 var result = convertml.convert(xml, {compact: false, spaces: 4});
+```
 ## Related warehouse
 [js_api_module Subsystem](https://gitee.com/OHOS_STD/js_api_module)
 

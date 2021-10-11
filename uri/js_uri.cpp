@@ -15,14 +15,14 @@
 #include "js_uri.h"
 #include "utils/log.h"
 namespace OHOS::Uri {
-    std::bitset <MAX_BIT_SIZE> g_ruleAlpha;
-    std::bitset <MAX_BIT_SIZE> g_ruleScheme;
-    std::bitset <MAX_BIT_SIZE> g_ruleUrlc;
-    std::bitset <MAX_BIT_SIZE> g_rulePath;
-    std::bitset <MAX_BIT_SIZE> g_ruleUserInfo;
-    std::bitset <MAX_BIT_SIZE> g_ruleScope;
-    std::bitset <MAX_BIT_SIZE> g_ruleDigit;
-    std::bitset <MAX_BIT_SIZE> g_rulePort;
+    std::bitset<MAX_BIT_SIZE> g_ruleAlpha;
+    std::bitset<MAX_BIT_SIZE> g_ruleScheme;
+    std::bitset<MAX_BIT_SIZE> g_ruleUrlc;
+    std::bitset<MAX_BIT_SIZE> g_rulePath;
+    std::bitset<MAX_BIT_SIZE> g_ruleUserInfo;
+    std::bitset<MAX_BIT_SIZE> g_ruleScope;
+    std::bitset<MAX_BIT_SIZE> g_ruleDigit;
+    std::bitset<MAX_BIT_SIZE> g_rulePort;
     void Uri::PreliminaryWork() const
     {
         std::string digitAggregate = "0123456789";
