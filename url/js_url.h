@@ -81,8 +81,6 @@ namespace OHOS::Url {
         napi_value GetIsIpv6() const;
         napi_value GetHost() const;
 
-        static void InitOnlyInput(std::string& input, UrlData& urlData,
-            std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags);
         virtual ~URL() {}
     private:
         UrlData urlData_;
