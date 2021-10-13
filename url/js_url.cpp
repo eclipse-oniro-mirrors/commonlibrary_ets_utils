@@ -340,7 +340,7 @@ namespace OHOS::Url {
         }
         temp.push_back(hexVal);
         std::string res = str.substr(0, index);
-        res = res + ":" + temp[0] + temp[1] + ":" + temp[2] + temp[3];
+        res = res + ":" + temp[0] + temp[1] + ":" + temp[2] + temp[3]; // 2:subscript 3:subscript
         return res;
     }
 
