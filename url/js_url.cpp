@@ -327,12 +327,17 @@ namespace OHOS::Url {
         std::string val = "";
         while ((pos = str.find(".", left)) != std::string::npos) {
             val = str.substr(left, pos - left);
-            snprintf(hexVal, sizeof(hexVal), "%02x", stoi(val));
+            if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) < 0) {
+                HILOG_ERROR("sprintf_s is falie");
+            }
+            
             temp.push_back(hexVal);
             left = pos + 1;
         }
         val = str.substr(left);
-        snprintf(hexVal, sizeof(hexVal), "%02x", stoi(val));
+        if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) < 0) {
+            HILOG_ERROR("sprintf_s is falie");
+        }
         temp.push_back(hexVal);
         std::string res = str.substr(0, index);
         res = res + ":" + temp[0] + temp[1] + ":" + temp[2] + temp[3];
@@ -349,8 +354,7 @@ namespace OHOS::Url {
         }
         size_t left = 0;
         size_t count = 0;
-        while ((pos = str.find(":", left)) != std::string::npos)
-        {
+        while ((pos = str.find(":", left)) != std::string::npos) {
             count++;
             left = pos + 1;
         }
@@ -382,8 +386,7 @@ namespace OHOS::Url {
             }
             if (count == strLen) {
                 ipv6[i] = "0";
-            }
-            else if (count != 0) {
+            } else if (count != 0) {
                 ipv6[i] = ipv6[i].substr(j);
             }
         }
@@ -405,13 +408,20 @@ namespace OHOS::Url {
                 size++;
                 i++;
             }
-            maxSize < size ? maxSize = size, maxIndex = index : 0;
+            if (maxSize < size) {
+                maxSize = size;
+                maxIndex = index;
+            }
         }
         std::string res = "";
         size_t ipv6Len = ipv6.size();
         for (size_t i = 0; i < ipv6Len; ++i) {
             if (isNeedZeroCompression && i == maxIndex) {
-                maxIndex == 0 ? res += "::" : res += ":";
+                if (maxIndex == 0) {
+                    res += "::";
+                } else {
+                    res += ":";
+                }
                 i += maxSize - 1;
                 continue;
             }
@@ -431,7 +441,7 @@ namespace OHOS::Url {
         }
     }
 
-    std::string Compress(std::string str) 
+    std::string Compress(std::string str)
     {
         std::vector<std::string> temp;
         size_t pos = 0;
@@ -476,7 +486,8 @@ namespace OHOS::Url {
         flags.set(static_cast<size_t>(BitsetStatusFlag::BIT10));
     }
 
-    bool IsRadix(std::string num, std::string radix) {
+    bool IsRadix(std::string num, std::string radix)
+    {
         size_t len = num.size();
         for (size_t i = 0; i < len; ++i) {
             if (radix.find(num[i]) == std::string::npos) {
@@ -506,10 +517,14 @@ namespace OHOS::Url {
     {
         int val = 0;
         if (radix == 16) { // 16:hex
-            sscanf_s(num.c_str(),"%x", &val);
+            if (sscanf_s(num.c_str(), "%x", &val) == 0) {
+                HILOG_ERROR("sscanf_s is falie");
+            }
             return std::to_string(val);
         } else if (radix == 8) { // 8:octal
-            sscanf_s(num.c_str(), "%o", &val);
+            if (sscanf_s(num.c_str(), "%o", &val) == 0) {
+                HILOG_ERROR("sscanf_s is falie");
+            }
             return std::to_string(val);
         } else {
             return num;
@@ -602,8 +617,8 @@ namespace OHOS::Url {
             flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
             return;
         }
-        
     }
+
     void AnalyseIPv4(const std::string input, std::string& host,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
@@ -639,6 +654,7 @@ namespace OHOS::Url {
             flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
         }
     }
+
     void AnalysisHost(std::string& input, std::string& host,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, bool special)
     {
@@ -680,6 +696,7 @@ namespace OHOS::Url {
         }
         return false;
     }
+
     void AnalysisFilePath(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
@@ -725,6 +742,24 @@ namespace OHOS::Url {
         }
     }
 
+    void AnalysisSpecialFile(std::string& temp, size_t pos, UrlData& urlinfo,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
+    {
+        std::string strHost = temp.substr(0, pos);
+        std::string strPath = temp.substr(pos + 1);
+        bool special = true;
+        if (!ISFileNohost(strHost)) {
+            AnalysisHost(strHost, urlinfo.host, flags, special);
+        } else if (!ISFileNohost(strHost) && flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
+            return;
+        }
+        if (!ISFileNohost(strHost)) {
+            AnalysisFilePath(strPath, urlinfo, flags);
+        } else {
+            AnalysisFilePath(temp, urlinfo, flags);
+        }
+    }
+
     void AnalysisFile(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
@@ -738,18 +773,7 @@ namespace OHOS::Url {
                 AnalysisFilePath(temp, urlinfo, flags);
             } else if ((((pos = temp.find('/')) != std::string::npos) ||
                 ((pos = temp.find('\\')) != std::string::npos)) && pos != 0) {
-                std::string strHost = temp.substr(0, pos);
-                std::string strPath = temp.substr(pos + 1);
-                if (!ISFileNohost(strHost)) {
-                    AnalysisHost(strHost, urlinfo.host, flags, special);
-                } else if (!ISFileNohost(strHost) && flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
-                    return;
-                }
-                if (!ISFileNohost(strHost)) {
-                    AnalysisFilePath(strPath, urlinfo, flags);
-                } else {
-                    AnalysisFilePath(temp, urlinfo, flags);
-                }
+                    AnalysisSpecialFile(temp, pos, urlinfo, flags);
             } else {
                 if (!temp.empty() && flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
                     AnalysisHost(temp, urlinfo.host, flags, special);
@@ -902,12 +926,12 @@ namespace OHOS::Url {
             size_t pos = 0;
             bool special = true;
             size_t inputLen = input.size();
-            for (; pos < inputLen;) {
+            while (pos < inputLen) {
                 if (input[pos] == '/' || input[pos] == '\\') {
                     pos++;
-                } else {
-                    break;
+                    continue;
                 }
+                break;
             }
             input = input.substr(pos);
             if (input.size() == 0) {
@@ -1050,6 +1074,17 @@ namespace OHOS::Url {
         }
     }
 
+    void ToolHasBase(std::string input, std::string &strInput, UrlData &urlData_,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags_)
+    {
+        if (!input.empty() && input[0] == '/') {
+            strInput = input.substr(1);
+            AnalysisInput(strInput, urlData_, flags_);
+        } else if (!input.empty() && input[0] != '/') {
+            AnalysisInput(strInput, urlData_, flags_);
+        }
+    }
+
     URL::URL(napi_env env, const std::string& input)
     {
         env_ = env;
@@ -1098,12 +1133,7 @@ namespace OHOS::Url {
             if (!baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
                 flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT0), 0);
                 BaseInfoToUrl(baseInfo, baseflags, urlData_, flags_, input.empty());
-                if (!input.empty() && input[0] == '/') {
-                    strInput = input.substr(1);
-                    AnalysisInput(strInput, urlData_, flags_);
-                } else if (!input.empty() && input[0] != '/') {
-                    AnalysisInput(strInput, urlData_, flags_);
-                }
+                ToolHasBase(input, strInput, urlData_, flags_);
                 if (!input.empty() && input[0] != '/' && urlData_.path.empty()) {
                     urlData_.path = baseInfo.path;
                     flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6),
