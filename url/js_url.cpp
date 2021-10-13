@@ -1074,14 +1074,14 @@ namespace OHOS::Url {
         }
     }
 
-    void ToolHasBase(std::string input, std::string &strInput, UrlData &urlData_,
-        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags_)
+    void ToolHasBase(std::string input, std::string &strInput, UrlData &urlData,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags)
     {
         if (!input.empty() && input[0] == '/') {
             strInput = input.substr(1);
-            AnalysisInput(strInput, urlData_, flags_);
+            AnalysisInput(strInput, urlData, flags);
         } else if (!input.empty() && input[0] != '/') {
-            AnalysisInput(strInput, urlData_, flags_);
+            AnalysisInput(strInput, urlData, flags);
         }
     }
 
