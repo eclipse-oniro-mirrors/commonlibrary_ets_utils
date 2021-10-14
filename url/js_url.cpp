@@ -19,33 +19,30 @@
 #include "securec.h"
 #include "utils/log.h"
 namespace OHOS::Url {
-    static std::map<std::string, int> g_head = {
+    std::map<std::string, int> g_head = {
         {"ftp:", 21}, {"file:", -1}, {"gopher:", 70}, {"http:", 80},
         {"https:", 443}, {"ws:", 80}, {"wss:", 443}
     };
-
-    static std::vector<std::string> g_doubleSegment = {
+    std::vector<std::string> g_doubleSegment = {
         "..", ".%2e", ".%2E", "%2e.", "%2E.",
         "%2e%2e", "%2E%2E", "%2e%2E", "%2E%2e"
     };
-
-    static std::vector<std::string> g_singlesegment = { ".", "%2e", "%2E" };
-
-    static std::vector<char> g_specialcharacter = {
+    std::vector<std::string> g_singlesegment = { ".", "%2e", "%2E" };
+    std::vector<char> g_specialcharacter = {
         '\0', '\t', '\n', '\r', ' ', '#', '%', '/', ':', '?',
         '@', '[', '\\', ']'
     };
 
-    static void ReplaceSpecialSymbols(std::string& input, std::string& oldstr, std::string& newstr)
+    void ReplaceSpecialSymbols(std::string& input, std::string& oldstr, std::string& newstr)
     {
         size_t oldlen = oldstr.size();
         while (true) {
             size_t pos = 0;
             if ((pos = input.find(oldstr)) != std::string::npos) {
                 input.replace(pos, oldlen, newstr);
-            } else {
-                break;
+                continue;
             }
+            break;
         }
     }
 
@@ -64,21 +61,19 @@ namespace OHOS::Url {
         return false;
     }
 
-    static unsigned AsciiToHex(const unsigned char pram)
+    unsigned AsciiToHex(const unsigned char pram)
     {
         if (pram >= '0' && pram <= '9') {
             return pram - '0';
-        }
-        if (pram >= 'A' && pram <= 'F') {
+        } else if (pram >= 'A' && pram <= 'F') {
             return pram - 'A' + 10; // 10:Convert to hexadecimal
-        }
-        if (pram >= 'a' && pram <= 'f') {
+        } else if (pram >= 'a' && pram <= 'f') {
             return pram - 'a' + 10; // 10:Convert to hexadecimal
         }
         return static_cast<unsigned>(-1);
     }
 
-    static std::string DecodePercent(const char *input, size_t len)
+    std::string DecodePercent(const char *input, size_t len)
     {
         std::string temp;
         if (len == 0) {
@@ -106,32 +101,32 @@ namespace OHOS::Url {
         return temp;
     }
 
-    static void DeleteC0OrSpace(std::string& str)
+    void DeleteC0OrSpace(std::string& str)
     {
         if (str.empty()) {
             return;
         }
         size_t i = 0;
         size_t strlen = str.size();
-        for (; i < strlen;) {
+        while (i < strlen) {
             if (str[i] >= '\0' && str[i] <= ' ') {
                 i++;
-            } else {
-                break;
+                continue;
             }
+            break;
         }
         str = str.substr(i);
         strlen = str.size();
         for (i = strlen - 1; i != 0; i--) {
             if (str[i] >= '\0' && str[i] <= ' ') {
                 str.pop_back();
-            } else {
-                break;
+                continue;
             }
+            break;
         }
     }
 
-    static void DeleteTabOrNewline(std::string& str1)
+    void DeleteTabOrNewline(std::string& str1)
     {
         for (auto item = str1.begin(); item != str1.end();) {
             if (IsASCIITabOrNewline(*item)) {
@@ -142,7 +137,7 @@ namespace OHOS::Url {
         }
     }
 
-    static bool IsSpecial(std::string scheme)
+    bool IsSpecial(std::string scheme)
     {
         auto temp = g_head.count(scheme);
         if (temp > 0) {
@@ -151,7 +146,7 @@ namespace OHOS::Url {
         return false;
     }
 
-    static bool AnalysisScheme(std::string& input, std::string& scheme,
+    bool AnalysisScheme(std::string& input, std::string& scheme,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         if (!isalpha(input[0])) {
@@ -178,20 +173,20 @@ namespace OHOS::Url {
         }
     }
 
-    static void AnalysisFragment(const std::string& input, std::string& fragment,
+    void AnalysisFragment(const std::string& input, std::string& fragment,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         fragment = input;
         flags.set(static_cast<size_t>(BitsetStatusFlag::BIT8));
     }
 
-    static void AnalysisQuery(const std::string& input, std::string& query,
+    void AnalysisQuery(const std::string& input, std::string& query,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         query = input;
         flags.set(static_cast<size_t>(BitsetStatusFlag::BIT7));
     }
-    static void AnalysisUsernameAndPasswd(std::string& input, std::string& username, std::string& password,
+    void AnalysisUsernameAndPasswd(std::string& input, std::string& username, std::string& password,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         int pos = input.size() - 1;
@@ -215,7 +210,6 @@ namespace OHOS::Url {
                 }
             }
         }
-
         if (userAndPasswd.find(':') != std::string::npos) {
             size_t i = userAndPasswd.find(':');
             std::string user = userAndPasswd.substr(0, i);
@@ -234,7 +228,7 @@ namespace OHOS::Url {
         }
     }
 
-    static void AnalysisPath(std::string& input, std::vector<std::string>& path,
+    void AnalysisPath(std::string& input, std::vector<std::string>& path,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, bool isSpecial)
     {
         std::vector<std::string> temp;
@@ -276,7 +270,7 @@ namespace OHOS::Url {
         }
     }
 
-    static void AnalysisPort(std::string input, UrlData& urlinfo,
+    void AnalysisPort(std::string input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         for (auto i : input) {
@@ -302,7 +296,7 @@ namespace OHOS::Url {
         urlinfo.port = it;
     }
 
-    static void AnalysisOpaqueHost(std::string input, std::string& host,
+    void AnalysisOpaqueHost(std::string input, std::string& host,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         size_t strlen = input.size();
@@ -318,350 +312,343 @@ namespace OHOS::Url {
         flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
     }
 
-    static std::string IPv6ZeroComperess(std::vector<std::string>& tempIPV6, std::string& input,
-        int maxZeroIndex, int max)
+    std::string DealIpv4(std::string str)
     {
-        for (int i = 0; i < maxZeroIndex; ++i) {
-            input += tempIPV6[i];
-            if (i != maxZeroIndex - 1) {
-                input += ":";
+        std::vector<std::string> temp;
+        size_t pos = str.rfind(":");
+        size_t index = pos;
+        size_t left = pos + 1;
+        char hexVal[3] = { 0 };
+        std::string val = "";
+        while ((pos = str.find(".", left)) != std::string::npos) {
+            val = str.substr(left, pos - left);
+            if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) < 0) {
+                HILOG_ERROR("sprintf_s is falie");
             }
+            
+            temp.push_back(hexVal);
+            left = pos + 1;
         }
-        input += "::";
-        size_t strlen = tempIPV6.size();
-        for (size_t i = maxZeroIndex + max; i < strlen; ++i) {
-            input += tempIPV6[i];
-            if (i != strlen - 1) {
-                input += ":";
-            }
+        val = str.substr(left);
+        if (sprintf_s(hexVal, sizeof(hexVal), "%02x", stoi(val)) < 0) {
+            HILOG_ERROR("sprintf_s is falie");
         }
-        return input;
+        temp.push_back(hexVal);
+        std::string res = str.substr(0, index);
+        res = res + ":" + temp[0] + temp[1] + ":" + temp[2] + temp[3]; // 2:subscript 3:subscript
+        return res;
     }
 
-    static std::string IPv6NoComperess(std::vector<std::string>& tempIPV6, std::string& input)
+    void FormatIpv6(std::string& str)
     {
-        size_t strlen = tempIPV6.size();
-            for (size_t i = 0; i < strlen; ++i) {
-                if (tempIPV6[i][0] == '?' && tempIPV6[i].size() == 1) {
-                    input += ":";
-                } else {
-                    input += tempIPV6[i];
-                    if (i != tempIPV6.size() - 1) {
-                        input += ":";
-                    }
-                }
-            }
-        return input;
+        size_t pos = str.find("::");
+        size_t index = pos;
+        if (pos == std::string::npos) {
+            return;
+        }
+        size_t left = 0;
+        size_t count = 0;
+        while ((pos = str.find(":", left)) != std::string::npos) {
+            count++;
+            left = pos + 1;
+        }
+        int size = 7 - (count - 2); // 7:point number 2:Continuous colon number
+        std::string temp = "";
+        for (int i = 0; i < size - 1; ++i) {
+            temp += ":0";
+        }
+        temp += ":";
+        str.replace(index, 2, temp); // 2:jump"::"
+        if (index == 0) {
+            str = "0" + str;
+        }
     }
 
-    static std::string IPv6HostCompress(std::vector<std::string>& tempIPV6, int flag)
+    void RemoveLeadingZeros(std::vector<std::string> &ipv6)
     {
-        std::string input;
-        if (flag == 1) {
-            return IPv6NoComperess(tempIPV6, input);
+        size_t len = ipv6.size();
+        for (size_t i = 0; i < len; ++i) {
+            size_t strLen = ipv6[i].size();
+            size_t count = 0;
+            size_t j = 0;
+            for (j = 0; j < strLen; ++j) {
+                if (ipv6[i][j] != '0') {
+                    break;
+                }
+                count++;
+            }
+            if (count == strLen) {
+                ipv6[i] = "0";
+            } else if (count != 0) {
+                ipv6[i] = ipv6[i].substr(j);
+            }
         }
-        int max = 0;
-        int count = 0;
-        size_t maxZeroIndex = 0;
-        size_t strlen = tempIPV6.size();
-        for (size_t i = 0; i < strlen;) {
-            if (tempIPV6[i] == "0" && (i + 1 < strlen && tempIPV6[i + 1] == "0")) {
-                int index = i;
-                while (i < strlen && tempIPV6[i] == "0") {
-                    i++;
-                    count++;
-                }
-                if (max < count) {
-                    max = count;
-                    maxZeroIndex = index;
-                }
-            } else {
-                count = 0;
+    }
+
+    std::string ZeroCompression(std::vector<std::string> &ipv6)
+    {
+        size_t maxIndex = 0;
+        size_t maxSize = 0;
+        size_t index = 0;
+        size_t size = 0;
+        bool isNeedZeroCompression = false;
+        size_t len = ipv6.size();
+        for (size_t i = 0; i < len; ++i) {
+            index = i;
+            size = 0;
+            while (i < len && ipv6[i] == "0") {
+                isNeedZeroCompression = true;
+                size++;
                 i++;
             }
+            if (maxSize < size) {
+                maxSize = size;
+                maxIndex = index;
+            }
         }
-        if (count == 8) { // 8:If IPv6 is all 0
-            return "::";
-        } else if (max == 0) {
-            strlen = tempIPV6.size();
-            for (size_t i = 0; i < strlen; ++i) {
-                input += tempIPV6[i];
-                if (i != strlen - 1) {
-                    input += ":";
+        std::string res = "";
+        size_t ipv6Len = ipv6.size();
+        for (size_t i = 0; i < ipv6Len; ++i) {
+            if (isNeedZeroCompression && i == maxIndex) {
+                if (maxIndex == 0) {
+                    res += "::";
+                } else {
+                    res += ":";
                 }
+                i += maxSize - 1;
+                continue;
             }
-            return input;
-        } else if (maxZeroIndex == 0) {
-            input += "::";
-            strlen = tempIPV6.size();
-            for (size_t i = max; i < strlen; ++i) {
-                input += tempIPV6[i] + ":";
-            }
-            input.pop_back();
-            return input;
-        } else {
-            return IPv6ZeroComperess(tempIPV6, input, maxZeroIndex, max);
+            res += ipv6[i];
+            i != (ipv6Len - 1) ? res += ":" : "";
         }
+        return res;
     }
 
-    void DealWithtempIpv6(std::vector<std::string> &tempIpv6, std::stringstream &ss,
-        std::string &numberHex, const int tempProt[4], int len)
+    void ToLower(std::string &str)
     {
-        tempIpv6.push_back(numberHex);
-        ss.clear();
-        numberHex.clear();
-        if (len == 0) {
-            return;
-        }
-        ss << std::hex << tempProt[2] * 0x100 + tempProt[3]; // 2: 3:subscript position
-        ss >> numberHex;
-        tempIpv6.push_back(numberHex);
-        ss.clear();
-        numberHex.clear();
-        tempIpv6.erase(tempIpv6.end() - 3); // 3:Remove redundant space
-    }
-
-    void IPv6DealWithColon(int& flag, std::string& strInput,
-        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, size_t &pos)
-    {
-        flag = 1;
-        if (strInput.find("::", pos + 2) != std::string::npos) { // 2:Subscript Move Right2
-            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-        }
-        return;
-    }
-
-    void IsFlagExist(size_t &pos, std::vector<std::string> &temp, std::vector<std::string> &tempEnd,
-        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags, unsigned &numberFlag)
-    {
-        while (((pos = temp[numberFlag].find('.')) != std::string::npos)) {
-            tempEnd.push_back(temp[numberFlag].substr(0, pos));
-            temp[numberFlag] = temp[numberFlag].substr(pos + 1);
-        }
-        tempEnd.push_back(temp[numberFlag]);
-        if (tempEnd.size() != 4) { // 4:The size is not 4
-            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-        }
-    }
-    void DealWithProt(std::vector<std::string> &tempEnd, unsigned &val,
-        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags,
-        int &number, int tempProt[4])
-    {
-        size_t strlen = tempEnd.size();
-        for (size_t x = 0; x < strlen; ++x) {
-            val = stoi(tempEnd[x]);
-            if (val > 255) { // 255:The maximum value is 255
-                flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-                return;
-            }
-            tempProt[number] = val;
-            number++;
-            val = 0;
-        }
-    }
-
-    void DealWithElse(std::vector<std::string> &temp, size_t &i, unsigned &numberFlag,
-        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, unsigned &val)
-    {
-        size_t strlen = temp[i].size();
-        for (size_t j = 0; j < strlen; ++j) {
-            if (((temp[i].find('.')) != std::string::npos)) {
-                numberFlag = i;
-                if (temp.size() == i || temp.size() > 7) { // 7:The size cannot be greater than 7
-                    flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-                    return;
-                }
-                return;
-            } else if (IsHexDigit(temp[i][j])) {
-                val = val * 0x10 + AsciiToHex(temp[i][j]);
+        size_t strLen = str.size();
+        for (size_t i = 0; i < strLen; ++i) {
+            if (isupper(str[i])) {
+                str[i] = tolower(str[i]);
             }
         }
     }
 
-    void DealWithStringStream(std::stringstream &ss, unsigned &val,
-        std::string &numberHex, std::vector<std::string> &tempIpv6)
+    std::string Compress(std::string str)
     {
-        ss << std::hex << val;
-        ss >> numberHex;
-        tempIpv6.push_back(numberHex);
-        ss.clear();
-        numberHex.clear();
-        val = 0;
+        std::vector<std::string> temp;
+        size_t pos = 0;
+        size_t left = 0;
+        while ((pos = str.find(":", left)) != std::string::npos) {
+            temp.push_back(str.substr(left, pos - left));
+            left = pos + 1;
+        }
+        temp.push_back(str.substr(left));
+        RemoveLeadingZeros(temp);
+        std::string res = ZeroCompression(temp);
+        ToLower(res);
+        return res;
     }
 
-    static void IPv6Host(std::string& input, std::string& host,
+    void IPv6Host(std::string& input, std::string& host,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
-        if (input.size() == 0) {
+        std::regex ipv6("(::|(:((:[0-9A-Fa-f]{1,4}){1,7}))|(([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|"
+                        "(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|:))|(([0-9A-Fa-f]{1,4}:){2}"
+                        "(((:[0-9A-Fa-f]{1,4}){1,5})|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})"
+                        "|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|:))|(([0-9A-Fa-f]{1,4}:){5}"
+                        "(((:[0-9A-Fa-f]{1,4}){1,2})|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|:))|"
+                        "(((:(:[0-9A-Fa-f]{1,4}){0,5}:)|(([0-9A-Fa-f]{1,4}:){1}(:[0-9A-Fa-f]{1,4}){0,4}:)"
+                        "|(([0-9A-Fa-f]{1,4}:){2}(:[0-9A-Fa-f]{1,4}){0,3}:)|(([0-9A-Fa-f]{1,4}:){3}"
+                        "(:[0-9A-Fa-f]{1,4}){0,2}:)|(([0-9A-Fa-f]{1,4}:){4}(:[0-9A-Fa-f]{1,4})?:)|"
+                        "(([0-9A-Fa-f]{1,4}:){5}:)|(([0-9A-Fa-f]{1,4}:){6}))((25[0-5]|2[0-4]\\d|1\\d{2}|"
+                        "[1-9]\\d|\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]\\d|\\d)))(%[a-zA-Z0-9._]+)?");
+        if (!std::regex_match(input, ipv6)) {
             flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
             return;
         }
-        std::string strInput = input;
-        std::stringstream ss;
-        std::string numberHex;
-        unsigned val = 0;
-        unsigned numberFlag = 0;
-        std::vector<std::string> temp;
-        std::vector<std::string> tempEnd;
-        std::vector<std::string> tempIpv6;
         size_t pos = 0;
-        int tempProt[4] = { 0 };
-        int number = 0;
-        int flag = 0;
-        if ((pos = strInput.find("::", 0)) != std::string::npos) {
-            IPv6DealWithColon(flag, strInput, flags, pos);
+        pos = input.find('.');
+        if (pos != std::string::npos) {
+            input = DealIpv4(input);
         }
-        while (((pos = strInput.find(':')) != std::string::npos)) {
-            temp.push_back(strInput.substr(0, pos));
-            strInput = strInput.substr(pos + 1);
-        }
-        temp.push_back(strInput);
-        if (temp.size() > 8) { // 8:The incoming value does not meet the criteria
-            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-            return;
-        }
-        size_t length = temp.size();
-        for (size_t i = 0; i < length; ++i) {
-            if (temp[i].empty()) {
-                tempIpv6.push_back("?");
-            } else {
-                DealWithElse(temp, i, numberFlag, flags, val);
-                DealWithStringStream(ss, val, numberHex, tempIpv6);
-            }
-        }
-        if (numberFlag != 0) {
-            IsFlagExist(pos, temp, tempEnd, flags, numberFlag);
-            DealWithProt(tempEnd, val, flags, number, tempProt);
-            ss << std::hex << tempProt[0] * 0x100 + tempProt[1];
-            ss >> numberHex;
-            DealWithtempIpv6(tempIpv6, ss, numberHex, tempProt, 4); // 4:tempProtlen
-        }
-        strInput = IPv6HostCompress(tempIpv6, flag);
-        host = '[' + strInput + ']';
+        FormatIpv6(input);
+        input = Compress(input);
+        host = "[" + input + "]";
         flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
         flags.set(static_cast<size_t>(BitsetStatusFlag::BIT10));
     }
 
-    static bool CheckNunType(const char ch, const unsigned num)
+    bool IsRadix(std::string num, std::string radix)
     {
-        enum class NUMERATION {
-            OCT = 8, // 8:Octal
-            DEC = 10, // 10:Decimal
-            HEX = 16 // 16:Hexadecimal
-        };
-        if (NUMERATION(num) == NUMERATION::OCT) {
-            if (ch < '0' || ch > '7') { // 0~7:Octal
-                return false;
-            }
-        } else if (NUMERATION(num) == NUMERATION::DEC) {
-            if (ch < '0' || ch > '9') { // 0~9:Decimal
-                return false;
-            }
-        } else if (NUMERATION(num) == NUMERATION::HEX) {
-            if (!((ch >= '0' && ch <= '9') ||  // 0~9, a~f, A~F:Hexadecimal
-                (ch >= 'A' && ch <= 'F') ||
-                (ch >= 'a' && ch <= 'f'))) {
+        size_t len = num.size();
+        for (size_t i = 0; i < len; ++i) {
+            if (radix.find(num[i]) == std::string::npos) {
                 return false;
             }
         }
         return true;
     }
 
-    static int64_t AnalyseNum(std::string parts)
+    bool IsNumber(std::string num, int &radix)
     {
-        unsigned num = 10; // 10:Decimal
-        std::string partsBeg = parts.substr(0, 2); // 2:Take two digits to determine whether it is hexadecimal
-        size_t partsLen = parts.length();
-        if (partsLen >= 2 && (partsBeg == "0X" || partsBeg == "0x")) { // 2:parts length
-            num = 16; // 16:Convert to hexadecimal
-            parts = parts.substr(2); // 2:delete '0x'
-        } else if (num == 10 && partsLen > 1 && parts.substr(0, 1) == "0") { // 10:Conversion to Decimal Coefficient
-            num = 8; // 8:Convert to octal
-            parts = parts.substr(1);
-        }
-        for (size_t i = 0; i < parts.length(); i++) {
-            bool ret = CheckNunType(parts[i], num);
-            if (!ret) {
-                return -1;
-            }
-        }
-        return strtoll(parts.c_str(), nullptr, num);
-    }
-
-    static bool OverHex(std::string input)
-    {
-        size_t size = input.size();
-        for (size_t i = 0; i < size; i++) {
-            return !IsHexDigit(input[i]);
+        size_t len = num.size();
+        if (len > 2 && num[0] == '0' && (num[1] == 'x' || num[1] == 'X')) { // 2:hex head length
+            radix = 16; // 16:hex
+            return IsRadix(num.substr(2), "0123456789abcdefABCDEF"); // 2:jump 0x
+        } else if (len > 1 && num[0] == '0') {
+            radix = 8; // 8:octal
+            return IsRadix(num.substr(1), "01234567");
+        } else if (IsRadix(num, "0123456789")) {
+            radix = 10; // 10:decimal
+            return true;
         }
         return false;
     }
 
-    static bool NotAllNum(std::string input)
+    std::string BinaryConversion(std::string num, int radix)
     {
-        size_t size = input.size();
-        for (size_t i = 0; i < size; i++) {
-            if (!isdigit(input[i])) {
-                return true;
+        int val = 0;
+        if (radix == 16) { // 16:hex
+            if (sscanf_s(num.c_str(), "%x", &val) == 0) {
+                HILOG_ERROR("sscanf_s is falie");
             }
+            return std::to_string(val);
+        } else if (radix == 8) { // 8:octal
+            if (sscanf_s(num.c_str(), "%o", &val) == 0) {
+                HILOG_ERROR("sscanf_s is falie");
+            }
+            return std::to_string(val);
+        } else {
+            return num;
         }
-        return false;
     }
 
-    static bool AnalyseIPv4(const char *instr, std::string &host,
-        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags)
+    bool RemovalIpv4(std::vector<std::string> &temp, std::string str)
     {
-        int count = 0;
-        for (const char *ptr = instr; *ptr != '\0'; ptr++) {
-            if (*ptr == '.') {
-                if (++count > 3) { // 3:The IPV4 address has only four segments
-                    return false;
-                }
-            }
-        }
-        if (count != 3) { // 3:The IPV4 address has only four segments
-            return false;
-        }
-
         size_t pos = 0;
-        std::vector<std::string> strVec;
-        std::string input = static_cast<std::string>(instr);
-        while (((pos = input.find('.')) != std::string::npos)) {
-            strVec.push_back(input.substr(0, pos));
-            input = input.substr(pos + 1);
+        size_t left = 0;
+        while ((pos = str.find(".", left)) != std::string::npos) {
+            temp.push_back(str.substr(left, pos - left));
+            left = pos + 1;
         }
-        strVec.push_back(input);
-        size_t size = strVec.size();
-        for (size_t i = 0; i < size; i++) {
-            if (strVec[i].empty()) {
-                return false;
-            }
-            std::string begStr = strVec[i].substr(0, 2); // 2:Intercept the first two characters
-            if ((begStr == "0x" || begStr == "0X") && OverHex(strVec[i].substr(2))) { // 2:Intercept
-                return false;
-            } else if ((begStr == "0x" || begStr == "0X") && !(OverHex(strVec[i].substr(2)))) { // 2:Intercept
-                continue;
-            }
-            if (NotAllNum(strVec[i])) {
-                return false;
-            }
-        }
-        for (size_t i = 0; i < size; i++) {
-            int64_t value = AnalyseNum(strVec[i].c_str());
-            if ((value < 0) || (value > 255)) { // 255:Only handle numbers between 0 and 255
-                flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-                return false;
+        temp.push_back(str.substr(left));
+        size_t tmpLen = temp.size();
+        std::vector<std::string> res;
+        for (size_t i = 0; i < tmpLen; ++i) {
+            int radix = 0;
+            if (IsNumber(temp[i], radix)) {
+                res.push_back(BinaryConversion(temp[i], radix));
             } else {
-                host += std::to_string(value);
-                if (i != size - 1) {
-                    host += ".";
-                }
+                return false;
             }
         }
-        flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
+        temp = res;
         return true;
     }
-    static void AnalysisHost(std::string& input, std::string& host,
+
+    int IsFormatIpv4(std::vector<std::string> nums)
+    {
+        size_t len = nums.size();
+        for (size_t i = 0; i < len; ++i) {
+            if (stoi(nums[i]) > 255) { // 255:ipv4 max value
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    std::string SplitNum(std::string num, size_t &number)
+    {
+        int val = stoi(num);
+        std::vector<std::string> nums;
+        std::string res = "";
+        while (val > 0) {
+            int num = val % 256; // 256:ipv4 max value
+            nums.push_back(std::to_string(num));
+            val /= 256; // 256:ipv4 max value
+        }
+        for (int i = nums.size() - 1; i >= 0; --i) {
+            res += nums[i] + ".";
+        }
+        number = nums.size();
+        return res.substr(0, res.size() - 1);
+    }
+
+    void FormatIpv4(std::vector<std::string> nums, std::string& host,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
+    {
+        size_t len = nums.size();
+        int index = IsFormatIpv4(nums);
+        std::string res = "";
+        if (index == -1) {
+            for (size_t i = 0; i < len - 1; ++i) {
+                res += nums[i] + ".";
+            }
+            for (size_t i = 0; i < 4 - len; ++i) { // 4:ipv4 max size
+                res += "0.";
+            }
+            res += nums[len - 1];
+            host = res;
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
+        } else if (index == static_cast<int>(len - 1)) {
+            for (size_t i = 0; i < len - 1; ++i) {
+                res += nums[i] + ".";
+            }
+            size_t number = 0;
+            std::string temp = SplitNum(nums[index], number);
+            if (number + (len - 1) > 4) { // 4:ipv4 max size
+                flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+                return;
+            }
+            for (size_t i = 0; i < 4 - (len - 1 + number); ++i) { // 4:ipv4 max size
+                temp = "0." + temp;
+            }
+            host = res + temp;
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
+        } else {
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+            return;
+        }
+    }
+
+    void AnalyseIPv4(const std::string& input, std::string& host,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
+    {
+        bool isipv4 = false;
+        std::vector<std::string> temp;
+        isipv4 = RemovalIpv4(temp, input);
+        size_t tempLen = temp.size();
+        std::string res = "";
+        for (size_t i = 0; i < tempLen; ++i) {
+            res += temp[i];
+            if (i != tempLen - 1) {
+                res += ".";
+            }
+        }
+        if (isipv4) {
+            if (tempLen > 4) { // 4:ipv4 max size
+                ToLower(res);
+                host = res;
+                flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
+            } else if (tempLen == 4) { // 4:ipv4 max size
+                if (IsFormatIpv4(temp) == -1) {
+                    host = res;
+                    flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
+                } else {
+                    flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+                }
+            } else {
+                FormatIpv4(temp, host, flags);
+            }
+        } else {
+            ToLower(res);
+            host = res;
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
+        }
+    }
+
+    void AnalysisHost(std::string& input, std::string& host,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, bool special)
     {
         if (input.empty()) {
@@ -693,21 +680,17 @@ namespace OHOS::Url {
                 return;
             }
         }
-        bool ipv4 = AnalyseIPv4(decodeInput.c_str(), host, flags);
-        if (ipv4) {
-            return;
-        }
-        host = decodeInput;
-        flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
+        AnalyseIPv4(decodeInput, host, flags);
     }
-    static bool ISFileNohost(const std::string& input)
+    bool ISFileNohost(const std::string& input)
     {
         if ((isalpha(input[0]) && (input[1] == ':' || input[1] == '|'))) {
             return true;
         }
         return false;
     }
-    static void AnalysisFilePath(std::string& input, UrlData& urlinfo,
+
+    void AnalysisFilePath(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         std::vector<std::string> temp;
@@ -752,7 +735,25 @@ namespace OHOS::Url {
         }
     }
 
-    static void AnalysisFile(std::string& input, UrlData& urlinfo,
+    void AnalysisSpecialFile(std::string& temp, size_t pos, UrlData& urlinfo,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
+    {
+        std::string strHost = temp.substr(0, pos);
+        std::string strPath = temp.substr(pos + 1);
+        bool special = true;
+        if (!ISFileNohost(strHost)) {
+            AnalysisHost(strHost, urlinfo.host, flags, special);
+        } else if (!ISFileNohost(strHost) && flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
+            return;
+        }
+        if (!ISFileNohost(strHost)) {
+            AnalysisFilePath(strPath, urlinfo, flags);
+        } else {
+            AnalysisFilePath(temp, urlinfo, flags);
+        }
+    }
+
+    void AnalysisFile(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         bool special = true;
@@ -765,18 +766,7 @@ namespace OHOS::Url {
                 AnalysisFilePath(temp, urlinfo, flags);
             } else if ((((pos = temp.find('/')) != std::string::npos) ||
                 ((pos = temp.find('\\')) != std::string::npos)) && pos != 0) {
-                std::string strHost = temp.substr(0, pos);
-                std::string strPath = temp.substr(pos + 1);
-                if (!ISFileNohost(strHost)) {
-                    AnalysisHost(strHost, urlinfo.host, flags, special);
-                } else if (!ISFileNohost(strHost) && flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
-                    return;
-                }
-                if (!ISFileNohost(strHost)) {
-                    AnalysisFilePath(strPath, urlinfo, flags);
-                } else {
-                    AnalysisFilePath(temp, urlinfo, flags);
-                }
+                    AnalysisSpecialFile(temp, pos, urlinfo, flags);
             } else {
                 if (!temp.empty() && flags.test(static_cast<size_t>(BitsetStatusFlag::BIT0))) {
                     AnalysisHost(temp, urlinfo.host, flags, special);
@@ -793,7 +783,7 @@ namespace OHOS::Url {
         }
     }
 
-    static void AnalysisFilescheme(std::string& input, UrlData& urlinfo,
+    void AnalysisFilescheme(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         std::string strPath = urlinfo.scheme + input;
@@ -839,7 +829,7 @@ namespace OHOS::Url {
         }
     }
 
-    static void AnalysisNoDefaultProtocol(std::string& input, UrlData& urlinfo,
+    void AnalysisNoDefaultProtocol(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         if (urlinfo.scheme.size() == 2) { // 2:The length is 2
@@ -890,7 +880,7 @@ namespace OHOS::Url {
         }
     }
 
-    static void AnalysisOnlyHost(std::string& input, UrlData& urlinfo,
+    void AnalysisOnlyHost(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, size_t pos)
     {
         std::string strHost = input;
@@ -922,19 +912,19 @@ namespace OHOS::Url {
             }
         }
     }
-    static void AnalysisHostAndPath(std::string& input, UrlData& urlinfo,
+    void AnalysisHostAndPath(std::string& input, UrlData& urlinfo,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         if (flags.test(static_cast<size_t>(BitsetStatusFlag::BIT1))) {
             size_t pos = 0;
             bool special = true;
             size_t inputLen = input.size();
-            for (; pos < inputLen;) {
+            while (pos < inputLen) {
                 if (input[pos] == '/' || input[pos] == '\\') {
                     pos++;
-                } else {
-                    break;
+                    continue;
                 }
+                break;
             }
             input = input.substr(pos);
             if (input.size() == 0) {
@@ -973,7 +963,7 @@ namespace OHOS::Url {
         }
     }
 
-    static void AnalysisInput(std::string& input, UrlData& urlData,
+    void AnalysisInput(std::string& input, UrlData& urlData,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         if (input.find('#') != std::string::npos) {
@@ -992,7 +982,7 @@ namespace OHOS::Url {
         AnalysisPath(input, urlData.path, flags, special);
     }
 
-    static void BaseInfoToUrl(const UrlData& baseInfo,
+    void BaseInfoToUrl(const UrlData& baseInfo,
         const std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> baseflags, UrlData& urlData,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags, bool inputIsEmpty)
     {
@@ -1027,7 +1017,7 @@ namespace OHOS::Url {
             baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT10)));
     }
 
-    static void ShorteningPath(UrlData& baseData, bool isFile)
+    void ShorteningPath(UrlData& baseData, bool isFile)
     {
         if (baseData.path.empty()) {
             return;
@@ -1037,6 +1027,55 @@ namespace OHOS::Url {
             return;
         }
         baseData.path.pop_back();
+    }
+
+    void InitOnlyInput(std::string& input, UrlData& urlData,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
+    {
+        if (input.empty()) {
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+            return;
+        }
+        if (input.find(':') != std::string::npos) {
+            size_t pos = input.find(':');
+            pos++;
+            std::string scheme = input.substr(0, pos);
+            if (!AnalysisScheme(scheme, urlData.scheme, flags)) {
+                return;
+            }
+            if (input.find('#') != std::string::npos) {
+                size_t i = input.find('#');
+                std::string fragment = input.substr(i);
+                AnalysisFragment(fragment, urlData.fragment, flags);
+                input = input.substr(0, i);
+            }
+            if (input.find('?') != std::string::npos) {
+                size_t i = input.find('?');
+                std::string query = input.substr(i);
+                AnalysisQuery(query, urlData.query, flags);
+                input = input.substr(0, i);
+            }
+            std::string str = input.substr(pos);
+            if (urlData.scheme == "file:") {
+                AnalysisFile(str, urlData, flags);
+            } else {
+                AnalysisHostAndPath(str, urlData, flags);
+            }
+        } else {
+            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
+            return;
+        }
+    }
+
+    void ToolHasBase(std::string input, std::string &strInput, UrlData &urlData,
+        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)> &flags)
+    {
+        if (!input.empty() && input[0] == '/') {
+            strInput = input.substr(1);
+            AnalysisInput(strInput, urlData, flags);
+        } else if (!input.empty() && input[0] != '/') {
+            AnalysisInput(strInput, urlData, flags);
+        }
     }
 
     URL::URL(napi_env env, const std::string& input)
@@ -1055,7 +1094,7 @@ namespace OHOS::Url {
         DeleteTabOrNewline(strBase);
         DeleteC0OrSpace(strInput);
         DeleteTabOrNewline(strInput);
-        URL::InitOnlyInput(strBase, baseInfo, baseflags);
+        InitOnlyInput(strBase, baseInfo, baseflags);
     }
 
     URL::URL(napi_env env, const std::string& input, const std::string& base)
@@ -1087,12 +1126,7 @@ namespace OHOS::Url {
             if (!baseflags.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
                 flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT0), 0);
                 BaseInfoToUrl(baseInfo, baseflags, urlData_, flags_, input.empty());
-                if (!input.empty() && input[0] == '/') {
-                    strInput = input.substr(1);
-                    AnalysisInput(strInput, urlData_, flags_);
-                } else if (!input.empty() && input[0] != '/') {
-                    AnalysisInput(strInput, urlData_, flags_);
-                }
+                ToolHasBase(input, strInput, urlData_, flags_);
                 if (!input.empty() && input[0] != '/' && urlData_.path.empty()) {
                     urlData_.path = baseInfo.path;
                     flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT6),
@@ -1161,91 +1195,66 @@ namespace OHOS::Url {
     napi_value URL::GetHostname() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT4))) {
-            temp = urlData_.host.c_str();
-        } else {
-            temp = "";
+            temp = urlData_.host;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetSearch() const
     {
         napi_value result;
-        const char *temp = nullptr;
-        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT7))) {
-            if (urlData_.query.size() == 1) {
-                temp = "";
-            } else {
-                temp = urlData_.query.c_str();
-            }
-        } else {
-            temp = "";
+        std::string temp = "";
+        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT7)) && !(urlData_.query.size() == 1)) {
+            temp = urlData_.query;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetUsername() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT2))) {
-            temp = urlData_.username.c_str();
-        } else
-            temp = "";
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+            temp = urlData_.username;
+        }
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetPassword() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT3))) {
-            temp = urlData_.password.c_str();
-        } else {
-            temp = "";
+            temp = urlData_.password;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetFragment() const
     {
         napi_value result;
-        const char *temp = nullptr;
-        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT8))) {
-            if (urlData_.fragment.size() == 1) {
-                temp = "";
-            } else {
-                temp = urlData_.fragment.c_str();
-            }
-        } else {
-            temp = "";
+        std::string temp = "";
+        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT8)) && !(urlData_.fragment.size() == 1)) {
+            temp = urlData_.fragment;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetScheme() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (!urlData_.scheme.empty()) {
-            temp = urlData_.scheme.c_str();
-        } else {
-            temp = "";
+            temp = urlData_.scheme;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
@@ -1272,30 +1281,26 @@ namespace OHOS::Url {
         return result;
     }
 
-
     napi_value URL::GetPort() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT5))) {
-            temp = std::to_string(urlData_.port).c_str();
-        } else {
-            temp = "";
+            temp = std::to_string(urlData_.port);
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetHost() const
     {
         napi_value result;
-        std::string temp1 = urlData_.host;
+        std::string temp = urlData_.host;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT5))) {
-            temp1 += ":";
-            temp1 += std::to_string(urlData_.port);
+            temp += ":";
+            temp += std::to_string(urlData_.port);
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp1.c_str(), temp1.size(), &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
@@ -1316,11 +1321,9 @@ namespace OHOS::Url {
     {
         napi_value result;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT10))) {
-            bool flag = true;
-            NAPI_CALL(env_, napi_get_boolean(env_, flag, &result));
+            NAPI_CALL(env_, napi_get_boolean(env_, true, &result));
         } else {
-            bool flag = false;
-            NAPI_CALL(env_, napi_get_boolean(env_, flag, &result));
+            NAPI_CALL(env_, napi_get_boolean(env_, false, &result));
         }
         return result;
     }
@@ -1372,10 +1375,7 @@ namespace OHOS::Url {
     void URL::SetPath(const std::string& input)
     {
         std::string strPath = input;
-        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
-            return;
-        }
-        if (strPath.empty()) {
+        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT9)) || strPath.empty()) {
             return;
         }
         std::string oldstr = "%3A";
@@ -1427,10 +1427,7 @@ namespace OHOS::Url {
 
     void URL::SetHost(const std::string& input)
     {
-        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
-            return;
-        }
-        if (input.empty()) {
+        if (input.empty() || flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
             return;
         }
         std::string strHost = input;
@@ -1591,44 +1588,6 @@ namespace OHOS::Url {
         }
     }
 
-    void URL::InitOnlyInput(std::string& input, UrlData& urlData,
-        std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
-    {
-        if (input.empty()) {
-            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-            return;
-        }
-        if (input.find(':') != std::string::npos) {
-            size_t pos = input.find(':');
-            pos++;
-            std::string scheme = input.substr(0, pos);
-            if (!AnalysisScheme(scheme, urlData.scheme, flags)) {
-                return;
-            }
-            if (input.find('#') != std::string::npos) {
-                size_t i = input.find('#');
-                std::string fragment = input.substr(i);
-                AnalysisFragment(fragment, urlData.fragment, flags);
-                input = input.substr(0, i);
-            }
-            if (input.find('?') != std::string::npos) {
-                size_t i = input.find('?');
-                std::string query = input.substr(i);
-                AnalysisQuery(query, urlData.query, flags);
-                input = input.substr(0, i);
-            }
-            std::string str = input.substr(pos);
-            if (urlData.scheme == "file:") {
-                AnalysisFile(str, urlData, flags);
-            } else {
-                AnalysisHostAndPath(str, urlData, flags);
-            }
-        } else {
-            flags.set(static_cast<size_t>(BitsetStatusFlag::BIT0));
-            return;
-        }
-    }
-
     URLSearchParams::URLSearchParams(napi_env env) : env(env)
     {}
     std::wstring StrToWstr(const std::string& str)
@@ -1646,22 +1605,17 @@ namespace OHOS::Url {
             delete[] wch;
             p = setlocale(LC_ALL, "");
             if (p == nullptr) {
-            return L"";
+                return L"";
             }
             return wstr;
         }
         return wstr;
     }
 
-    bool IsEscapeRange(const char charaEncode)
+    bool IsEscapeRange(const char ch)
     {
-        if ((charaEncode > 0 && charaEncode < '*') ||
-            (charaEncode > '*' && charaEncode < '-') ||
-            (charaEncode == '/') ||
-            (charaEncode > '9' && charaEncode < 'A') ||
-            (charaEncode > 'Z' && charaEncode < '_') ||
-            (charaEncode == '`') ||
-            (charaEncode > 'z')) {
+        if ((ch > 0 && ch < '*') || (ch > '*' && ch < '-') || (ch == '/') ||
+            (ch > '9' && ch < 'A') || (ch > 'Z' && ch < '_') || (ch == '`') || (ch > 'z')) {
             return true;
         }
         return false;
@@ -1672,11 +1626,12 @@ namespace OHOS::Url {
         size_t bytOfSpeChar = 3; // 3:Bytes of special characters in Linux
         std::string subStr = str.substr(i, bytOfSpeChar);
         i += 2; // 2:Searching for the number and number of keys and values
-        std::wstring wstr = StrToWstr(subStr.c_str());
+        std::wstring wstr = StrToWstr(subStr);
         wchar_t wch = wstr[0];
         auto charaEncode = static_cast<size_t>(wch);
         return charaEncode;
     }
+
     std::string ReviseStr(std::string str, std::string *reviseChar)
     {
         const size_t lenStr = str.length();
@@ -1692,39 +1647,27 @@ namespace OHOS::Url {
                 charaEncode = CharToUnicode(str, i);
             }
             if (charaEncode >= 0 && charaEncode < numOfAscii) {
-                // 2:Defines the escape range of ASCII characters
                 if (IsEscapeRange(charaEncode)) {
                     output += reviseChar[charaEncode];
                 } else {
                     output += str.substr(i, 1);
                 }
             } else if (charaEncode <= 0x000007FF) { // Convert the Unicode code into two bytes
-                std::string output1 = reviseChar[0x000000C0 |
-                    (charaEncode / 64)]; // 64:Acquisition method of the first byte
-                std::string output2 = reviseChar[numOfAscii |
-                    (charaEncode & 0x0000003F)]; // Acquisition method of the second byte
+                std::string output1 = reviseChar[0x000000C0 | (charaEncode / 64)]; // 64:the first byte
+                std::string output2 = reviseChar[numOfAscii | (charaEncode & 0x0000003F)];
                 output += output1 + output2;
-            } else if ((charaEncode >= 0x0000E000) ||
-                       (charaEncode <= 0x0000D7FF)) { // Convert the Unicode code into three bytes
-                std::string output1 = reviseChar[0x000000E0 |
-                    (charaEncode / 4096)]; // 4096:Acquisition method of the first byte
-                std::string output2 = reviseChar[numOfAscii |
-                    ((charaEncode / 64) & 0x0000003F)]; // 64:method of the second byte
-                std::string output3 = reviseChar[numOfAscii |
-                    (charaEncode & 0x0000003F)]; // Acquisition method of the third  byte
+            } else if ((charaEncode >= 0x0000E000) || (charaEncode <= 0x0000D7FF)) {
+                std::string output1 = reviseChar[0x000000E0 | (charaEncode / 4096)]; // 4096:Acquisition method
+                std::string output2 = reviseChar[numOfAscii | ((charaEncode / 64) & 0x0000003F)]; // 64:second byte
+                std::string output3 = reviseChar[numOfAscii | (charaEncode & 0x0000003F)];
                 output += output1 + output2 + output3;
             } else {
                 const size_t charaEncode1 = static_cast<size_t>(str[++i]) & 1023; // 1023:Convert codes
-                charaEncode = 65536 + (((charaEncode & 1023) << 10) |
-                    charaEncode1); // 65536:Specific transcoding method
-                std::string output1 = reviseChar[0x000000F0 |
-                    (charaEncode / 262144)]; // 262144:Acquisition method of the first byte
-                std::string output2 = reviseChar[numOfAscii |
-                    ((charaEncode / 4096) & 0x0000003F)]; // 4096:Acquisition method of the second byte
-                std::string output3 = reviseChar[numOfAscii |
-                    ((charaEncode / 64) & 0x0000003F)]; // 64:Acquisition method of the third  byte
-                std::string output4 = reviseChar[numOfAscii |
-                    (charaEncode & 0x0000003F)]; // Acquisition method of the fourth   byte
+                charaEncode = 65536 + (((charaEncode & 1023) << 10) | charaEncode1); // 65536:Specific transcoding
+                std::string output1 = reviseChar[0x000000F0 | (charaEncode / 262144)]; // 262144:the first byte
+                std::string output2 = reviseChar[numOfAscii | ((charaEncode / 4096) & 0x0000003F)]; // 4096:second byte
+                std::string output3 = reviseChar[numOfAscii | ((charaEncode / 64) & 0x0000003F)]; // 64:third byte
+                std::string output4 = reviseChar[numOfAscii | (charaEncode & 0x0000003F)];
                 output += output1 + output2 + output3 + output4;
             }
         }
@@ -1770,6 +1713,7 @@ namespace OHOS::Url {
         napi_create_string_utf8(env, output.c_str(), output.size(), &result);
         return result;
     }
+
     void URLSearchParams::HandleIllegalChar(std::wstring& inputStr, std::wstring::const_iterator it)
     {
         std::wstring::iterator iter = inputStr.begin();
@@ -1839,6 +1783,7 @@ namespace OHOS::Url {
         delete[] rePtr;
         return reStr;
     }
+
     napi_value URLSearchParams::Get(napi_value buffer)
     {
         char *name = nullptr;
@@ -1866,6 +1811,7 @@ namespace OHOS::Url {
         }
         return result;
     }
+
     napi_value URLSearchParams::GetAll(napi_value buffer)
     {
         char *name = nullptr;
@@ -1889,10 +1835,7 @@ namespace OHOS::Url {
         for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
             if (searchParams[i] == sname) {
                 napi_create_string_utf8(env, searchParams[i + 1].c_str(), searchParams[i + 1].length(), &napiStr);
-                napi_status status = napi_set_element(env, result, flag, napiStr);
-                if (status != napi_ok) {
-                    HILOG_INFO("set element error");
-                }
+                NAPI_CALL(env, napi_set_element(env, result, flag, napiStr));
                 flag++;
             }
         }
@@ -1956,7 +1899,6 @@ namespace OHOS::Url {
         for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
             napi_value result = nullptr;
             napi_create_array(env, &result);
-
             napi_create_string_utf8(env, searchParams[i].c_str(), searchParams[i].length(), &firNapiStr);
             napi_create_string_utf8(env, searchParams[i + 1].c_str(), searchParams[i + 1].length(), &secNapiStr);
             napi_set_element(env, result, 0, firNapiStr);
@@ -1965,25 +1907,7 @@ namespace OHOS::Url {
         }
         return resend;
     }
-    void URLSearchParams::ForEach(napi_value function, napi_value thisVar)
-    {
-        if (searchParams.size() == 0) {
-            return;
-        }
-        size_t size = searchParams.size() - 1;
-        for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
-            napi_value returnVal = nullptr;
-            size_t argc = 3;
-            napi_value global = nullptr;
-            napi_get_global(env, &global);
-            napi_value key = nullptr;
-            napi_create_string_utf8(env, searchParams[i].c_str(), strlen(searchParams[i].c_str()), &key);
-            napi_value value = nullptr;
-            napi_create_string_utf8(env, searchParams[i + 1].c_str(), strlen(searchParams[i + 1].c_str()), &value);
-            napi_value argv[3] = {key, value, thisVar};
-            napi_call_function(env, global, function, argc, argv, &returnVal);
-        }
-    }
+
     napi_value URLSearchParams::IsHas(napi_value name) const
     {
         char *buffer = nullptr;
@@ -2052,13 +1976,13 @@ namespace OHOS::Url {
     }
     void URLSearchParams::Sort()
     {
-        unsigned int len = searchParams.size();
+        size_t len = searchParams.size();
         if (len <= 2 && (len % 2 != 0)) { // 2: Iterate over key-value pairs
             return;
         }
-        unsigned int i = 0;
+        size_t i = 0;
         for (; i < len - 2; i += 2) { // 2:Iterate over key-value pairs
-            unsigned int  j = i + 2; // 2:Iterate over key-value pairs
+            size_t j = i + 2; // 2:Iterate over key-value pairs
             for (; j < len; j += 2) { // 2:Iterate over key-value pairs
                 bool tmp = (searchParams[i] > searchParams[j]);
                 if (tmp) {

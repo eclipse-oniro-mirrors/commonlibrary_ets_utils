@@ -71,8 +71,18 @@ class URLSearchParams {
         this.urlcalss.delete(deletename);
     }
 
-    forEach(objfun:object) {
-        return this.urlcalss.forEach(objfun);
+    forEach(objfun:any, thisArg = undefined) {
+        let array = this.urlcalss.array;
+        if (array.length == 0) {
+            return;
+        }
+        
+        let size = array.length - 1;
+        for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
+            let key = array[i];
+            let value = array[i + 1];
+            objfun.call(thisArg, value, key, this);
+        }
     }
 
     [Symbol.iterator]() {
