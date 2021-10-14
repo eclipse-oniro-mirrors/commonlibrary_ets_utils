@@ -344,7 +344,7 @@ namespace OHOS::Url {
         size_t pos = str.find("::");
         size_t index = pos;
         if (pos == std::string::npos) {
-            return str;
+            return;
         }
         size_t left = 0;
         size_t count = 0;
@@ -1590,7 +1590,7 @@ namespace OHOS::Url {
 
     URLSearchParams::URLSearchParams(napi_env env) : env(env)
     {}
-    std::wstring StrToWstr(const std::string str)
+    std::wstring StrToWstr(const std::string& str)
     {
         char *p = setlocale(LC_ALL, "");
         if (p == nullptr) {
