@@ -1810,7 +1810,7 @@ namespace OHOS::Url {
             }
         }
         return result;
-    } 
+    }
 
     napi_value URLSearchParams::GetAll(napi_value buffer)
     {
