@@ -339,9 +339,8 @@ namespace OHOS::Url {
         return res;
     }
 
-    std::string FormatIpv6(std::string ipv6String)
+    void FormatIpv6(std::string& str)
     {
-        std::string str = ipv6String;
         size_t pos = str.find("::");
         size_t index = pos;
         if (pos == std::string::npos) {
@@ -363,7 +362,6 @@ namespace OHOS::Url {
         if (index == 0) {
             str = "0" + str;
         }
-        return str;
     }
 
     void RemoveLeadingZeros(std::vector<std::string> &ipv6)
@@ -474,7 +472,7 @@ namespace OHOS::Url {
         if (pos != std::string::npos) {
             input = DealIpv4(input);
         }
-        input = FormatIpv6(input);
+        FormatIpv6(input);
         input = Compress(input);
         host = "[" + input + "]";
         flags.set(static_cast<size_t>(BitsetStatusFlag::BIT4));
@@ -614,7 +612,7 @@ namespace OHOS::Url {
         }
     }
 
-    void AnalyseIPv4(const std::string input, std::string& host,
+    void AnalyseIPv4(const std::string& input, std::string& host,
         std::bitset<static_cast<size_t>(BitsetStatusFlag::BIT_STATUS_11)>& flags)
     {
         bool isipv4 = false;
@@ -1592,7 +1590,7 @@ namespace OHOS::Url {
 
     URLSearchParams::URLSearchParams(napi_env env) : env(env)
     {}
-    std::wstring StrToWstr(const std::string& str)
+    std::wstring StrToWstr(const std::string str)
     {
         char *p = setlocale(LC_ALL, "");
         if (p == nullptr) {
@@ -1628,7 +1626,7 @@ namespace OHOS::Url {
         size_t bytOfSpeChar = 3; // 3:Bytes of special characters in Linux
         std::string subStr = str.substr(i, bytOfSpeChar);
         i += 2; // 2:Searching for the number and number of keys and values
-        std::wstring wstr = StrToWstr(subStr.c_str());
+        std::wstring wstr = StrToWstr(subStr);
         wchar_t wch = wstr[0];
         auto charaEncode = static_cast<size_t>(wch);
         return charaEncode;
