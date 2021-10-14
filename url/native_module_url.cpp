@@ -619,18 +619,6 @@ namespace OHOS::Url {
         return nullptr;
     }
 
-    static napi_value ForEach(napi_env env, napi_callback_info info)
-    {
-        napi_value thisVar = nullptr;
-        size_t argc = 1;
-        napi_value args = nullptr;
-        napi_get_cb_info(env, info, &argc, &args, &thisVar, nullptr);
-        URLSearchParams *object = nullptr;
-        napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
-        object->ForEach(args, thisVar);
-        return nullptr;
-    }
-
     static napi_value Entries(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -853,7 +841,6 @@ namespace OHOS::Url {
             DECLARE_NAPI_FUNCTION("getAll", GetAll),
             DECLARE_NAPI_FUNCTION("append", Append),
             DECLARE_NAPI_FUNCTION("delete", Delete),
-            DECLARE_NAPI_FUNCTION("forEach", ForEach),
             DECLARE_NAPI_FUNCTION("entries", Entries),
             DECLARE_NAPI_GETTER_SETTER("array", GetArray, SetArray),
         };

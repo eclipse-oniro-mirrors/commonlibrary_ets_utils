@@ -23,14 +23,11 @@ namespace OHOS::Url {
         {"ftp:", 21}, {"file:", -1}, {"gopher:", 70}, {"http:", 80},
         {"https:", 443}, {"ws:", 80}, {"wss:", 443}
     };
-
     std::vector<std::string> g_doubleSegment = {
         "..", ".%2e", ".%2E", "%2e.", "%2E.",
         "%2e%2e", "%2E%2E", "%2e%2E", "%2E%2e"
     };
-
     std::vector<std::string> g_singlesegment = { ".", "%2e", "%2E" };
-
     std::vector<char> g_specialcharacter = {
         '\0', '\t', '\n', '\r', ' ', '#', '%', '/', ':', '?',
         '@', '[', '\\', ']'
@@ -43,9 +40,9 @@ namespace OHOS::Url {
             size_t pos = 0;
             if ((pos = input.find(oldstr)) != std::string::npos) {
                 input.replace(pos, oldlen, newstr);
-            } else {
-                break;
+                continue;
             }
+            break;
         }
     }
 
@@ -68,11 +65,9 @@ namespace OHOS::Url {
     {
         if (pram >= '0' && pram <= '9') {
             return pram - '0';
-        }
-        if (pram >= 'A' && pram <= 'F') {
+        } else if (pram >= 'A' && pram <= 'F') {
             return pram - 'A' + 10; // 10:Convert to hexadecimal
-        }
-        if (pram >= 'a' && pram <= 'f') {
+        } else if (pram >= 'a' && pram <= 'f') {
             return pram - 'a' + 10; // 10:Convert to hexadecimal
         }
         return static_cast<unsigned>(-1);
@@ -113,21 +108,21 @@ namespace OHOS::Url {
         }
         size_t i = 0;
         size_t strlen = str.size();
-        for (; i < strlen;) {
+        while (i < strlen) {
             if (str[i] >= '\0' && str[i] <= ' ') {
                 i++;
-            } else {
-                break;
+                continue;
             }
+            break;
         }
         str = str.substr(i);
         strlen = str.size();
         for (i = strlen - 1; i != 0; i--) {
             if (str[i] >= '\0' && str[i] <= ' ') {
                 str.pop_back();
-            } else {
-                break;
+                continue;
             }
+            break;
         }
     }
 
@@ -1202,91 +1197,66 @@ namespace OHOS::Url {
     napi_value URL::GetHostname() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT4))) {
-            temp = urlData_.host.c_str();
-        } else {
-            temp = "";
+            temp = urlData_.host;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetSearch() const
     {
         napi_value result;
-        const char *temp = nullptr;
-        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT7))) {
-            if (urlData_.query.size() == 1) {
-                temp = "";
-            } else {
-                temp = urlData_.query.c_str();
-            }
-        } else {
-            temp = "";
+        std::string temp = "";
+        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT7)) && !(urlData_.query.size() == 1)) {
+            temp = urlData_.query;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetUsername() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT2))) {
-            temp = urlData_.username.c_str();
-        } else
-            temp = "";
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+            temp = urlData_.username;
+        }
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetPassword() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT3))) {
-            temp = urlData_.password.c_str();
-        } else {
-            temp = "";
+            temp = urlData_.password;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetFragment() const
     {
         napi_value result;
-        const char *temp = nullptr;
-        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT8))) {
-            if (urlData_.fragment.size() == 1) {
-                temp = "";
-            } else {
-                temp = urlData_.fragment.c_str();
-            }
-        } else {
-            temp = "";
+        std::string temp = "";
+        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT8)) && !(urlData_.fragment.size() == 1)) {
+            temp = urlData_.fragment;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetScheme() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (!urlData_.scheme.empty()) {
-            temp = urlData_.scheme.c_str();
-        } else {
-            temp = "";
+            temp = urlData_.scheme;
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
@@ -1313,30 +1283,26 @@ namespace OHOS::Url {
         return result;
     }
 
-
     napi_value URL::GetPort() const
     {
         napi_value result;
-        const char *temp = nullptr;
+        std::string temp = "";
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT5))) {
-            temp = std::to_string(urlData_.port).c_str();
-        } else {
-            temp = "";
+            temp = std::to_string(urlData_.port);
         }
-        size_t templen = strlen(temp);
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp, templen, &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
     napi_value URL::GetHost() const
     {
         napi_value result;
-        std::string temp1 = urlData_.host;
+        std::string temp = urlData_.host;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT5))) {
-            temp1 += ":";
-            temp1 += std::to_string(urlData_.port);
+            temp += ":";
+            temp += std::to_string(urlData_.port);
         }
-        NAPI_CALL(env_, napi_create_string_utf8(env_, temp1.c_str(), temp1.size(), &result));
+        NAPI_CALL(env_, napi_create_string_utf8(env_, temp.c_str(), temp.size(), &result));
         return result;
     }
 
@@ -1357,11 +1323,9 @@ namespace OHOS::Url {
     {
         napi_value result;
         if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT10))) {
-            bool flag = true;
-            NAPI_CALL(env_, napi_get_boolean(env_, flag, &result));
+            NAPI_CALL(env_, napi_get_boolean(env_, true, &result));
         } else {
-            bool flag = false;
-            NAPI_CALL(env_, napi_get_boolean(env_, flag, &result));
+            NAPI_CALL(env_, napi_get_boolean(env_, false, &result));
         }
         return result;
     }
@@ -1413,10 +1377,7 @@ namespace OHOS::Url {
     void URL::SetPath(const std::string& input)
     {
         std::string strPath = input;
-        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
-            return;
-        }
-        if (strPath.empty()) {
+        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT9)) || strPath.empty()) {
             return;
         }
         std::string oldstr = "%3A";
@@ -1468,10 +1429,7 @@ namespace OHOS::Url {
 
     void URL::SetHost(const std::string& input)
     {
-        if (flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
-            return;
-        }
-        if (input.empty()) {
+        if (input.empty() || flags_.test(static_cast<size_t>(BitsetStatusFlag::BIT9))) {
             return;
         }
         std::string strHost = input;
@@ -1649,22 +1607,17 @@ namespace OHOS::Url {
             delete[] wch;
             p = setlocale(LC_ALL, "");
             if (p == nullptr) {
-            return L"";
+                return L"";
             }
             return wstr;
         }
         return wstr;
     }
 
-    bool IsEscapeRange(const char charaEncode)
+    bool IsEscapeRange(const char ch)
     {
-        if ((charaEncode > 0 && charaEncode < '*') ||
-            (charaEncode > '*' && charaEncode < '-') ||
-            (charaEncode == '/') ||
-            (charaEncode > '9' && charaEncode < 'A') ||
-            (charaEncode > 'Z' && charaEncode < '_') ||
-            (charaEncode == '`') ||
-            (charaEncode > 'z')) {
+        if ((ch > 0 && ch < '*') || (ch > '*' && ch < '-') || (ch == '/') ||
+            (ch > '9' && ch < 'A') || (ch > 'Z' && ch < '_') || (ch == '`') || (ch > 'z')) {
             return true;
         }
         return false;
@@ -1680,6 +1633,7 @@ namespace OHOS::Url {
         auto charaEncode = static_cast<size_t>(wch);
         return charaEncode;
     }
+
     std::string ReviseStr(std::string str, std::string *reviseChar)
     {
         const size_t lenStr = str.length();
@@ -1695,39 +1649,27 @@ namespace OHOS::Url {
                 charaEncode = CharToUnicode(str, i);
             }
             if (charaEncode >= 0 && charaEncode < numOfAscii) {
-                // 2:Defines the escape range of ASCII characters
                 if (IsEscapeRange(charaEncode)) {
                     output += reviseChar[charaEncode];
                 } else {
                     output += str.substr(i, 1);
                 }
             } else if (charaEncode <= 0x000007FF) { // Convert the Unicode code into two bytes
-                std::string output1 = reviseChar[0x000000C0 |
-                    (charaEncode / 64)]; // 64:Acquisition method of the first byte
-                std::string output2 = reviseChar[numOfAscii |
-                    (charaEncode & 0x0000003F)]; // Acquisition method of the second byte
+                std::string output1 = reviseChar[0x000000C0 | (charaEncode / 64)]; // 64:the first byte
+                std::string output2 = reviseChar[numOfAscii | (charaEncode & 0x0000003F)];
                 output += output1 + output2;
-            } else if ((charaEncode >= 0x0000E000) ||
-                       (charaEncode <= 0x0000D7FF)) { // Convert the Unicode code into three bytes
-                std::string output1 = reviseChar[0x000000E0 |
-                    (charaEncode / 4096)]; // 4096:Acquisition method of the first byte
-                std::string output2 = reviseChar[numOfAscii |
-                    ((charaEncode / 64) & 0x0000003F)]; // 64:method of the second byte
-                std::string output3 = reviseChar[numOfAscii |
-                    (charaEncode & 0x0000003F)]; // Acquisition method of the third  byte
+            } else if ((charaEncode >= 0x0000E000) || (charaEncode <= 0x0000D7FF)) {
+                std::string output1 = reviseChar[0x000000E0 | (charaEncode / 4096)]; // 4096:Acquisition method
+                std::string output2 = reviseChar[numOfAscii | ((charaEncode / 64) & 0x0000003F)]; // 64:second byte
+                std::string output3 = reviseChar[numOfAscii | (charaEncode & 0x0000003F)];
                 output += output1 + output2 + output3;
             } else {
                 const size_t charaEncode1 = static_cast<size_t>(str[++i]) & 1023; // 1023:Convert codes
-                charaEncode = 65536 + (((charaEncode & 1023) << 10) |
-                    charaEncode1); // 65536:Specific transcoding method
-                std::string output1 = reviseChar[0x000000F0 |
-                    (charaEncode / 262144)]; // 262144:Acquisition method of the first byte
-                std::string output2 = reviseChar[numOfAscii |
-                    ((charaEncode / 4096) & 0x0000003F)]; // 4096:Acquisition method of the second byte
-                std::string output3 = reviseChar[numOfAscii |
-                    ((charaEncode / 64) & 0x0000003F)]; // 64:Acquisition method of the third  byte
-                std::string output4 = reviseChar[numOfAscii |
-                    (charaEncode & 0x0000003F)]; // Acquisition method of the fourth   byte
+                charaEncode = 65536 + (((charaEncode & 1023) << 10) | charaEncode1); // 65536:Specific transcoding
+                std::string output1 = reviseChar[0x000000F0 | (charaEncode / 262144)]; // 262144:the first byte
+                std::string output2 = reviseChar[numOfAscii | ((charaEncode / 4096) & 0x0000003F)]; // 4096:second byte
+                std::string output3 = reviseChar[numOfAscii | ((charaEncode / 64) & 0x0000003F)]; // 64:third byte
+                std::string output4 = reviseChar[numOfAscii | (charaEncode & 0x0000003F)];
                 output += output1 + output2 + output3 + output4;
             }
         }
@@ -1773,6 +1715,7 @@ namespace OHOS::Url {
         napi_create_string_utf8(env, output.c_str(), output.size(), &result);
         return result;
     }
+
     void URLSearchParams::HandleIllegalChar(std::wstring& inputStr, std::wstring::const_iterator it)
     {
         std::wstring::iterator iter = inputStr.begin();
@@ -1842,6 +1785,7 @@ namespace OHOS::Url {
         delete[] rePtr;
         return reStr;
     }
+
     napi_value URLSearchParams::Get(napi_value buffer)
     {
         char *name = nullptr;
@@ -1868,7 +1812,8 @@ namespace OHOS::Url {
             }
         }
         return result;
-    }
+    } 
+
     napi_value URLSearchParams::GetAll(napi_value buffer)
     {
         char *name = nullptr;
@@ -1892,10 +1837,7 @@ namespace OHOS::Url {
         for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
             if (searchParams[i] == sname) {
                 napi_create_string_utf8(env, searchParams[i + 1].c_str(), searchParams[i + 1].length(), &napiStr);
-                napi_status status = napi_set_element(env, result, flag, napiStr);
-                if (status != napi_ok) {
-                    HILOG_INFO("set element error");
-                }
+                NAPI_CALL(env, napi_set_element(env, result, flag, napiStr));
                 flag++;
             }
         }
@@ -1959,7 +1901,6 @@ namespace OHOS::Url {
         for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
             napi_value result = nullptr;
             napi_create_array(env, &result);
-
             napi_create_string_utf8(env, searchParams[i].c_str(), searchParams[i].length(), &firNapiStr);
             napi_create_string_utf8(env, searchParams[i + 1].c_str(), searchParams[i + 1].length(), &secNapiStr);
             napi_set_element(env, result, 0, firNapiStr);
@@ -1968,25 +1909,7 @@ namespace OHOS::Url {
         }
         return resend;
     }
-    void URLSearchParams::ForEach(napi_value function, napi_value thisVar)
-    {
-        if (searchParams.size() == 0) {
-            return;
-        }
-        size_t size = searchParams.size() - 1;
-        for (size_t i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
-            napi_value returnVal = nullptr;
-            size_t argc = 3;
-            napi_value global = nullptr;
-            napi_get_global(env, &global);
-            napi_value key = nullptr;
-            napi_create_string_utf8(env, searchParams[i].c_str(), strlen(searchParams[i].c_str()), &key);
-            napi_value value = nullptr;
-            napi_create_string_utf8(env, searchParams[i + 1].c_str(), strlen(searchParams[i + 1].c_str()), &value);
-            napi_value argv[3] = {key, value, thisVar};
-            napi_call_function(env, global, function, argc, argv, &returnVal);
-        }
-    }
+
     napi_value URLSearchParams::IsHas(napi_value name) const
     {
         char *buffer = nullptr;
@@ -2055,13 +1978,13 @@ namespace OHOS::Url {
     }
     void URLSearchParams::Sort()
     {
-        unsigned int len = searchParams.size();
+        size_t len = searchParams.size();
         if (len <= 2 && (len % 2 != 0)) { // 2: Iterate over key-value pairs
             return;
         }
-        unsigned int i = 0;
+        size_t i = 0;
         for (; i < len - 2; i += 2) { // 2:Iterate over key-value pairs
-            unsigned int  j = i + 2; // 2:Iterate over key-value pairs
+            size_t j = i + 2; // 2:Iterate over key-value pairs
             for (; j < len; j += 2) { // 2:Iterate over key-value pairs
                 bool tmp = (searchParams[i] > searchParams[j]);
                 if (tmp) {

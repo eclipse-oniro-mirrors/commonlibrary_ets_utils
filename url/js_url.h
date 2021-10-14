@@ -98,7 +98,6 @@ namespace OHOS::Url {
         napi_value GetAll(napi_value buffer);
         void Append(napi_value buffer, napi_value temp);
         void Delete(napi_value buffer);
-        void ForEach(napi_value function, napi_value thisVar);
         napi_value Entries() const;
         void Set(napi_value name, napi_value value);
         void Sort();
