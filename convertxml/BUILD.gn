@@ -19,6 +19,11 @@ import("//foundation/ace/ace_engine/ace_config.gni")
 # compile .ts to .js.
 action("build_ts_js") {
   script = "//base/compileruntime/js_api_module/convertxml/build_ts_js.py"
+
+  args = [
+    "--dst-file",
+    rebase_path(target_out_dir + "/js_convertxml.js"),
+  ]
   depfile = "$target_gen_dir/$target_name.d"
   outputs = [ target_out_dir + "/js_convertxml.js" ]
 }
