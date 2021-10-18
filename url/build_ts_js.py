@@ -13,17 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import platform
+import argparse
 
 if __name__ == '__main__':
     
     build_path = os.path.abspath(os.path.join(os.getcwd(), "../.."))
     os.chdir("%s/base/compileruntime/js_api_module/url" % build_path)
-    os.system('../../../../developtools/ace-ets2bundle/compiler/node_modules/typescript/bin/tsc')
-    
-    if os.access("../../../../out/ohos-arm64-release", os.F_OK):
-        os.system('cp -r ./out/js_url.js ../../../../out/ohos-arm64-release/obj/base/compileruntime/js_api_module/url/js_url.js')
-        
-    if os.access("../../../../out/ohos-arm-release", os.F_OK):
-        os.system('cp -r ./out/js_url.js ../../../../out/ohos-arm-release/obj/base/compileruntime/js_api_module/url/js_url.js')
-        
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dst-file',
+                        help='the converted target file')
+    input_arguments = parser.parse_args()
+
+    os.system('../../../../prebuilts/build-tools/common/nodejs/node-v12.18.4-linux-x64/bin/node '
+              '../../../../ark/ts2abc/ts2panda/node_modules/typescript/bin/tsc')
+    os.system('cp -r ./out/js_url.js ' + input_arguments.dst_file)
     os.system('rm -rf ./out')
