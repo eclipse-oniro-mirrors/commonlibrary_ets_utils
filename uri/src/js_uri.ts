@@ -96,7 +96,7 @@ function toAscllString(uriStr:any) {
     }
 }
 
-function createNewUri(uriStr) {
+function createNewUri(uriStr:string) {
     return new URI(uriStr);
 }
 
