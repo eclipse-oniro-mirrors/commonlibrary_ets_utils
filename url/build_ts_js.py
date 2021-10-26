@@ -20,8 +20,12 @@ import subprocess
 
 def run_command(cmd):
     print(" ".join(cmd))
-    proc = subprocess.Popen(cmd)
-    proc.wait()
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+          stderr=subprocess.PIPE, universal_newlines=True)
+    out, err = proc.communicate()
+    if out != "":
+        print(out)
+        exit(1)
 
 if __name__ == '__main__':
     
