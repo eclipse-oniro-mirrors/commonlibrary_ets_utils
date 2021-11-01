@@ -15,6 +15,16 @@
 import os
 import platform
 import argparse
+import subprocess
+
+def run_command(cmd):
+    print(" ".join(cmd))
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+          stderr=subprocess.PIPE, universal_newlines=True)
+    out, err = proc.communicate()
+    if out != "":
+        print(out)
+        exit(1)
 
 if __name__ == '__main__':
     
@@ -26,7 +36,15 @@ if __name__ == '__main__':
                         help='the converted target file')
     input_arguments = parser.parse_args()
 
-    os.system('../../../../prebuilts/build-tools/common/nodejs/node-v12.18.4-linux-x64/bin/node '
-              '../../../../ark/ts2abc/ts2panda/node_modules/typescript/bin/tsc')
-    os.system('cp -r ./out/js_convertxml.js ' + input_arguments.dst_file)
-    os.system('rm -rf ./out')
+    node = '../../../../prebuilts/build-tools/common/nodejs/\
+node-v12.18.4-linux-x64/bin/node'
+    tsc = '../../../../ark/ts2abc/ts2panda/node_modules/typescript/bin/tsc'
+    cmd = [node, tsc]
+    run_command(cmd)
+
+    cmd = ['cp', "-r", './out/js_convertxml.js', input_arguments.dst_file]
+    run_command(cmd)
+
+    cmd = ['rm', "-rf", './out']
+    run_command(cmd)
+    exit(0)
