@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import("//build/test.gni")
 
 if (is_standard_system) {
@@ -20,13 +19,15 @@ if (is_standard_system) {
 ohos_unittest("test_uri_unittest") {
   module_out_path = module_output_path
 
+  configs = [ "//ark/js_runtime:ark_jsruntime_public_config" ]
+
   include_dirs = [
     "//base/compileruntime/js_api_module/uri",
+    "//ark/js_runtime",
     "//foundation/ace/napi",
     "//foundation/ace/napi/interfaces/kits",
     "//foundation/ace/napi/native_engine",
-    "//foundation/ace/napi/native_engine/impl/quickjs",
-    "//third_party/icu/icu4c/source/common",
+    "//foundation/ace/napi/native_engine/impl/ark",
     "//third_party/googletest/include",
     "//third_party/node/src",
     "//utils/native/base/include",
@@ -35,25 +36,27 @@ ohos_unittest("test_uri_unittest") {
   cflags = [ "-g3" ]
 
   sources = [
+    "test_ark.cpp",
     "test_napi.cpp",
-    "test_quickjs.cpp",
   ]
 
   deps = [
+    "//ark/js_runtime:libark_jsruntime",
     "//base/compileruntime/js_api_module/uri:uri_packages",
     "//foundation/ace/napi/:ace_napi",
-    "//foundation/ace/napi/:ace_napi_quickjs",
+    "//foundation/ace/napi/:ace_napi_ark",
     "//third_party/googletest:gtest",
     "//third_party/googletest:gtest_main",
     "//third_party/icu/icu4c:static_icuuc",
     "//third_party/libuv:uv_static",
-    "//third_party/quickjs:qjs",
     "//utils/native/base:utils",
     "//utils/native/base:utilsecurec",
   ]
 
   if (is_standard_system) {
     external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  } else {
+    external_deps = [ "hilog:libhilog" ]
   }
 }
 

@@ -15,8 +15,10 @@
 
 #include "test.h"
 
-#include "quickjs_native_engine.h"
+#include "utils/log.h"
+#include "ark_native_engine.h"
 
+using panda::RuntimeOption;
 static NativeEngine *g_nativeEngine = nullptr;
 
 NativeEngineTest::NativeEngineTest()
@@ -31,30 +33,30 @@ int main(int argc, char **argv)
     testing::GTEST_FLAG(output) = "xml:./";
     testing::InitGoogleTest(&argc, argv);
 
-    JSRuntime *rt = JS_NewRuntime();
-    if (rt == nullptr) {
+    // Setup
+    RuntimeOption option;
+    option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
+
+    const int64_t poolSize = 0x1000000;  // 16M
+    option.SetGcPoolSize(poolSize);
+
+    option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+    option.SetDebuggerLibraryPath("");
+    EcmaVM *vm = panda::JSNApi::CreateJSVM(option);
+    if (vm == nullptr) {
         return 0;
     }
 
-    JSContext *ctx = JS_NewContext(rt);
-    if (ctx == nullptr) {
-        return 0;
-    }
+    g_nativeEngine = new ArkNativeEngine(vm, nullptr);
 
-    js_std_add_helpers(ctx, 0, nullptr);
+    int ret = testing::UnitTest::GetInstance()->Run();
 
-    g_nativeEngine = new QuickJSNativeEngine(rt, ctx, 0); // default instance id 0
-
-    int ret = RUN_ALL_TESTS();
-
-    g_nativeEngine->Loop(LOOP_DEFAULT);
+    g_nativeEngine->Loop(LOOP_NOWAIT);
 
     delete g_nativeEngine;
     g_nativeEngine = nullptr;
-
-    js_std_free_handlers(rt);
-    JS_FreeContext(ctx);
-    JS_FreeRuntime(rt);
+    panda::JSNApi::DestoryJSVM(vm);
+    vm = nullptr;
 
     return ret;
 }
