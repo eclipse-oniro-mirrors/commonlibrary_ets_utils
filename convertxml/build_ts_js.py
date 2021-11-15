@@ -17,34 +17,38 @@ import platform
 import argparse
 import subprocess
 
-def run_command(cmd):
-    print(" ".join(cmd))
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-          stderr=subprocess.PIPE, universal_newlines=True)
-    out, err = proc.communicate()
-    if out != "":
-        print(out)
+def run_command(in_cmd):
+    print(" ".join(in_cmd))
+    proc = subprocess.Popen(in_cmd, stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          universal_newlines=True,
+                          shell=False)
+    stdout, stderr = proc.communicate()
+    if stdout != "":
+        print(stdout)
         exit(1)
 
 if __name__ == '__main__':
-    
-    build_path = os.path.abspath(os.path.join(os.getcwd(), "../.."))
-    os.chdir("%s/base/compileruntime/js_api_module/convertxml" % build_path)
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dst-file',
+    BUILD_PATH = os.path.abspath(os.path.join(os.getcwd(), "../.."))
+    os.chdir("%s/base/compileruntime/js_api_module/convertxml" % BUILD_PATH)
+
+    PARSER_INST = argparse.ArgumentParser()
+    PARSER_INST.add_argument('--dst-file',
                         help='the converted target file')
-    input_arguments = parser.parse_args()
+    INPUT_ARGUMENTS = PARSER_INST.parse_args()
 
-    node = '../../../../prebuilts/build-tools/common/nodejs/\
+
+    NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\
 node-v12.18.4-linux-x64/bin/node'
-    tsc = '../../../../ark/ts2abc/ts2panda/node_modules/typescript/bin/tsc'
-    cmd = [node, tsc]
-    run_command(cmd)
+    TSC_PATH = '../../../../ark/ts2abc/ts2panda/node_modules/\
+typescript/bin/tsc'
+    CMD_INST = [NODE_PATH, TSC_PATH]
+    run_command(CMD_INST)
 
-    cmd = ['cp', "-r", './out/js_convertxml.js', input_arguments.dst_file]
-    run_command(cmd)
+    CMD_INST = ['cp', "-r", './out/js_convertxml.js', INPUT_ARGUMENTS.dst_file]
+    run_command(CMD_INST)
 
-    cmd = ['rm', "-rf", './out']
-    run_command(cmd)
+    CMD_INST = ['rm', "-rf", './out']
+    run_command(CMD_INST)
     exit(0)
