@@ -1559,7 +1559,8 @@ namespace OHOS::Url {
             flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT2), 0);
         } else {
             std::string usname = input;
-            for (int i = 0; i <= 12; i += 2) { // 12:The number of variables is 12, 2:Shift subscript right 2
+            size_t len = g_specialSymbols.size() - 2; // 2:Maximum position of subscript
+            for (int i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
                 ReplaceSpecialSymbols(usname, g_specialSymbols[i], g_specialSymbols[i + 1]);
             }
             urlData_.username = usname;
@@ -1574,7 +1575,8 @@ namespace OHOS::Url {
             flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT3), 0);
         } else {
             std::string keyWord = input;
-            for (int i = 0; i <= 12; i += 2) { // 12:The number of variables is 12, 2:Shift subscript right 2
+            size_t len = g_specialSymbols.size() - 2; // 2:Maximum position of subscript
+            for (int i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
                 ReplaceSpecialSymbols(keyWord, g_specialSymbols[i], g_specialSymbols[i + 1]);
             }
             urlData_.password = keyWord;
