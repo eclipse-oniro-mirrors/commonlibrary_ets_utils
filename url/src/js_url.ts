@@ -273,7 +273,7 @@ class URL {
         if (this.host_ == null || this.host_ === '' || this.protocol_ === 'file:') {
             return;
         }
-        const usname_ = escape(input);
+        const usname_ = encodeURI(input);
         this.c_info.username = usname_;
         this.username_ = this.c_info.username;
         this.set_href();
@@ -285,7 +285,7 @@ class URL {
         if (this.host_ == null || this.host_ === '' || this.protocol_ === 'file:') {
             return;
         }
-        const passwd_ = escape(input);
+        const passwd_ = encodeURI(input);
         this.c_info.password = passwd_;
         this.password_ = this.c_info.password;
         this.set_href();

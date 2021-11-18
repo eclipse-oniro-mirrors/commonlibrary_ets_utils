@@ -27,6 +27,10 @@ namespace OHOS::Url {
         "..", ".%2e", ".%2E", "%2e.", "%2E.",
         "%2e%2e", "%2E%2E", "%2e%2E", "%2E%2e"
     };
+    std::vector<std::string> g_specialSymbols = {
+        "@", "%40", "#", "%23", "=", "%3D", ":", "%3A",
+        "/", "%2F", ";", "%3B", "?", "%3F"
+    };
     std::vector<std::string> g_singlesegment = { ".", "%2e", "%2E" };
     std::vector<char> g_specialcharacter = {
         '\0', '\t', '\n', '\r', ' ', '#', '%', '/', ':', '?',
@@ -347,7 +351,7 @@ namespace OHOS::Url {
             return;
         }
         size_t left = 0;
-        size_t count = 0;
+        int count = 0;
         while ((pos = str.find(":", left)) != std::string::npos) {
             count++;
             left = pos + 1;
@@ -1554,17 +1558,13 @@ namespace OHOS::Url {
             urlData_.username = "";
             flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT2), 0);
         } else {
-            if (!input.empty()) {
-                std::string usname = input;
-                std::string oldstr = "@";
-                std::string newstr = "%40";
-                ReplaceSpecialSymbols(usname, oldstr, newstr);
-                oldstr = "/";
-                newstr = "%2F";
-                ReplaceSpecialSymbols(usname, oldstr, newstr);
-                urlData_.username = usname;
-                flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT2));
+            std::string usname = input;
+            size_t len = g_specialSymbols.size() - 2; // 2:Maximum position of subscript
+            for (int i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
+                ReplaceSpecialSymbols(usname, g_specialSymbols[i], g_specialSymbols[i + 1]);
             }
+            urlData_.username = usname;
+            flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT2));
         }
     }
 
@@ -1574,17 +1574,13 @@ namespace OHOS::Url {
             urlData_.password = "";
             flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT3), 0);
         } else {
-            if (!input.empty()) {
-                std::string keyWord = input;
-                std::string oldstr = "@";
-                std::string newstr = "%40";
-                ReplaceSpecialSymbols(keyWord, oldstr, newstr);
-                oldstr = "/";
-                newstr = "%2F";
-                ReplaceSpecialSymbols(keyWord, oldstr, newstr);
-                urlData_.password = keyWord;
-                flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT3));
+            std::string keyWord = input;
+            size_t len = g_specialSymbols.size() - 2; // 2:Maximum position of subscript
+            for (int i = 0; i <= len; i += 2) { // 2:Shift subscript right 2
+                ReplaceSpecialSymbols(keyWord, g_specialSymbols[i], g_specialSymbols[i + 1]);
             }
+            urlData_.password = keyWord;
+            flags_.set(static_cast<size_t>(BitsetStatusFlag::BIT3));
         }
     }
 
@@ -1626,7 +1622,7 @@ namespace OHOS::Url {
         size_t bytOfSpeChar = 3; // 3:Bytes of special characters in Linux
         std::string subStr = str.substr(i, bytOfSpeChar);
         i += 2; // 2:Searching for the number and number of keys and values
-        std::wstring wstr = StrToWstr(subStr);
+        std::wstring wstr = StrToWstr(subStr.c_str());
         wchar_t wch = wstr[0];
         auto charaEncode = static_cast<size_t>(wch);
         return charaEncode;
