@@ -58,11 +58,9 @@ namespace OHOS::xml {
         std::map<int, std::map<int, std::string>> multNsp;
         int CurNspNum = 0;
         std::string out_;
-        
     };
 
-    enum class TagEnum
-    {
+    enum class TagEnum {
         XML_DECLARATION = -1,
         START_DOCUMENT,
         END_DOCUMENT,
@@ -82,8 +80,7 @@ namespace OHOS::xml {
         PARAMETER_ENTITY_REF
     };
     
-    enum class TextEnum
-    {
+    enum class TextEnum {
         ATTRI,
         TEXT,
         ENTITY_DECL
@@ -105,7 +102,6 @@ namespace OHOS::xml {
             static napi_value IsEmptyElementTag(napi_env env, napi_callback_info info);
             static napi_value IsWhitespace(napi_env env, napi_callback_info info);
         };
-
         struct TagText
         {
             const std::string START_CDATA = "<![CDATA[";
@@ -133,7 +129,6 @@ namespace OHOS::xml {
             const std::string ILLEGAL_TYPE = "Wrong event type";
             const std::string START_PROCESSING_INSTRUCTION = "<?";
         };
-
         struct SrcLinkList {
             SrcLinkList* next;
             std::string strBuffer;
@@ -152,10 +147,8 @@ namespace OHOS::xml {
             this->max = max;
             }
         };
-        XmlPullParser(napi_env env, std::string strXml, std::string encoding) :env_(env), strXml_(strXml), encoding_(encoding) {
-            HILOG_INFO("LHC.....cpp XmlPullParser ---");
-        }
-        ~XmlPullParser() {}
+        XmlPullParser(napi_env env, std::string strXml, std::string encoding) :env_(env), strXml_(strXml), encoding_(encoding) {};
+        ~XmlPullParser() {};
         int GetDepth();
         int GetColumnNumber();
         int GetLineNumber();
@@ -166,16 +159,13 @@ namespace OHOS::xml {
         std::string GetText();
         bool IsEmptyElementTag();
         bool IsWhitespace();
-
         void PushSrcLinkList(std::string strBuffer);
         void PopSrcLinkList();
         bool DealLength(int minimun);
         void Replace(std::string &strTemp, std::string strSrc, std::string strDes);
         int GetNSCount(int iTemp);
         void Parse(napi_value thisVar);
-
         std::string GetNamespace(std::string prefix);
-
         napi_value DealOptionInfo(napi_value napiObj, napi_callback_info info);
         TagEnum ParseTagType(bool inDeclaration);
         void SkipText(std::string chars);
@@ -206,6 +196,7 @@ namespace OHOS::xml {
         void ParseText();
         void ParseCdect();
         std::string XmlPullParserError();
+        bool ParseFunc(napi_value thisVar);
     private:
         napi_env env_;
         bool bDoctype_ = false;
@@ -215,7 +206,6 @@ namespace OHOS::xml {
         napi_value attrFunc_ = nullptr;
         napi_value tokenFunc_ = nullptr;
         TagText tagText_;
-
         std::string strXml_ = "";
         std::string version_ = "";
         std::string encoding_ = "";
@@ -225,21 +215,17 @@ namespace OHOS::xml {
         std::string text_ = "";
         std::string sysInfo_ = "";
         std::string pubInfo_ = "";
-
         std::string keyInfo_ = "";
         std::string xmlPullParserError_;
-
         std::vector<int> nspCounts_;
         std::vector<std::string> nspStack_;
         std::vector<std::string> elementStack_;
-
         std::vector<std::string> attributes;
         std::map<std::string, std::string> documentEntities;
         std::map<std::string, std::map<std::string, std::string>> defaultAttributes;
         std::map<std::string, std::string> DEFAULT_ENTITIES = {
-        {"lt;", "<"},{"gt;", ">"},{"amp;", "&"},{"apos;", "'"},{"quot;", "\""}
+        {"lt;", "<"}, {"gt;", ">"}, {"amp;", "&"}, {"apos;", "'"}, {"quot;", "\""}
         };
-
         int position_ = 0;
         int depth = 0;
         int max_ = 0;
@@ -248,7 +234,6 @@ namespace OHOS::xml {
         int attriCount_ = 0;
         TagEnum type = TagEnum::START_DOCUMENT;
         bool bWhitespace_ = false;
-
         SrcLinkList* srcLinkList_ = new SrcLinkList;
         bool bEndFlag_ = false;
         bool bAlone_ = false;

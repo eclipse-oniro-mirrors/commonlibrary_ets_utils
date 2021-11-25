@@ -34,7 +34,7 @@ namespace OHOS::xml {
         size_t offPos = 0;
         napi_value arraybuffer = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
-        NAPI_ASSERT(env, argc == 1 || argc == 2 , "Wrong number of arguments");
+        NAPI_ASSERT(env, argc == 1 || argc == 2, "Wrong number of arguments"); // 2: number of args
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, &data));
         if (args[0] == nullptr) {
             NAPI_CALL(env, napi_throw_error(env, "", "parameter is empty"));
@@ -82,7 +82,7 @@ namespace OHOS::xml {
         napi_value args[2] = { 0 }; // 2:two args
         XmlPullParser *object = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
-        NAPI_ASSERT(env, argc == 1 || argc == 2 , "Wrong number of arguments"); // 2:two args
+        NAPI_ASSERT(env, argc == 1 || argc == 2, "Wrong number of arguments"); // 2:two args
         if (argc != 1 && argc != 2) { // 2:two args
             NAPI_ASSERT(env, argc == 1, "Wrong argument value. (not nullptr expected).");
         }
@@ -134,7 +134,7 @@ namespace OHOS::xml {
         napi_value args[2] = { 0 }; // 2:two args
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        NAPI_ASSERT(env, argc == 2 , "Wrong number of arguments");
+        NAPI_ASSERT(env, argc == 2, "Wrong number of arguments");
         napi_valuetype valuetype = napi_null;
         NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
         NAPI_ASSERT(env, args[1] != nullptr, "Parameter is empty.");
@@ -209,7 +209,7 @@ namespace OHOS::xml {
         return result;
     }
 
-    static napi_value EndElement(napi_env env, napi_callback_info info) 
+    static napi_value EndElement(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr));
@@ -228,7 +228,7 @@ namespace OHOS::xml {
         napi_value args[2] = { 0 }; // 2:two args
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        NAPI_ASSERT(env, argc == 2 , "Wrong number of arguments"); // 2:two args
+        NAPI_ASSERT(env, argc == 2, "Wrong number of arguments"); // 2:two args
         napi_valuetype valuetype = napi_null;
         NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
         NAPI_ASSERT(env, args[1] != nullptr, "Parameter is empty.");
