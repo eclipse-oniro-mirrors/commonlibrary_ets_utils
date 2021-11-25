@@ -89,8 +89,9 @@ namespace OHOS::xml {
         type = "isDecl";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
-            iPos_ += iLenTemp;
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
     void XmlSerializer::SetNamespace(std::string prefix, std::string ns_Temp)
@@ -108,8 +109,9 @@ namespace OHOS::xml {
         type = "isNsp";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
-            iPos_ += iLenTemp;
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
     void XmlSerializer::StartElement(std::string name)
@@ -142,8 +144,9 @@ namespace OHOS::xml {
         elementStack.push_back("");
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
-            iPos_ += iLenTemp;
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
     void XmlSerializer::SetAttributes(std::string name, std::string value)
@@ -160,8 +163,9 @@ namespace OHOS::xml {
         type = "isAttri";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
-            iPos_ += iLenTemp;
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
     void XmlSerializer::EndElement()
@@ -190,8 +194,9 @@ namespace OHOS::xml {
         out_.append(">");
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
-            iPos_ += iLenTemp;
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
     void XmlSerializer::AddEmptyElement(std::string name)
@@ -210,8 +215,9 @@ namespace OHOS::xml {
         type = "isAddEmpElem";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
-            iPos_ += iLenTemp;
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
     void XmlSerializer::SetText(std::string text)
@@ -225,8 +231,9 @@ namespace OHOS::xml {
         type = "isText";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
-            iPos_ += iLenTemp;
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
     void XmlSerializer::SetCommnet(std::string comment)
@@ -241,14 +248,15 @@ namespace OHOS::xml {
         type = "isCom";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
-            iPos_ += iLenTemp;
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
     void XmlSerializer::SetCData(std::string data)
     {
         out_ = "";
-         if (type == "isStart" || type == "isAttri") {
+        if (type == "isStart" || type == "isAttri") {
             SplicNsp();
             out_.append(">");
         }
@@ -258,8 +266,9 @@ namespace OHOS::xml {
         type = "isCData";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
-            iPos_ += iLenTemp;
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
     void XmlSerializer::SetDocType(std::string text)
@@ -274,7 +283,9 @@ namespace OHOS::xml {
         type = "isDocType";
         size_t iLenTemp = out_.length();
         if (iLength_ > iPos_ + iLenTemp - 1) {
-            memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp);
+            if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                iPos_ += iLenTemp;
+            }
         }
     }
 
@@ -467,10 +478,10 @@ namespace OHOS::xml {
             napi_value global = nullptr;
             napi_get_global(env_, &global);
             napi_value key = nullptr;
-            napi_create_string_utf8(env_, attributes[i * 4 + 2].c_str(),
+            napi_create_string_utf8(env_, attributes[i * 4 + 2].c_str(), // 4 and 2: number of args
                 attributes[i * 4 + 2].size(), &key); // 4 and 2: number of args
             napi_value value = nullptr;
-            napi_create_string_utf8(env_, attributes[i * 4 + 3].c_str(),
+            napi_create_string_utf8(env_, attributes[i * 4 + 3].c_str(), // 4 and 2: number of args
                 attributes[i * 4 + 3].size(), &value); // 3 and 4: number of args
             napi_value argv[3] = {key, value, thisVar};
             napi_call_function(env_, global, attrFunc_, argc, argv, &returnVal);
@@ -505,7 +516,6 @@ namespace OHOS::xml {
                 }
                 if (attrFunc_ && attriCount_) {
                     bRec = ParseAttri(thisVar);
-                    
                 }
                 if (attrFunc_ && attriCount_ && !bRec) {
                     break;
@@ -520,7 +530,7 @@ namespace OHOS::xml {
         }
     }
 
-   TagEnum XmlPullParser::ParseTagTypeFunc()
+    TagEnum XmlPullParser::ParseTagTypeFunc()
     {
         switch (strXml_[position_ + 2]) { // 2:  number of args
             case 'D':
@@ -530,11 +540,11 @@ namespace OHOS::xml {
             case '-':
                 return TagEnum::COMMENT;
             case 'E':
-            switch (strXml_[position_ + 3]) { // 3:  number of args
-                case 'L':
-                    return TagEnum::ELEMENTDECL;
-                case 'N':
-                    return TagEnum::ENTITYDECL;
+                switch (strXml_[position_ + 3]) { // 3:  number of args
+                    case 'L':
+                        return TagEnum::ELEMENTDECL;
+                    case 'N':
+                        return TagEnum::ENTITYDECL;
                 }
                 xmlPullParserError_ = "Unexpected <!";
                 break;
@@ -575,15 +585,15 @@ namespace OHOS::xml {
                             return TagEnum::INSTRUCTION;
                         }
                     case '!':
-                        return ParseTagTypeFunc();  
+                        return ParseTagTypeFunc();
                     default:
                         return TagEnum::START_TAG;
                     }
-                case '%':
-                    return inDeclaration ? TagEnum::PARAMETER_ENTITY_REF : TagEnum::TEXT;
-                default:
-                    return TagEnum::TEXT;
-            }
+            case '%':
+                return inDeclaration ? TagEnum::PARAMETER_ENTITY_REF : TagEnum::TEXT;
+            default:
+                return TagEnum::TEXT;
+        }
     }
 
     void XmlPullParser::SkipText(std::string chars)
@@ -690,7 +700,7 @@ namespace OHOS::xml {
                 c = std::stoi(strEntity.substr(1), nullptr);
             }
             out = "";
-            out += (char)c;
+            out += static_cast<char>(c);
             bUnresolved_ = false;
             return;
         }
@@ -742,7 +752,7 @@ namespace OHOS::xml {
                 || c == '-'
                 || c == '#') {
                 position_++;
-                out.push_back((char)c);
+                out.push_back(static_cast<char>(c));
             } else if (relaxed) {
                 return;
             } else {
@@ -752,7 +762,42 @@ namespace OHOS::xml {
         ParseEntityFunc(start, out, isEntityToken, textEnum);
     }
 
-    std::string XmlPullParser::ParseTagValue(char delimiter, bool resolveEntities, bool throwOnResolveFailure, TextEnum textEnum)
+    bool XmlPullParser::ParseTagValueFunc(char c, bool throwOnResolveFailure, TextEnum textEnum,
+        int &start, std::string& result)
+    {
+        if (c == '\r') {
+            if ((position_ + 1 < max_ || DealLength(2)) && strXml_[position_ + 1] == '\n') { // 2: number of args
+                position_++;
+            }
+            c = (textEnum == TextEnum::ATTRI) ? ' ' : '\n';
+        } else if (c == '\n') {
+            c = ' ';
+        } else if (c == '&') {
+            bWhitespace_ = false;
+            ParseEntity(result, false, throwOnResolveFailure, textEnum);
+            start = position_;
+            return false;
+        } else if (c == '<') {
+            if (textEnum == TextEnum::ATTRI) {
+                xmlPullParserError_ = "Illegal: \"<\" inside attribute value";
+            }
+            bWhitespace_ = false;
+        } else if (c == ']') {
+            if ((position_ + 2 < max_ || DealLength(3)) // 2: number of args 3: number of args
+                && strXml_[position_ + 1] == ']' && strXml_[position_ + 2] == '>') { // 2: number of args
+                xmlPullParserError_ = "Illegal: \"]]>\" outside CDATA section";
+            }
+            bWhitespace_ = false;
+        } else if (c == '%') {
+            xmlPullParserError_ = "This parser doesn't support parameter entities";
+        } else {
+            xmlPullParserError_ = "AssertionError";
+        }
+        return true;
+    }
+    
+    std::string XmlPullParser::ParseTagValue(char delimiter, bool resolveEntities,
+        bool throwOnResolveFailure, TextEnum textEnum)
     {
         int start = position_;
         std::string result = " ";
@@ -783,33 +828,8 @@ namespace OHOS::xml {
                 continue;
             }
             result.append(strXml_, start, position_ - start);
-            if (c == '\r') {
-                if ((position_ + 1 < max_ || DealLength(2)) && strXml_[position_ + 1] == '\n') { // 2: number of args
-                    position_++;
-                }
-                c = (textEnum == TextEnum::ATTRI) ? ' ' : '\n';
-            } else if (c == '\n') {
-                c = ' ';
-            } else if (c == '&') {
-                bWhitespace_ = false;
-                ParseEntity(result, false, throwOnResolveFailure, textEnum);
-                start = position_;
+            if(!ParseTagValueFunc(c, throwOnResolveFailure, textEnum, start, result)) {
                 continue;
-            } else if (c == '<') {
-                if (textEnum == TextEnum::ATTRI) {
-                    xmlPullParserError_ = "Illegal: \"<\" inside attribute value";
-                }
-                bWhitespace_ = false;
-            } else if (c == ']') {
-                if ((position_ + 2 < max_ || DealLength(3)) // 2: number of args 3: number of args
-                    && strXml_[position_ + 1] == ']' && strXml_[position_ + 2] == '>') { // 2: number of args
-                    xmlPullParserError_ = "Illegal: \"]]>\" outside CDATA section";
-                }
-                bWhitespace_ = false;
-            } else if (c == '%') {
-                xmlPullParserError_ = "This parser doesn't support parameter entities";
-            } else {
-                xmlPullParserError_ = "AssertionError";
             }
             position_++;
             result = result + c;
@@ -846,7 +866,7 @@ namespace OHOS::xml {
             strTemp.replace(iPos, strSrc.size(), strDes);
         }
     }
-    void XmlPullParser::ParseNspFunc(int &i, std::string &attrName, bool &any)//to do
+    void XmlPullParser::ParseNspFunc(int &i, std::string &attrName, bool &any)
     {
         int j = (nspCounts_[depth]++) << 1;
         size_t ui_size = nspStack_.size();
@@ -868,7 +888,7 @@ namespace OHOS::xml {
             i -= 4; // 4:
         }
     }
-    void XmlPullParser::ParseNspFunc_()//to do
+    void XmlPullParser::ParseNspFunc_()
     {
         for (int i = (attriCount_ << 2) - 4; i >= 0; i -= 4) { // 4: number of args 2: number of args
             std::string attrName = attributes[i + 2]; // 2: number of args
@@ -907,11 +927,11 @@ namespace OHOS::xml {
             if (!(prefix == "xmlns")) {
                 any = true;
             } else {
-                ParseNspFunc(i, attrName, any);//to do
+                ParseNspFunc(i, attrName, any);
             }
         }
         if (any) {
-            ParseNspFunc_();//to du
+            ParseNspFunc_();
         }
         int cut = name_.find(':');
         if (cut == 0) {
@@ -956,7 +976,7 @@ namespace OHOS::xml {
             } else {
                 xmlPullParserError_ = "attr value delimiter missing!";
             }
-            attributes[i + 3] = ParseTagValue(delimiter, true,
+            attributes[i + 3] = ParseTagValue(delimiter, true, // 3: number of args
                 throwOnResolveFailure, TextEnum::ATTRI); // 3: number of args
             if (delimiter != ' ' && PriorDealChar() == delimiter) {
                 position_++;
@@ -1205,18 +1225,18 @@ namespace OHOS::xml {
         SkipInvalidChar();
         int c = PriorDealChar();
         if (c == '(') {
-            int depth = 0;
+            int iDepth = 0;
             do {
                 if (c == '(') {
-                    depth++;
+                    iDepth++;
                 } else if (c == ')') {
-                    depth--;
+                    iDepth--;
                 } else if (c == -1) {
                     xmlPullParserError_ = "Unterminated element content spec ";
                 }
                 position_++;
                 c = PriorDealChar();
-            } while (depth > 0);
+            } while (iDepth > 0);
             if (c == '*' || c == '?' || c == '+') {
                 position_++;
             }
@@ -1238,7 +1258,7 @@ namespace OHOS::xml {
         SkipChar('>');
     }
     
-    void XmlPullParser::ParseInnerAttriDeclFunc(int &c)// to du
+    void XmlPullParser::ParseInnerAttriDeclFunc(int &c)
     {
         if (c == '(') {
             position_++;
@@ -1275,7 +1295,7 @@ namespace OHOS::xml {
             }
             std::string attributeName = ParseName();
             SkipInvalidChar();
-            if (position_ + 1 >= max_ && !DealLength(2)) {
+            if (position_ + 1 >= max_ && !DealLength(2)) { // 2: lengths
                 xmlPullParserError_ = "Malformed attribute list ";
             }
             if (strXml_[position_] == tagText_.NOTATION[0] && strXml_[position_ + 1] == tagText_.NOTATION[1]) {
@@ -1303,7 +1323,7 @@ namespace OHOS::xml {
             }
             if (c == '"' || c == '\'') {
                 position_++;
-                std::string value = ParseTagValue((char)c, true, true, TextEnum::ATTRI);
+                std::string value = ParseTagValue(static_cast<char>(c), true, true, TextEnum::ATTRI);
                 if (PriorDealChar() == c) {
                     position_++;
                 }
@@ -1327,7 +1347,7 @@ namespace OHOS::xml {
         std::string entityValue;
         if (quote == '"' || quote == '\'') {
             position_++;
-            entityValue = ParseTagValue((char)quote, true, false, TextEnum::ENTITY_DECL);
+            entityValue = ParseTagValue(static_cast<char>(quote), true, false, TextEnum::ENTITY_DECL);
             if (PriorDealChar() == quote) {
                 position_++;
             }
@@ -1367,31 +1387,31 @@ namespace OHOS::xml {
             }
             TagEnum declarationType = ParseTagType(true);
             switch (declarationType) {
-            case TagEnum::ELEMENTDECL:
-                ParseInnerEleDec();
-                break;
-            case TagEnum::ATTLISTDECL:
-                ParseInnerAttriDecl();
-                break;
-            case TagEnum::ENTITYDECL:
-                ParseEntityDecl();
-                break;
-            case TagEnum::NOTATIONDECL:
-                ParseInneNotaDecl();
-                break;
-            case TagEnum::INSTRUCTION:
-                SkipText(tagText_.START_PROCESSING_INSTRUCTION);
-                ParseDelimiterInfo(tagText_.END_PROCESSING_INSTRUCTION, false);
-                break;
-            case TagEnum::COMMENT:
-                ParseComment(false);
-                break;
-            case TagEnum::PARAMETER_ENTITY_REF:
-                break;
-                xmlPullParserError_ = "Parameter entity references are not supported ";
-            default:
-                break;
-                xmlPullParserError_ = "Unexpected token";
+                case TagEnum::ELEMENTDECL:
+                    ParseInnerEleDec();
+                    break;
+                case TagEnum::ATTLISTDECL:
+                    ParseInnerAttriDecl();
+                    break;
+                case TagEnum::ENTITYDECL:
+                    ParseEntityDecl();
+                    break;
+                case TagEnum::NOTATIONDECL:
+                    ParseInneNotaDecl();
+                    break;
+                case TagEnum::INSTRUCTION:
+                    SkipText(tagText_.START_PROCESSING_INSTRUCTION);
+                    ParseDelimiterInfo(tagText_.END_PROCESSING_INSTRUCTION, false);
+                    break;
+                case TagEnum::COMMENT:
+                    ParseComment(false);
+                    break;
+                case TagEnum::PARAMETER_ENTITY_REF:
+                    break;
+                    xmlPullParserError_ = "Parameter entity references are not supported ";
+                default:
+                    break;
+                    xmlPullParserError_ = "Unexpected token";
             }
         }
     }
@@ -1582,7 +1602,7 @@ namespace OHOS::xml {
     bool XmlPullParser::IsEmptyElementTag()
     {
         if (type != TagEnum::START_TAG) {
-            xmlPullParserError_ = tagText_.ILLEGAL_TYPE; 
+            xmlPullParserError_ = tagText_.ILLEGAL_TYPE;
         }
         return bEndFlag_;
     }

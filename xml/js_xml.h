@@ -132,13 +132,15 @@ namespace OHOS::xml {
             std::string strBuffer;
             int position;
             int max;
-            SrcLinkList() {
+            SrcLinkList()
+            {
                 this->next = nullptr;
                 this->strBuffer = "";
                 this->position = -1;
                 this->max = -1;
-                };
-            SrcLinkList(SrcLinkList* next, std::string strBuffer, int position, int max) {
+            };
+            SrcLinkList(SrcLinkList* next, std::string strBuffer, int position, int max)
+            {
                 this->next = next;
                 this->strBuffer = strBuffer;
                 this->position = position;
@@ -205,6 +207,7 @@ namespace OHOS::xml {
         bool ParseStartTagFuncDeal(bool throwOnResolveFailure);
         bool ParseStartTagFunc(bool xmldecl, bool throwOnResolveFailure);
         TagEnum ParseOneTagFunc();
+        bool ParseTagValueFunc(char c, bool throwOnResolveFailure, TextEnum textEnum, int &start, std::string &result);
     private:
         napi_env env_;
         bool bDoctype_ = false;
