@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -134,7 +134,7 @@ namespace OHOS::xml {
         napi_value args[2] = { 0 }; // 2:two args
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr));
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
-        NAPI_ASSERT(env, argc == 2, "Wrong number of arguments");
+        NAPI_ASSERT(env, argc == 2, "Wrong number of arguments"); // 2: number of args
         napi_valuetype valuetype = napi_null;
         NAPI_ASSERT(env, args[0] != nullptr, "Parameter is empty.");
         NAPI_ASSERT(env, args[1] != nullptr, "Parameter is empty.");

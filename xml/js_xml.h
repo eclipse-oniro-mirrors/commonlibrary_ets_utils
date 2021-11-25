@@ -26,8 +26,7 @@
 #include "utils/log.h"
 
 namespace OHOS::xml {
-    class XmlSerializer
-    {
+    class XmlSerializer {
     public:
         XmlSerializer(napi_env env, char *pStart, size_t bufferLength, std::string encoding = "utf-8");
         void SetAttributes(std::string name, std::string value);
@@ -43,7 +42,7 @@ namespace OHOS::xml {
         void WriteEscaped(std::string s);
         void SplicNsp();
         void NextItem();
-        std:: string XmlSerializerError();
+        std::string XmlSerializerError();
         static napi_status DealNapiStrValue(napi_env env, const napi_value napi_StrValue, std::string &result);
     private:
         napi_env env_;
@@ -77,7 +76,9 @@ namespace OHOS::xml {
         ENTITYDECL,
         ATTLISTDECL,
         NOTATIONDECL,
-        PARAMETER_ENTITY_REF
+        PARAMETER_ENTITY_REF,
+        OK,
+        ERROR1
     };
     
     enum class TextEnum {
@@ -85,11 +86,9 @@ namespace OHOS::xml {
         TEXT,
         ENTITY_DECL
     };
-    class XmlPullParser
-    {
+    class XmlPullParser {
     public:
-        class ParseInfo
-        {
+        class ParseInfo {
         public:
             static napi_value GetDepth(napi_env env, napi_callback_info info);
             static napi_value GetColumnNumber(napi_env env, napi_callback_info info);
@@ -102,8 +101,7 @@ namespace OHOS::xml {
             static napi_value IsEmptyElementTag(napi_env env, napi_callback_info info);
             static napi_value IsWhitespace(napi_env env, napi_callback_info info);
         };
-        struct TagText
-        {
+        struct TagText {
             const std::string START_CDATA = "<![CDATA[";
             const std::string END_CDATA = "]]>";
             const std::string START_COMMENT = "<!--";
@@ -133,21 +131,22 @@ namespace OHOS::xml {
             SrcLinkList* next;
             std::string strBuffer;
             int position;
-        int max;
-        SrcLinkList() {
-            this->next = nullptr;
-            this->strBuffer = "";
-            this->position = -1;
-            this->max = -1;
-            };
-        SrcLinkList(SrcLinkList* next, std::string strBuffer, int position, int max) {
-            this->next = next;
-            this->strBuffer = strBuffer;
-            this->position = position;
-            this->max = max;
+            int max;
+            SrcLinkList() {
+                this->next = nullptr;
+                this->strBuffer = "";
+                this->position = -1;
+                this->max = -1;
+                };
+            SrcLinkList(SrcLinkList* next, std::string strBuffer, int position, int max) {
+                this->next = next;
+                this->strBuffer = strBuffer;
+                this->position = position;
+                this->max = max;
             }
         };
-        XmlPullParser(napi_env env, std::string strXml, std::string encoding) :env_(env), strXml_(strXml), encoding_(encoding) {};
+        XmlPullParser(napi_env env, std::string strXml, std::string encoding) :env_(env),
+            strXml_(strXml), encoding_(encoding) {};
         ~XmlPullParser() {};
         int GetDepth();
         int GetColumnNumber();
@@ -196,7 +195,16 @@ namespace OHOS::xml {
         void ParseText();
         void ParseCdect();
         std::string XmlPullParserError();
-        bool ParseFunc(napi_value thisVar);
+        bool ParseAttri(napi_value thisVar);
+        bool ParseToken(napi_value thisVar);
+        void ParseNspFunc_();
+        void ParseNspFunc(int &i, std::string &attrName, bool &any);
+        void ParseInnerAttriDeclFunc(int &c);
+        TagEnum ParseTagTypeFunc();
+        void ParseEntityFunc(int start, std::string &out, bool isEntityToken, TextEnum textEnum);
+        bool ParseStartTagFuncDeal(bool throwOnResolveFailure);
+        bool ParseStartTagFunc(bool xmldecl, bool throwOnResolveFailure);
+        TagEnum ParseOneTagFunc();
     private:
         napi_env env_;
         bool bDoctype_ = false;
@@ -244,6 +252,3 @@ namespace OHOS::xml {
     };
 } // namespace
 #endif /* FOUNDATION_ACE_CCRUNTIME_XML_CLASS_H */
-
-
-
