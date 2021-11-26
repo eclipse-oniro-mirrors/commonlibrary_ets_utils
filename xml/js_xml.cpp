@@ -250,7 +250,7 @@ namespace OHOS::xml {
             out_.append(">");
         }
         if (type != "") {
-           NextItem();
+            NextItem();
         }
         out_ += "<!--" + comment + "-->";
         type = "isCom";
@@ -269,7 +269,7 @@ namespace OHOS::xml {
             out_.append(">");
         }
         if (type != "") {
-           NextItem();
+            NextItem();
         }
         data = Replace(data, "]]>", "]]]]><![CDATA[>");
         out_ += "<![CDATA[" + data + "]]>";
@@ -289,7 +289,7 @@ namespace OHOS::xml {
             out_.append(">");
         }
         if (type != "") {
-           NextItem();
+            NextItem();
         }
         out_ += "<!DOCTYPE " + text + ">";
         type = "isDocType";
