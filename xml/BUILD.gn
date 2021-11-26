@@ -84,8 +84,8 @@ ohos_shared_library("xml") {
   ]
 
   deps = [
-    ":xml_abc",
     ":js_xml",
+    ":xml_abc",
     "//base/compileruntime/js_api_module/xml/:js_xml",
     "//foundation/ace/napi/:ace_napi",
     "//foundation/ace/napi/:ace_napi_quickjs",
