@@ -173,9 +173,15 @@ namespace OHOS::xml {
         out_ = "";
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
-            out_.append(" />");
+            out_.append("/>");
             type = "isEndTag";
             --depth_;
+            size_t iLenTemp = out_.length();
+            if (iLength_ > iPos_ + iLenTemp - 1) {
+                if (!memcpy_s(pStart_ + iPos_, iLength_ - iPos_, out_.c_str(), iLenTemp)) {
+                    iPos_ += iLenTemp;
+                }
+            }
             return;
         }
         --depth_;
@@ -243,7 +249,9 @@ namespace OHOS::xml {
             SplicNsp();
             out_.append(">");
         }
-        NextItem();
+        if (type != "") {
+           NextItem();
+        }
         out_ += "<!--" + comment + "-->";
         type = "isCom";
         size_t iLenTemp = out_.length();
@@ -260,7 +268,9 @@ namespace OHOS::xml {
             SplicNsp();
             out_.append(">");
         }
-        NextItem();
+        if (type != "") {
+           NextItem();
+        }
         data = Replace(data, "]]>", "]]]]><![CDATA[>");
         out_ += "<![CDATA[" + data + "]]>";
         type = "isCData";
@@ -278,7 +288,9 @@ namespace OHOS::xml {
             SplicNsp();
             out_.append(">");
         }
-        NextItem();
+        if (type != "") {
+           NextItem();
+        }
         out_ += "<!DOCTYPE " + text + ">";
         type = "isDocType";
         size_t iLenTemp = out_.length();
@@ -481,7 +493,7 @@ namespace OHOS::xml {
             napi_create_string_utf8(env_, attributes[i * 4 + 2].c_str(), // 4 and 2: number of args
                 attributes[i * 4 + 2].size(), &key); // 4 and 2: number of args
             napi_value value = nullptr;
-            napi_create_string_utf8(env_, attributes[i * 4 + 3].c_str(), // 4 and 2: number of args
+            napi_create_string_utf8(env_, attributes[i * 4 + 3].c_str(), // 4 and 3: number of args
                 attributes[i * 4 + 3].size(), &value); // 3 and 4: number of args
             napi_value argv[3] = {key, value, thisVar};
             napi_call_function(env_, global, attrFunc_, argc, argv, &returnVal);
@@ -828,7 +840,7 @@ namespace OHOS::xml {
                 continue;
             }
             result.append(strXml_, start, position_ - start);
-            if(!ParseTagValueFunc(c, throwOnResolveFailure, textEnum, start, result)) {
+            if (!ParseTagValueFunc(c, throwOnResolveFailure, textEnum, start, result)) {
                 continue;
             }
             position_++;
@@ -1601,9 +1613,6 @@ namespace OHOS::xml {
     }
     bool XmlPullParser::IsEmptyElementTag()
     {
-        if (type != TagEnum::START_TAG) {
-            xmlPullParserError_ = tagText_.ILLEGAL_TYPE;
-        }
         return bEndFlag_;
     }
 
@@ -1614,9 +1623,6 @@ namespace OHOS::xml {
 
     bool XmlPullParser::IsWhitespace()
     {
-        if (type != TagEnum::TEXT && type != TagEnum::WHITESPACE && type != TagEnum::CDSECT) {
-            xmlPullParserError_ = tagText_.ILLEGAL_TYPE;
-        }
         return bWhitespace_;
     }
     

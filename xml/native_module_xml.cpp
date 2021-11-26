@@ -83,9 +83,6 @@ namespace OHOS::xml {
         XmlPullParser *object = nullptr;
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, nullptr, &thisVar, &data));
         NAPI_ASSERT(env, argc == 1 || argc == 2, "Wrong number of arguments"); // 2:two args
-        if (argc != 1 && argc != 2) { // 2:two args
-            NAPI_ASSERT(env, argc == 1, "Wrong argument value. (not nullptr expected).");
-        }
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, &data));
         napi_valuetype valuetype = napi_null;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
