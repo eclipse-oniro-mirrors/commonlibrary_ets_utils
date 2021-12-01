@@ -1,4 +1,4 @@
-In the jsapi / workers directory, the definitions of some interfaces refer to their definitions in the webapi.
+In the jsapi / api directory, the definitions of some interfaces refer to their definitions in the webapi.
 The following is a reference to the defined interface:
 
 declare namespace url {
