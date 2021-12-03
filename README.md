@@ -336,4 +336,4 @@ var result = convertml.convert(xml, {compact: false, spaces: 4});
 
 ## License
 
-URL is available under [Mozilla license](https://www.mozilla.org/en-US/MPL/), and the documentation is detailed in [documentation](https://gitee.com/openharmony/js_api_module/blob/master/LICENSE_docs). See [LICENSE](https://gitee.com/openharmony/js_api_module/blob/master/LICENSE) for the full license text.
+URL is available under [Mozilla license](https://www.mozilla.org/en-US/MPL/), and the documentation is detailed in [documentation](https://gitee.com/openharmony/js_api_module/blob/master/mozilla_docs.txt). See [LICENSE](https://gitee.com/openharmony/js_api_module/blob/master/LICENSE) for the full license text.

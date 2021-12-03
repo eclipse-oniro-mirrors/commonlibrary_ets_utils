@@ -336,6 +336,6 @@ var result = convertml.convert(xml, {compact: false, spaces: 4});
 
 [base/compileruntime/js_api_module/](base/compileruntime/js_api_module/readme.md)
 
-## 许可证
+### 许可证
 
-URL在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，说明文档详见[说明文档](https://gitee.com/openharmony/js_api_module/blob/master/LICENSE_docs)。有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/js_api_module/blob/master/LICENSE)
+URL在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，说明文档详见[说明文档](https://gitee.com/openharmony/js_api_module/blob/master/mozilla_docs.txt)。有关完整的许可证文本，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/js_api_module/blob/master/LICENSE)
