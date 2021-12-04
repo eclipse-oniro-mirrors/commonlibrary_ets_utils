@@ -36,7 +36,7 @@ base/compileruntime/js_api_module/
 │   ├── username                               # username属性
 │   ├── toString()                             # toString方法
 │   └── toJSON()                               # toJSON方法
-├── Class: URLSearchParams                 # URLSearchParams类
+├── Class: URLSearchParams                     # URLSearchParams类
 │   ├── new URLSearchParams()                  # 创建URLSearchParams对象
 │   ├── new URLSearchParams(string)            # 创建URLSearchParams对象
 │   ├── new URLSearchParams(obj)               # 创建URLSearchParams对象
@@ -54,8 +54,8 @@ base/compileruntime/js_api_module/
 │   ├── toString()                             # toString方法
 │   ├── values()                               # values方法
 │   └── urlSearchParams[Symbol.iterator]()     # 创建URLSearchParams对象 
-├── Class:URI                              # URI类
-│   ├── URI​(String str)                        # 创建URI对象
+├── Class:URI                                  # URI类
+│   ├── URI(String str)                        # 创建URI对象
 │   ├── scheme                                 # scheme属性
 │   ├── authority                              # authority属性
 │   ├── ssp                                    # ssp属性
@@ -66,13 +66,13 @@ base/compileruntime/js_api_module/
 │   ├── fragment                               # fragment属性
 │   ├── path                                   # path属性
 │   ├── equals(Object ob)                      # equals方法
-│   ├── normalize​()                            # normalize方法
-│   ├── isAbsolute​()                           # isAbsolute方法
-│   ├── normalize​()                            # normalize方法
+│   ├── normalize()                            # normalize方法
+│   ├── isAbsolute()                           # isAbsolute方法
+│   ├── normalize()                            # normalize方法
 │   └── toString()                             # toString方法
-└── Class:ConvertXml                       # ConvertXml类
-	├── ConvertXml()                           # 创建ConvertXml类对象
-	└── convert(String xml, Object options)    # convert方法	
+└── Class:ConvertXml                           # ConvertXml类
+    ├── ConvertXml()                           # 创建ConvertXml类对象
+    └── convert(String xml, Object options)    # convert方法	
 ```
 
 ## 说明
@@ -80,10 +80,9 @@ base/compileruntime/js_api_module/
 ### 接口说明
 
 
-| 接口名 | 说明                                                         |
+| 接口名 | 说明 |
 | -------- | -------- | 
-//URL
-| URL(url: string,base?:string I URL) | 创建并返回一个URL对象，该URL对象引用使用绝对URL字符串，相对URL字符串和基本URL字符串指定的URL。 |
+| URL(url: string,base?:string \| URL) | 创建并返回一个URL对象，该URL对象引用使用绝对URL字符串，相对URL字符串和基本URL字符串指定的URL。 |
 | tostring():string | 该字符串化方法返回一个包含完整 URL 的 USVString。它的作用等同于只读的 URL.href。 |
 | toJSON():string | 该方法返回一个USVString，其中包含一个序列化的URL版本。 |
 | new URLSearchParams() | URLSearchParams() 构造器无入参，该方法创建并返回一个新的URLSearchParams 对象。 开头的'?' 字符会被忽略。 |
@@ -94,17 +93,15 @@ base/compileruntime/js_api_module/
 | set(name: string, value string): void |  检索searchParams对象中是否含有key为name的键值对。没有的话则添加该键值对，有的话则修改对象中第一个key所对应的value，并删除键为name的其余键值对。 |
 | sort(): void | 根据键的Unicode代码点，对包含在此对象中的所有键/值对进行排序，并返回undefined。 |
 | toString(): string | 根据searchParams对象,返回适用在URL中的查询字符串。 |
-| keys(): iterableIterator<string> | 返回一个iterator，遍历器允许遍历对象中包含的所有key值。 |
-| values(): iterableIterator<string> | 返回一个iterator，遍历器允许遍历对象中包含的所有value值。 |
+| keys(): iterableIterator\<string> | 返回一个iterator，遍历器允许遍历对象中包含的所有key值。 |
+| values(): iterableIterator\<string> | 返回一个iterator，遍历器允许遍历对象中包含的所有value值。 |
 | append(name: string, value: string): void | 在searchParams对象中插入name, value键值对。 |
 | delete(name: string): void | 遍历searchParams对象，查找所有的name,删除对应的键值对。 |
 | get(name: string): string | 检索searchParams对象中第一个name,返回name键对应的值。 |
 | getAll(name: string): string[] | 检索searchParams对象中所有name,返回name键对应的所有值。 |
 | entries(): iterableIterator<[string, string]> | 返回一个iterator，允许遍历searchParams对象中包含的所有键/值对。 |
 | forEach(): void | 通过回调函数来遍历URLSearchParams实例对象上的键值对。 |
-| urlSearchParams[Symbol.iterator] () | 返回查询字符串中每个名称-值对的ES6迭代器。迭代器的每个项都是一个JavaScript数组。 |
-
-//URI
+| urlSearchParams\[Symbol.iterator]() | 返回查询字符串中每个名称-值对的ES6迭代器。迭代器的每个项都是一个JavaScript数组。 |
 | URI​(String str) | 通过解析给定入参（String str）来构造URI。此构造函数严格按照RFC 2396附录A中的语法规定解析给定字符串。 |
 | scheme​ | 返回此 URI 的scheme部分，如果scheme未定义，则返回 null |
 | authority​ | 返回此 URI 的解码authority部分，如果authority未定义，则返回 null。 |
@@ -118,16 +115,12 @@ base/compileruntime/js_api_module/
 | equals(Object ob) | 测试此 URI 是否与另一个对象相等。如果给定的对象不是 URI，则此方法立即返回 false。 |
 | normalize​() | 规范化这个 URI 的路径。如果这个 URI 的path不规范，将规范后构造一个新 URI对象返回。 |
 | isAbsolute​() | 判断这个 URI 是否是绝对的。当且仅当它具有scheme部分时，URI 是绝对的，返回值为true，否则返回值为false。 |
-
-//ConvertXml
 | ConvertXml() | 用于构造ConvertXml类对象的构造函数。此构造函数无需传入参数。 |
 | convert(String xml, Object options)  | 返回按选项要求转化xml字符串的JavaScrip对象。 |
 
 ### 使用说明
 
 各接口使用方法如下：
-
-1.URL
 
 1、new URL(url: string,base?:string|URL)
 ```
@@ -140,7 +133,7 @@ let a = new URL( 'sca/./path/path/../scasa/text', 'http://www.example.com');
 ```
 const url = new URL('http://10.0xFF.O400.235:8080/directory/file?query#fragment');
 url.toString() // => 'http://10.0xff.o400.235:8080/directory/file?query#fragment'
-   
+
 const url = new URL("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:80/index.html");
 url.toString() // => 'http://[fedc:ba98:7654:3210:fedc:ba98:7654:3210]/index.html'
 
@@ -200,13 +193,13 @@ params .sort();
 ```
 console.log(params .toString()); // =>bar=2&baz=3&foo=1'
 ```
-12、keys(): iterableIterator<string>
+12、keys(): iterableIterator\<string>
 ```
 for(var key of params.keys()) {
   console.log(key);
 } // =>bar  baz  foo
 ```
-13、values(): iterableIterator<string>
+13、values(): iterableIterator\<string>
 ```
 for(var value of params.values()) {
   console.log(value);
@@ -253,91 +246,87 @@ for (const [name, value] of params) {
 // xyz ba
 ```
 
-2.URI
-
-1、URI​(String str)
+21、URI​(String str)
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 ```
-2、scheme
+22、scheme
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.scheme        // => "http";
 ```
-3、authority
+23、authority
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.authority     // => "gg:gaogao@www.baidu.com:99";
 ```
-4、ssp
+24、ssp
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.ssp "         // => gg:gaogao@www.baidu.com:99/path/path?query";
 ```
-5、userinfo
+25、userinfo
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.userinfo      // => "gg:gaogao";
 ```
-6、host
+26、host
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.host          // => "www.baidu.com";
 ```
-7、port
+27、port
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.port          // => "99";
 ```
-8、query
+28、query
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.query         // => "query";
 ```
-9、fragment
+29、fragment
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.fragment      // => "fagment";
 ```
-10、path
+30、path
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
 gaogao.path          // => "/path/path";
 ```
-11、equals(Object ob)
+31、equals(Object ob)
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path1?query#fagment');
 let gaogao1 = gaogao;
 let res = gaogao.equals(gaogao1);
 console.log(res);      // => true;
 ```
-12、normalize​()
+32、normalize​()
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path/66./../././mm/.././path1?query#fagment');
 let res = gaogao.normalize();
 console.log(res.path);        // => "/path/path1"
 console.log(res.toString());  // => "http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path/path1?query#fagment"
 ```
-13、isAbsolute​()
+33、isAbsolute​()
 ```
 let gaogao = new Uri.URI('f/tp://username:password@www.baidu.com:88/path?query#fagment');
 let res = gaogao.isAbsolute();
 console.log(res);              //=> false;
 ```
-14、toString()
+34、toString()
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/../../path/.././../aa/bb/cc?query#fagment');
 let res = gaogao.toString();
 console.log(res.toString());     // => 'http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/../../path/.././../aa/bb/cc?query#fagment';
 ```
 
-3.ConvertXml
-
-1、ConvertXml()
+35、ConvertXml()
 ```
 var convertml = new convertXml.ConvertXml();
 ```
-2、convert(String xml, Object options)
+36、convert(String xml, Object options)
 ```
 var result = convertml.convert(xml, {compact: false, spaces: 4});
 ```
@@ -346,3 +335,7 @@ var result = convertml.convert(xml, {compact: false, spaces: 4});
 [js_api_module子系统](https://gitee.com/OHOS_STD/js_api_module)
 
 [base/compileruntime/js_api_module/](base/compileruntime/js_api_module/readme.md)
+
+### 许可证
+
+URL在[Mozilla许可证](https://www.mozilla.org/en-US/MPL/)下可用，说明文档详见[说明文档](https://gitee.com/openharmony/js_api_module/blob/master/mozilla_docs.txt)。有关完整的许可证文本，有关完整的许可证文本，请参见[许可证](https://gitee.com/openharmony/js_api_module/blob/master/LICENSE)
