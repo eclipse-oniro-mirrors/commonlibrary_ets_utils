@@ -76,7 +76,7 @@ class URLSearchParams {
         if (array.length == 0) {
             return;
         }
-        
+
         let size = array.length - 1;
         for (let i = 0; i < size; i += 2) { // 2:Searching for the number and number of keys and values
             let key = array[i];

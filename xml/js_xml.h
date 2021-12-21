@@ -15,12 +15,11 @@
 #ifndef FOUNDATION_ACE_CCRUNTIME_XML_CLASS_H
 #define FOUNDATION_ACE_CCRUNTIME_XML_CLASS_H
 
+#include <algorithm>
+#include <cstring>
 #include <map>
 #include <string>
 #include <vector>
-#include <fstream>
-#include <algorithm>
-#include <cstring>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "utils/log.h"
@@ -28,13 +27,15 @@
 namespace OHOS::xml {
     class XmlSerializer {
     public:
-        XmlSerializer(napi_env env, char *pStart, size_t bufferLength, std::string encoding = "utf-8");
+        XmlSerializer(char *pStart, size_t bufferLength, std::string encoding = "utf-8") :pStart_(pStart),
+            iLength_(bufferLength), encoding_(encoding){};
+        ~XmlSerializer(){}
         void SetAttributes(std::string name, std::string value);
         void AddEmptyElement(std::string name);
         void SetDeclaration();
         void StartElement(std::string name);
         void EndElement();
-        void SetNamespace(std::string prefix, std::string ns_Temp);
+        void SetNamespace(std::string prefix, std::string nsTemp);
         void SetCommnet(std::string comment);
         void SetCData(std::string data);
         void SetText(std::string text);
@@ -43,20 +44,20 @@ namespace OHOS::xml {
         void SplicNsp();
         void NextItem();
         std::string XmlSerializerError();
-        static napi_status DealNapiStrValue(napi_env env, const napi_value napi_StrValue, std::string &result);
+        static napi_status DealNapiStrValue(napi_env env, const napi_value napiStr, std::string &result);
     private:
-        napi_env env_;
         char *pStart_;
         size_t iPos_ = 0;
         size_t iLength_;
         std::string xmlSerializerError_;
         std::string encoding_;
-        int depth_ = 0;
+        size_t depth_ = 0;
         std::string type;
         std::vector<std::string> elementStack = { "", "", ""};
         std::map<int, std::map<int, std::string>> multNsp;
         int CurNspNum = 0;
         std::string out_;
+        bool isHasDecl = false;
     };
 
     enum class TagEnum {
@@ -80,7 +81,7 @@ namespace OHOS::xml {
         OK,
         ERROR1
     };
-    
+
     enum class TextEnum {
         ATTRI,
         TEXT,
@@ -126,6 +127,7 @@ namespace OHOS::xml {
             const std::string START_NOTATION = "<!NOTATION";
             const std::string ILLEGAL_TYPE = "Wrong event type";
             const std::string START_PROCESSING_INSTRUCTION = "<?";
+            const std::string XML = "xml ";
         };
         struct SrcLinkList {
             SrcLinkList* next;
@@ -139,32 +141,32 @@ namespace OHOS::xml {
                 this->position = -1;
                 this->max = -1;
             };
-            SrcLinkList(SrcLinkList* next, std::string strBuffer, int position, int max)
-            {
-                this->next = next;
-                this->strBuffer = strBuffer;
-                this->position = position;
-                this->max = max;
+            SrcLinkList(SrcLinkList* pNext, std::string strTemp, int iPos, int iMax) :next(pNext),
+                strBuffer(strTemp), position(iPos), max(iMax){}
+        };
+        XmlPullParser(napi_env env, std::string strXml, std::string encoding) : env_(env),
+            strXml_(strXml), encoding_(encoding) {};
+        ~XmlPullParser()
+        {
+            while (srcLinkList_) {
+                PopSrcLinkList();
             }
         };
-        XmlPullParser(napi_env env, std::string strXml, std::string encoding) :env_(env),
-            strXml_(strXml), encoding_(encoding) {};
-        ~XmlPullParser() {};
-        int GetDepth();
-        int GetColumnNumber();
-        int GetLineNumber();
-        int GetAttributeCount();
-        std::string GetName();
-        std::string GetNamespace();
-        std::string GetPrefix();
-        std::string GetText();
-        bool IsEmptyElementTag();
-        bool IsWhitespace();
+        int GetDepth() const;
+        int GetColumnNumber() const;
+        int GetLineNumber() const;
+        int GetAttributeCount() const;
+        std::string GetName() const;
+        std::string GetNamespace() const;
+        std::string GetPrefix() const;
+        std::string GetText() const;
+        bool IsEmptyElementTag() const;
+        bool IsWhitespace() const;
         void PushSrcLinkList(std::string strBuffer);
         void PopSrcLinkList();
-        bool DealLength(int minimun);
-        void Replace(std::string &strTemp, std::string strSrc, std::string strDes);
-        int GetNSCount(int iTemp);
+        bool DealLength(size_t minimun);
+        void Replace(std::string &strTemp, std::string strSrc, std::string strDes) const;
+        size_t GetNSCount(size_t iTemp);
         void Parse(napi_value thisVar);
         std::string GetNamespace(std::string prefix);
         napi_value DealOptionInfo(napi_value napiObj, napi_callback_info info);
@@ -172,6 +174,7 @@ namespace OHOS::xml {
         void SkipText(std::string chars);
         int PriorDealChar();
         void SkipChar(char expected);
+        std::string ParseNameInner(int start);
         std::string ParseName();
         void SkipInvalidChar();
         void ParseEntity(std::string& out, bool isEntityToken, bool throwOnResolveFailure, TextEnum textEnum);
@@ -189,25 +192,29 @@ namespace OHOS::xml {
         void ParseInnerAttriDecl();
         void ParseEntityDecl();
         void ParseInneNotaDecl();
-        void readInternalSubset();
+        void ReadInternalSubset();
         void ParseDoctype(bool saveDtdText);
         TagEnum ParseOneTag();
         void ParserPriorDeal();
         void ParseInstruction();
         void ParseText();
         void ParseCdect();
-        std::string XmlPullParserError();
-        bool ParseAttri(napi_value thisVar);
-        bool ParseToken(napi_value thisVar);
-        void ParseNspFunc_();
-        void ParseNspFunc(int &i, std::string &attrName, bool &any);
+        std::string XmlPullParserError() const;
+        bool ParseAttri(napi_value thisVar) const;
+        bool ParseToken(napi_value thisVar) const;
+        void ParseNspFunction();
+        void ParseNspFunc(size_t &i, std::string &attrName, bool &any);
         void ParseInnerAttriDeclFunc(int &c);
-        TagEnum ParseTagTypeFunc();
+        TagEnum DealExclamationGroup();
         void ParseEntityFunc(int start, std::string &out, bool isEntityToken, TextEnum textEnum);
         bool ParseStartTagFuncDeal(bool throwOnResolveFailure);
         bool ParseStartTagFunc(bool xmldecl, bool throwOnResolveFailure);
         TagEnum ParseOneTagFunc();
-        bool ParseTagValueFunc(char c, bool throwOnResolveFailure, TextEnum textEnum, int &start, std::string &result);
+        int ParseTagValueInner(size_t &start, std::string &result, char delimiter, TextEnum textEnum, bool bFlag);
+        bool ParseTagValueFunc(char c, bool bFlag, TextEnum textEnum, size_t &start, std::string &result);
+        void MakeStrUpper(std::string &src) const;
+        TagEnum DealLtGroup();
+        void DealWhiteSpace(char c);
     private:
         napi_env env_;
         bool bDoctype_ = false;
@@ -227,22 +234,22 @@ namespace OHOS::xml {
         std::string sysInfo_ = "";
         std::string pubInfo_ = "";
         std::string keyInfo_ = "";
-        std::string xmlPullParserError_;
-        std::vector<int> nspCounts_;
+        std::string xmlPullParserError_ = "";
+        std::vector<size_t> nspCounts_;
         std::vector<std::string> nspStack_;
         std::vector<std::string> elementStack_;
         std::vector<std::string> attributes;
         std::map<std::string, std::string> documentEntities;
         std::map<std::string, std::map<std::string, std::string>> defaultAttributes;
         std::map<std::string, std::string> DEFAULT_ENTITIES = {
-        {"lt;", "<"}, {"gt;", ">"}, {"amp;", "&"}, {"apos;", "'"}, {"quot;", "\""}
+            {"lt;", "<"}, {"gt;", ">"}, {"amp;", "&"}, {"apos;", "'"}, {"quot;", "\""}
         };
-        int position_ = 0;
-        int depth = 0;
-        int max_ = 0;
-        int bufferStartLine_ = 0;
-        int bufferStartColumn_ = 0;
-        int attriCount_ = 0;
+        size_t position_ = 0;
+        size_t depth = 0;
+        size_t max_ = 0;
+        size_t bufferStartLine_ = 0;
+        size_t bufferStartColumn_ = 0;
+        size_t attriCount_ = 0;
         TagEnum type = TagEnum::START_DOCUMENT;
         bool bWhitespace_ = false;
         SrcLinkList* srcLinkList_ = new SrcLinkList;

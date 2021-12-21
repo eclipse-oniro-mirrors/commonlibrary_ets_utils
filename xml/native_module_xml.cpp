@@ -50,7 +50,7 @@ namespace OHOS::xml {
             }
         }
         if (argc == 1) {
-            object = new XmlSerializer(env, reinterpret_cast<char*>(data), iLength);
+            object = new XmlSerializer(reinterpret_cast<char*>(data), iLength);
         } else if (argc == 2) { // 2:When the input parameter is set to 2
             std::string encoding = "";
             napi_valuetype valuetype;
@@ -59,7 +59,7 @@ namespace OHOS::xml {
             napi_status status = napi_ok;
             status = XmlSerializer::DealNapiStrValue(env, args[1], encoding);
             if (status == napi_ok) {
-                object = new XmlSerializer(env, reinterpret_cast<char*>(data), iLength, encoding);
+                object = new XmlSerializer(reinterpret_cast<char*>(data), iLength, encoding);
             }
         }
         napi_wrap(
@@ -174,7 +174,7 @@ namespace OHOS::xml {
         NAPI_CALL(env, napi_get_undefined(env, &result));
         return result;
     }
-    
+
     static napi_value SetDeclaration(napi_env env, napi_callback_info info)
     {
         napi_value thisVar = nullptr;
@@ -349,7 +349,7 @@ namespace OHOS::xml {
     {
         const char *xmlSerializerClass = "XmlSerializer";
         napi_value xmlClass = nullptr;
-        static napi_property_descriptor XmlDesc[] = {
+        static napi_property_descriptor xmlDesc[] = {
             DECLARE_NAPI_FUNCTION("setAttributes", SetAttributes),
             DECLARE_NAPI_FUNCTION("addEmptyElement", AddEmptyElement),
             DECLARE_NAPI_FUNCTION("setDeclaration", SetDeclaration),
@@ -360,10 +360,10 @@ namespace OHOS::xml {
             DECLARE_NAPI_FUNCTION("setCData", SetCData),
             DECLARE_NAPI_FUNCTION("setText", SetText),
             DECLARE_NAPI_FUNCTION("setDocType", SetDocType),
-            DECLARE_NAPI_FUNCTION("xmlSerializerError", XmlSerializerError)
+            DECLARE_NAPI_FUNCTION("XmlSerializerError", XmlSerializerError)
         };
         NAPI_CALL(env, napi_define_class(env, xmlSerializerClass, strlen(xmlSerializerClass), XmlSerializerConstructor,
-                                         nullptr, sizeof(XmlDesc) / sizeof(XmlDesc[0]), XmlDesc, &xmlClass));
+                                         nullptr, sizeof(xmlDesc) / sizeof(xmlDesc[0]), xmlDesc, &xmlClass));
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("XmlSerializer", xmlClass)
         };
@@ -409,13 +409,13 @@ namespace OHOS::xml {
     {
         const char *xmlPullParserClass = "XmlPullParser";
         napi_value xmlClass = nullptr;
-        static napi_property_descriptor XmlDesc[] = {
+        static napi_property_descriptor xmlDesc[] = {
             DECLARE_NAPI_FUNCTION("parse", Parse),
-            DECLARE_NAPI_FUNCTION("xmlPullParserError", XmlPullParserError)
+            DECLARE_NAPI_FUNCTION("XmlPullParserError", XmlPullParserError)
         };
         NAPI_CALL(env, napi_define_class(env, xmlPullParserClass, strlen(xmlPullParserClass),
-                  XmlPullParserConstructor, nullptr, sizeof(XmlDesc) / sizeof(XmlDesc[0]),
-                  XmlDesc, &xmlClass));
+            XmlPullParserConstructor, nullptr, sizeof(xmlDesc) / sizeof(xmlDesc[0]),
+            xmlDesc, &xmlClass));
         static napi_property_descriptor desc[] = {
             DECLARE_NAPI_PROPERTY("XmlPullParser", xmlClass)
         };
@@ -423,7 +423,6 @@ namespace OHOS::xml {
         return exports;
     };
 
-    
     static napi_value Init(napi_env env, napi_value exports)
     {
         XmlSerializerInit(env, exports);
@@ -454,7 +453,7 @@ namespace OHOS::xml {
     }
 
 
-    static napi_module XmlModule = {
+    static napi_module xmlModule = {
         .nm_version = 1,
         .nm_flags = 0,
         .nm_filename = nullptr,
@@ -465,6 +464,6 @@ namespace OHOS::xml {
     };
     extern "C" __attribute__((constructor)) void RegisterModule()
     {
-        napi_module_register(&XmlModule);
+        napi_module_register(&xmlModule);
     }
 } // namespace

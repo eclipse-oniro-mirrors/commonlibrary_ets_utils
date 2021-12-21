@@ -133,7 +133,7 @@ namespace OHOS::Uri {
     {
         size_t dataLen = data.size();
         for (size_t i = 0; i < dataLen; ++i) {
-            if (data[i] >= 0 && data[i] < 128) { // 128:Maximum value of char
+            if (static_cast<int>(data[i]) >= 0 && static_cast<int>(data[i]) < 128) { // 128:ASCII Max Number
                 bool isLegal = rule.test(data[i]);
                 if (!isLegal) {
                     return false;

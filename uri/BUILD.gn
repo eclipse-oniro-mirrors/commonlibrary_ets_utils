@@ -17,16 +17,18 @@ import("//foundation/ace/ace_engine/ace_config.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
-  script = "//base/compileruntime/js_api_module/uri/build_ts_js.py"
-
+  script = "//base/compileruntime/js_api_module/build_ts_js.py"
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/js_uri.js"),
+    "--module-path",
+    rebase_path("/base/compileruntime/js_api_module/uri"),
+    "--out-file",
+    rebase_path("./out/js_uri.js"),
   ]
   depfile = "$target_gen_dir/$target_name.d"
   outputs = [ target_out_dir + "/js_uri.js" ]
 }
-
 base_output_path = get_label_info(":js_uri", "target_out_dir")
 js_uri_obj_path = base_output_path + "/uri.o"
 gen_js_obj("js_uri") {

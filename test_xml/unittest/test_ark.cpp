@@ -14,9 +14,8 @@
  */
 
 #include "test.h"
-
-#include "utils/log.h"
 #include "ark_native_engine.h"
+#include "utils/log.h"
 
 using panda::RuntimeOption;
 static NativeEngine *g_nativeEngine = nullptr;
@@ -52,9 +51,10 @@ int main(int argc, char **argv)
     int ret = testing::UnitTest::GetInstance()->Run();
 
     g_nativeEngine->Loop(LOOP_NOWAIT);
-
-    delete g_nativeEngine;
-    g_nativeEngine = nullptr;
+    if (g_nativeEngine) {
+        delete g_nativeEngine;
+        g_nativeEngine = nullptr;
+    }
     panda::JSNApi::DestroyJSVM(vm);
     vm = nullptr;
 

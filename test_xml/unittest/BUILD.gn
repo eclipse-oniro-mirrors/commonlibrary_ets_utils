@@ -17,12 +17,12 @@ if (is_standard_system) {
   module_output_path = "jsapi_api/napi"
 }
 
-ohos_unittest("test_uri_unittest") {
+ohos_unittest("test_xml_unittest") {
   module_out_path = module_output_path
 
   configs = [ "//ark/js_runtime:ark_jsruntime_public_config" ]
   include_dirs = [
-    "//base/compileruntime/js_api_module/uri",
+    "//base/compileruntime/js_api_module/xml",
     "//ark/js_runtime",
     "//foundation/ace/napi",
     "//foundation/ace/napi/interfaces/kits",
@@ -37,12 +37,12 @@ ohos_unittest("test_uri_unittest") {
 
   sources = [
     "test_ark.cpp",
-    "test_napi.cpp",
+    "test_xml.cpp",
   ]
 
   deps = [
     "//ark/js_runtime:libark_jsruntime",
-    "//base/compileruntime/js_api_module/uri:uri_packages",
+    "//base/compileruntime/js_api_module/xml:xml_packages",
     "//foundation/ace/napi/:ace_napi",
     "//foundation/ace/napi/:ace_napi_ark",
     "//third_party/googletest:gtest",
@@ -62,5 +62,5 @@ ohos_unittest("test_uri_unittest") {
 
 group("unittest") {
   testonly = true
-  deps = [ ":test_uri_unittest" ]
+  deps = [ ":test_xml_unittest" ]
 }
