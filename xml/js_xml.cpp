@@ -584,7 +584,7 @@ namespace OHOS::xml {
         } else if (cTemp == '?') {
             std::string strXml = strXml_.substr(position_ + 2, 4);  // 2 and 4:position and length
             MakeStrUpper(strXml);
-            if (max_ >= position_ + 5 && strXml == tagText_.XML) {
+            if (max_ >= position_ + 5 && strXml == tagText_.XML) { // 5: number of args
                 return TagEnum::XML_DECLARATION;
             } else {
                 return TagEnum::INSTRUCTION;
@@ -623,7 +623,7 @@ namespace OHOS::xml {
 
         while (i < src.size()) {
             if (src[i] >= 'A' && src[i] <= 'Z') {
-                src[i] += 32;
+                src[i] += 32; // 32: number of args
             }
             ++i;
         }

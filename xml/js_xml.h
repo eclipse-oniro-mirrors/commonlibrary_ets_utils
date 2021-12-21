@@ -28,8 +28,8 @@ namespace OHOS::xml {
     class XmlSerializer {
     public:
         XmlSerializer(char *pStart, size_t bufferLength, std::string encoding = "utf-8") :pStart_(pStart),
-            iLength_(bufferLength), encoding_(encoding){};
-        ~XmlSerializer(){}
+            iLength_(bufferLength), encoding_(encoding) {};
+        ~XmlSerializer() {}
         void SetAttributes(std::string name, std::string value);
         void AddEmptyElement(std::string name);
         void SetDeclaration();
@@ -142,7 +142,7 @@ namespace OHOS::xml {
                 this->max = -1;
             };
             SrcLinkList(SrcLinkList* pNext, std::string strTemp, int iPos, int iMax) :next(pNext),
-                strBuffer(strTemp), position(iPos), max(iMax){}
+                strBuffer(strTemp), position(iPos), max(iMax) {}
         };
         XmlPullParser(napi_env env, std::string strXml, std::string encoding) : env_(env),
             strXml_(strXml), encoding_(encoding) {};
