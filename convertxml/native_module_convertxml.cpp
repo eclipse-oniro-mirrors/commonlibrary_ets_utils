@@ -88,28 +88,6 @@ namespace OHOS::Xml {
         return exports;
     }
 
-    extern "C"
-    __attribute__((visibility("default"))) void NAPI_convertxml_GetJSCode(const char **buf, int *bufLen)
-    {
-        if (buf != nullptr) {
-            *buf = _binary_js_convertxml_js_start;
-        }
-
-        if (bufLen != nullptr) {
-            *bufLen = _binary_js_convertxml_js_end - _binary_js_convertxml_js_start;
-        }
-    }
-    extern "C"
-    __attribute__((visibility("default"))) void NAPI_convertxml_GetABCCode(const char** buf, int* buflen)
-    {
-        if (buf != nullptr) {
-            *buf = _binary_convertxml_abc_start;
-        }
-        if (buflen != nullptr) {
-            *buflen = _binary_convertxml_abc_end - _binary_convertxml_abc_start;
-        }
-    }
-
     static napi_module convertXmlModule = {
         .nm_version = 1,
         .nm_flags = 0,
@@ -123,5 +101,26 @@ namespace OHOS::Xml {
     extern "C" __attribute__ ((constructor)) void RegisterModule()
     {
         napi_module_register(&convertXmlModule);
+    }
+
+    extern "C"
+    __attribute__((visibility("default"))) void NAPI_convertxml_GetJSCode(const char **buf, int *bufLen)
+    {
+        if (buf != nullptr) {
+            *buf = _binary_js_convertxml_js_start;
+        }
+        if (bufLen != nullptr) {
+            *bufLen = _binary_js_convertxml_js_end - _binary_js_convertxml_js_start;
+        }
+    }
+    extern "C"
+    __attribute__((visibility("default"))) void NAPI_convertxml_GetABCCode(const char** buf, int* buflen)
+    {
+        if (buf != nullptr) {
+            *buf = _binary_convertxml_abc_start;
+        }
+        if (buflen != nullptr) {
+            *buflen = _binary_convertxml_abc_end - _binary_convertxml_abc_start;
+        }
     }
 } // namespace

@@ -32,12 +32,12 @@ namespace OHOS::Uri {
         size_t argc = 1;
         napi_value argv[1] = { 0 };
         Uri *object = nullptr;
+        std::string input = "";
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, &data));
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, argv[0], &valuetype));
         if (valuetype == napi_string) {
             char *type = nullptr;
-            std::string input = "";
             size_t typelen = 0;
             NAPI_CALL(env, napi_get_value_string_utf8(env, argv[0], nullptr, 0, &typelen));
             if (typelen > 0) {
@@ -253,7 +253,7 @@ namespace OHOS::Uri {
         static napi_property_descriptor uriDesc[] = {
             DECLARE_NAPI_FUNCTION("normalize", Normalize),
             DECLARE_NAPI_FUNCTION("equals", Equals),
-            DECLARE_NAPI_FUNCTION("isAbsolute", IsAbsolute),
+            DECLARE_NAPI_FUNCTION("checkIsAbsolute", IsAbsolute),
             DECLARE_NAPI_FUNCTION("toString", UriToString),
             DECLARE_NAPI_GETTER("scheme", GetScheme),
             DECLARE_NAPI_GETTER("authority", GetAuthority),
@@ -275,13 +275,26 @@ namespace OHOS::Uri {
         return exports;
     }
 
+
+    static napi_module UriModule = {
+        .nm_version = 1,
+        .nm_flags = 0,
+        .nm_filename = nullptr,
+        .nm_register_func = UriInit,
+        .nm_modname = "uri",
+        .nm_priv = ((void*)0),
+        .reserved = {0},
+    };
+    extern "C" __attribute__((constructor)) void RegisterModule()
+    {
+        napi_module_register(&UriModule);
+    }
     extern "C"
     __attribute__((visibility("default"))) void NAPI_uri_GetJSCode(const char **buf, int *bufLen)
     {
         if (buf != nullptr) {
             *buf = _binary_js_uri_js_start;
         }
-
         if (bufLen != nullptr) {
             *bufLen = _binary_js_uri_js_end - _binary_js_uri_js_start;
         }
@@ -295,18 +308,5 @@ namespace OHOS::Uri {
         if (buflen != nullptr) {
             *buflen = _binary_uri_abc_end - _binary_uri_abc_start;
         }
-    }
-    static napi_module UriModule = {
-        .nm_version = 1,
-        .nm_flags = 0,
-        .nm_filename = nullptr,
-        .nm_register_func = UriInit,
-        .nm_modname = "uri",
-        .nm_priv = ((void*)0),
-        .reserved = {0},
-    };
-    extern "C" __attribute__((constructor)) void RegisterModule()
-    {
-        napi_module_register(&UriModule);
     }
 } // namespace

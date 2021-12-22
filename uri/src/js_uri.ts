@@ -35,8 +35,8 @@ class URI {
         return this.uricalss.equals(other.uricalss);
     }
 
-    isAbsolute() {
-        return this.uricalss.isAbsolute();
+    checkIsAbsolute() {
+        return this.uricalss.checkIsAbsolute();
     }
 
     normalize() {

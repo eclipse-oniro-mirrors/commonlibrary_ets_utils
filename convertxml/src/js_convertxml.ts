@@ -15,7 +15,7 @@
 
 declare function requireInternal(s : string) : any;
 const convertXml = requireInternal("ConvertXML");
-class ConvertXml {
+class ConvertXML {
     convertxmlclass : any;
     constructor() {
         this.convertxmlclass = new convertXml.ConvertXml();
@@ -130,7 +130,7 @@ function DealLaterReplace(strXml : string, idx : any, idxThir : any)
 }
 
 export default {
-    ConvertXml : ConvertXml
+    ConvertXML : ConvertXML
 }
 
 

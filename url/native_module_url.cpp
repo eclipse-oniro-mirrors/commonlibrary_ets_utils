@@ -616,6 +616,7 @@ namespace OHOS::Url {
         URLSearchParams *object = nullptr;
         napi_unwrap(env, thisVar, reinterpret_cast<void**>(&object));
         object->Delete(args);
+
         return nullptr;
     }
 
@@ -892,13 +893,26 @@ namespace OHOS::Url {
         return exports;
     }
 
+
+    static napi_module UrlModule = {
+        .nm_version = 1,
+        .nm_flags = 0,
+        .nm_filename = nullptr,
+        .nm_register_func = Init,
+        .nm_modname = "url",
+        .nm_priv = ((void*)0),
+        .reserved = {0},
+    };
+    extern "C" __attribute__((constructor)) void RegisterModule()
+    {
+        napi_module_register(&UrlModule);
+    }
     extern "C"
     __attribute__((visibility("default"))) void NAPI_url_GetJSCode(const char **buf, int *bufLen)
     {
         if (buf != nullptr) {
             *buf = _binary_js_url_js_start;
         }
-
         if (bufLen != nullptr) {
             *bufLen = _binary_js_url_js_end - _binary_js_url_js_start;
         }
@@ -912,18 +926,5 @@ namespace OHOS::Url {
         if (buflen != nullptr) {
             *buflen = _binary_url_abc_end - _binary_url_abc_start;
         }
-    }
-    static napi_module UrlModule = {
-        .nm_version = 1,
-        .nm_flags = 0,
-        .nm_filename = nullptr,
-        .nm_register_func = Init,
-        .nm_modname = "url",
-        .nm_priv = ((void*)0),
-        .reserved = {0},
-    };
-    extern "C" __attribute__((constructor)) void RegisterModule()
-    {
-        napi_module_register(&UrlModule);
     }
 } // namespace

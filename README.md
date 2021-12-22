@@ -16,63 +16,80 @@ URI Represents a Uniform Resource Identifier (URI) reference.
 
 XML representation refers to extensible markup language.
 
+The XmlSerializer interface is used to generate an xml file. The constructor of XmlSerializer creates a new XmlSerializer object, and calls the method of the XmlSerializer object to generate an xml file. The XmlPullParser interface is used to parse the existing xml file. The constructor of XmlPullParser creates a new XmlPullParser object, and calls the method of the XmlPullParser object to parse the xml file.
+
 ## Contents
 
 ```
 base/compileruntime/js_api_module/
-├── Class:URL                                    # URL class
-│   ├── new URL(input[, base])                   # Create URL object
-│   ├── hash                                     # hash attribute
-│   ├── host                                     # host attribute
-│   ├── hostname                                 # hostname attribute
-│   ├── href                                     # href attribute
-│   ├── origin                                   # origin attribute
-│   ├── password                                 # password attribute
-│   ├── pathname                                 # pathname attribute
-│   ├── port                                     # port attribute
-│   ├── protocol                                 # protocol attribute
-│   ├── search                                   # search attribute
-│   ├── searchParams                             # searchParams attribute
-│   ├── username                                 # username attribute
-│   ├── toString()                               # toString method
-│   └── toJSON()                                 # toJSON method
-├── Class: URLSearchParams                       # URLSearchParams class
-│   ├── new URLSearchParams()                    # Create URLSearchParams object
-│   ├── new URLSearchParams(string)              # Create URLSearchParams object
-│   ├── new URLSearchParams(obj)                 # Create URLSearchParams object
-│   ├── new URLSearchParams(iterable)            # Create URLSearchParams object
-│   ├── append(name, value)                      # append method
-│   ├── delete(name)                             # delete method
-│   ├── entries()                                # entries method
-│   ├── forEach(fn[, thisArg])                   # forEach method
-│   ├── get(name)                                # get method
-│   ├── getAll(name)                             # getAll method
-│   ├── has(name)                                # has method
-│   ├── keys()                                   # keys method
-│   ├── set(name, value)                         # set method
-│   ├── sort()                                   # sort method
-│   ├── toString()                               # toString method
-│   ├── values()                                 # values method
-│   └── urlSearchParams[Symbol.iterator]()       # Create URLSearchParams object
-├── Class:URI                                    # URI class
-│   ├── URI(String str)                          # URI class
-│   ├── scheme                                   # Create URI object
-│   ├── authority                                # scheme attribute
-│   ├── ssp                                      # authority attribute
-│   ├── userinfo                                 # ssp attribute
-│   ├── host                                     # userinfo attribute
-│   ├── port                                     # host attribute
-│   ├── query                                    # port attribute
-│   ├── fragment                                 # query attribute
-│   ├── path                                     # fragment attribute
-│   ├── equals(Object ob)                        # path method
-│   ├── normalize()                              # equals method
-│   ├── isAbsolute()                             # normalize method
-│   ├── normalize()                              # isAbsolute method
-│   └── toString()                               # normalize method
-└── Class:ConvertXml                             # ConvertXml class
-    ├── ConvertXml()                             # Create convertxml class object
-    └── convert(String xml, Object options)      # Convert method
+├── Class:URL                                                                # URL class
+│   ├── new URL(input[, base])                                               # Create URL object
+│   ├── hash                                                                 # hash attribute
+│   ├── host                                                                 # host attribute
+│   ├── hostname                                                             # hostname attribute
+│   ├── href                                                                 # href attribute
+│   ├── origin                                                               # origin attribute
+│   ├── password                                                             # password attribute
+│   ├── pathname                                                             # pathname attribute
+│   ├── port                                                                 # port attribute
+│   ├── protocol                                                             # protocol attribute
+│   ├── search                                                               # search attribute
+│   ├── searchParams                                                         # searchParams attribute
+│   ├── username                                                             # username attribute
+│   ├── toString()                                                           # toString method
+│   └── toJSON()                                                             # toJSON method
+├── Class: URLSearchParams                                                   # URLSearchParams class
+│   ├── new URLSearchParams()                                                # Create URLSearchParams object
+│   ├── new URLSearchParams(string)                                          # Create URLSearchParams object
+│   ├── new URLSearchParams(obj)                                             # Create URLSearchParams object
+│   ├── new URLSearchParams(iterable)                                        # Create URLSearchParams object
+│   ├── append(name, value)                                                  # append method
+│   ├── delete(name)                                                         # delete method
+│   ├── entries()                                                            # entries method
+│   ├── forEach(fn[, thisArg])                                               # forEach method
+│   ├── get(name)                                                            # get method
+│   ├── getAll(name)                                                         # getAll method
+│   ├── has(name)                                                            # has method
+│   ├── keys()                                                               # keys method
+│   ├── set(name, value)                                                     # set method
+│   ├── sort()                                                               # sort method
+│   ├── toString()                                                           # toString method
+│   ├── values()                                                             # values method
+│   └── urlSearchParams[Symbol.iterator]()                                   # Create URLSearchParams object
+├── Class:URI                                                                # URI class
+│   ├── URI(str: string)                                                     # Create URI object
+│   ├── scheme                                                               # scheme attribute
+│   ├── authority                                                            # authority attribute
+│   ├── ssp                                                                  # ssp attribute
+│   ├── userinfo                                                             # userinfo attribute
+│   ├── host                                                                 # host attribute
+│   ├── port                                                                 # port attribute
+│   ├── query                                                                # query attribute
+│   ├── fragment                                                             # fragment attribute
+│   ├── path                                                                 # path method
+│   ├── equals(ob: Object)                                                   # equals method
+│   ├── normalize()                                                          # normalize method
+│   ├── checkIsAbsolute()                                                    # checkIsAbsolute method
+│   ├── normalize()                                                          # normalize method
+│   ├── toString()                                                           # toString method
+├── Class:ConvertXml                                                         # ConvertXml class
+│   ├── ConvertXml()                                                         # Create convertxml class object
+│   └── convert(xml: string, options: Object)                                # convert method
+├── Class:XmlSerializer                                                      # XmlSerializer class
+│   ├── new XmlSerializer(buffer: ArrayBuffer | DataView, encoding?: string) # Create XmlSerializer class object
+│   ├── setAttributes(name: string, value: string)                           # Set Attributes method
+│   ├── addEmptyElement(name: string)                                        # Add an empty element method
+│   ├── setDeclaration()                                                     # Set the Declaration method
+│   ├── startElement(name: string)                                           # Set the start element method
+│   ├── endElement()                                                         # Set the end element method
+│   ├── setNamespace(prefix: string, namespace: string)                      # Namespace method
+│   ├── setCommnet(text: string)                                             # Set up Commnet method
+│   ├── setCData(text: string)                                               # Set the CData method
+│   ├── setText(text: string)                                                # Set the Text method
+│   ├── setDocType(text: string)                                             # Set DocType method
+└── Class: XmlPullParser                                                     # XmlPullParser class
+    ├── new (buffer: ArrayBuffer | DataView, encoding?: string)              # Create XmlPullParser object
+    └── parse(option: ParseOptions)                                          # parse method
 ```
 
 ## Illustrate
@@ -80,7 +97,7 @@ base/compileruntime/js_api_module/
 ### Interface Description
 
 
-| Interface name | Illustrate |
+| Interface name | Illustrate                                                         |
 | -------- | -------- |
 | new URL(url: string,base?:string \| URL) | Create and return a URL object that references the URL specified by the absolute URL string, the relative URL string, and the basic URL string. |
 | tostring():string | The stringification method returns a USVString containing the complete URL. It is equivalent to the read-only URL.href. |
@@ -102,7 +119,7 @@ base/compileruntime/js_api_module/
 | entries(): iterableIterator<[string, string]> | Returns an iterator that allows iterating through all key/value pairs contained in the searchParams object. |
 | forEach(): void | Through the callback function to traverse the key-value pairs on the URLSearchParams instance object. |
 | urlSearchParams\[Symbol.iterator]() | Returns an ES6 iterator for each name-value pair in the query string. Each item of the iterator is a JavaScript array. |
-| URI​(String str) | Construct the URI by parsing the given input parameter (String str). This constructor parses the given string strictly in accordance with the grammatical provisions in RFC 2396 Appendix A. |
+| URI​(str: string) | Construct the URI by parsing the given input parameter (String str). This constructor parses the given string strictly in accordance with the grammatical provisions in RFC 2396 Appendix A. |
 | getScheme​() | Return the scheme component of this URI, or null if the scheme is not defined. |
 | getAuthority​() | Returns the decoded authority component of this URI, or null if authority is not defined. The string returned by this method is the same as the string returned by the getRawAuthority method, except that all escaped octet sequences are decoded. |
 | getSchemeSpecificPart​() |  Returns the decoding scheme-specific part of this URI. The string returned by this method is the same as the string returned by the getRawSchemeSpecificPart method, except that all escaped octet sequences are decoded. |
@@ -112,16 +129,29 @@ base/compileruntime/js_api_module/
 | getQuery​() | Returns the decoded query component of this URI, or null if the query is not defined. The string returned by this method is the same as the string returned by the getRawQuery method, except that all escaped octet sequences are decoded. |
 | getFragment​() | Returns the decoded fragment component of this URI, or null if the fragment is not defined. The string returned by this method is the same as the string returned by the getRawFragment method, except that all escaped octet sequences are decoded. |
 | getPath​() | Returns the decoded path component of this URI, or null if path is not defined. The string returned by this method is the same as the string returned by the getRawPath method, except that all escaped octet sequences are decoded. |
-| equals(Object ob) | Test whether this URI is equal to another object. If the given object is not a URI, this method immediately returns false. |
+| equals(ob: Object) | Test whether this URI is equal to another object. If the given object is not a URI, this method immediately returns false. |
 | normalize​() | Normalize the path of this URI. If this URI is opaque, or its path is already in normal form, then this URI is returned. Otherwise, a new URI identical to this URI will be constructed. |
-| isAbsolute​() | Determine whether this URI is absolute. If and only if it has a scheme component, the URI is absolute and the return value is true, otherwise the return value is false. |
+| checkIsAbsolute() | Determine whether this URI is absolute. If and only if it has a scheme component, the URI is absolute and the return value is true, otherwise the return value is false. |
 | toString() | Return the content of this URI as a string. |
 | ConvertXml() | The constructor used to construct the convertxml class object. This constructor does not need to pass in parameters. |
-| convert(String xml, Object options)  | Returns a JavaScript object that converts an XML string as required by the option. |
-
+| convert(xml: string, options: Object)  | Returns a JavaScript object that converts an XML string as required by the option. |
+| XmlSerializer(buffer: ArrayBuffer \| DataView, encoding?: string) | Create and return an XmlSerializer object. The XmlSerializer object passes two parameters. The first parameter is ArrayBuffer or DataView, and the second parameter is the file format (UTF-8 by default). |
+| setAttributes(name: string, value: string): void | Write the Attributes attribute to the xml file. |
+| addEmptyElement(name: string): void | Write an empty element. |
+| setDeclaration(): void | Set the Declaration to use the encoding to write the xml declaration. For example: <? xml version="1.0" encoding="utf-8"> |
+| startElement(name: string): void | Write the elemnet start tag with the given name.|
+| endElement(): void | Write the end tag of the element. |
+| setNamespace(prefix: string, namespace: string): void | Write the namespace of the current element tag. |
+| setCommnet(text: string): void | Write the comment attribute. |
+| setCData(text: string): void | Write the CData attribute. |
+| setText(text: string): void | Write the Text property. |
+| setDocType(text: string): void | Write the DocType attribute. |
+| XmlPullParser(buffer: ArrayBuffer \| DataView, encoding?: string) | Create and return an XmlPullParser object. The XmlPullParser object passes two parameters. The first parameter is ArrayBuffer or DataView, and the second parameter is the file format (default is UTF-8). |
+| parse(option: ParseOptions): void | This interface is used to parse xml. The ParseOptions parameter is an interface containing five optional parameters {supportDoctype?: boolea ignoreNameSpace?: boolean tagValueCallbackFunction?: (name: string, value: string) => boolean attributeValueCallbackFunction?: (name: string, value: string) => boolean) tokenValueCallbackFunction?: (eventType: EventType, value: ParseInfo) => boolean }. The input parameter 1 of the tokenValueCallbackFunction callback function is the event type, and the input parameter 2 is the info interface containing get attributes such as getColumnNumber and getDepth. The user can obtain the depth and other information in the current parsing process through methods such as info.getDepth(). |
 ### Instructions for use
 
 The usage of each interface is as follows:
+
 
 1、new URL(url: string,base?:string|URL)
 ```
@@ -134,7 +164,7 @@ let a = new URL( 'sca/./path/path/../scasa/text', 'http://www.example.com');
 ```
 const url = new URL('http://10.0xFF.O400.235:8080/directory/file?query#fragment');
 url.toString() // => 'http://10.0xff.o400.235:8080/directory/file?query#fragment'
-   
+
 const url = new URL("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:80/index.html");
 url.toString() // => 'http://[fedc:ba98:7654:3210:fedc:ba98:7654:3210]/index.html'
 
@@ -168,6 +198,7 @@ console.log(params.getAll('query'));
 7、new URLSearchParams(iterable)
 ```
 let params;
+
 // Using an array
 params = new URLSearchParams([
     ['user', 'abc'],
@@ -246,6 +277,7 @@ for (const [name, value] of params) {
 // xyz ba
 ```
 
+
 21、URI​(String str)
 ```
 let gaogao = new Uri.URI('http://gg:gaogao@www.baidu.com:99/path/path?query#fagment');
@@ -309,10 +341,10 @@ let res = gaogao.normalize();
 console.log(res.path);        // => "/path/path1"
 console.log(res.toString());  // => "http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/path/path1?query#fagment"
 ```
-33、isAbsolute​()
+33、checkIsAbsolute()
 ```
 let gaogao = new Uri.URI('f/tp://username:password@www.baidu.com:88/path?query#fagment');
-let res = gaogao.isAbsolute();
+let res = gaogao.checkIsAbsolute();
 console.log(res);              //=> false;
 ```
 34、toString()
@@ -321,13 +353,105 @@ let gaogao = new Uri.URI('http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/../../path/.././
 let res = gaogao.toString();
 console.log(res.toString());     // => 'http://gg:gaogao@[1:0:0:1:2:1:2:1]:99/../../path/.././../aa/bb/cc?query#fagment';
 ```
+
+
 35、ConvertXml()
 ```
 var convertml = new convertXml.ConvertXml();
 ```
-36、convert(String xml, Object options)
+36、convert(xml: string, options: Object)
 ```
 var result = convertml.convert(xml, {compact: false, spaces: 4});
+```
+37、new XmlSerializer(buffer: ArrayBuffer | DataView, encoding?: string)
+```
+
+var arrayBuffer = new ArrayBuffer(1024);
+var bufView = new DataView(arrayBuffer);
+var thatSer = new xml.XmlSerializer(bufView);
+```
+38、setDeclaration()：void
+```
+var thatSer = new xml.XmlSerializer(bufView);
+thatSer.setDeclaration() // => <?xml version="1.0" encoding="utf-8"?>;
+```
+39、setCommnet(text: string):void
+```
+var thatSer = new xml.XmlSerializer(bufView);
+thatSer.setCommnet("Hello, World!"); // => <!--Hello, World!-->;
+```
+40、setCData(text: string) :void
+```
+var thatSer = new xml.XmlSerializer(bufView);
+thatSer.setDocType('root SYSTEM "http://www.test.org/test.dtd"'); // => <![CDATA[root SYSTEM \“http://www.test.org/test.dtd\”]]>
+```
+41、setDocType(text: string):void
+```
+var thatSer = new xml.XmlSerializer(bufView);
+thatSer.setDocType("foo"); // => <!DOCTYPE foo>
+```
+42、setNamespace(prefix: string, namespace: string): void
+43、startElement(name: string): void
+44、setAttributes(name: string, value: string): void
+45、endElement(): void
+46、setText(text: string): void
+```
+var thatSer = new xml.XmlSerializer(bufView);
+thatSer.setNamespace("h", "http://www.w3.org/TR/html4/");
+thatSer.startElement("table");
+thatSer.setAttributes("importance", "high");
+thatSer.setText("Happy");
+endElement(); // => <h:table importance="high" xmlns:h="http://www.w3.org/TR/html4/">Happy</h:table>
+```
+47、addEmptyElement(name: string): void
+```
+var thatSer = new xml.XmlSerializer(bufView);
+thatSer.addEmptyElement("b"); // => <b/>
+```
+48、new (buffer: ArrayBuffer | DataView, encoding?: string)
+```
+var strXml =
+            '<?xml version="1.0" encoding="utf-8"?>' +
+            '<note importance="high" logged="true">' +
+            '    <title>Happy</title>' +
+            '    <todo>Work</todo>' +
+            '    <todo>Play</todo>' +
+            '</note>';
+var arrayBuffer = new ArrayBuffer(strXml.length*2);
+var bufView = new Uint8Array(arrayBuffer);
+var strLen = strXml.length;
+for (var i = 0; i < strLen; ++i) {
+    bufView[i] = strXml.charCodeAt(i);//设置arraybuffer 方式
+}
+var that = new xml.XmlPullParser(arrayBuffer);
+
+```
+49、parse(option: ParseOptions): void
+```
+var strXml =
+            '<?xml version="1.0" encoding="utf-8"?>' +
+            '<note importance="high" logged="true">' +
+            '    <title>Happy</title>' +
+            '    <todo>Work</todo>' +
+            '    <todo>Play</todo>' +
+            '</note>';
+var arrayBuffer = new ArrayBuffer(strXml.length*2);
+var bufView = new Uint8Array(arrayBuffer);
+var strLen = strXml.length;
+for (var i = 0; i < strLen; ++i) {
+    bufView[i] = strXml.charCodeAt(i);
+}
+var that = new xml.XmlPullParser(arrayBuffer);
+var arrTag = {};
+arrTag[0] = '132';
+var i = 1;
+function func(key, value){
+    arrTag[i] = 'key:'+key+' value:'+ value.getDepth();
+    i++;
+    return true;
+}
+var options = {supportDoctype:true, ignoreNameSpace:true, tokenValueCallbackFunction:func};
+that.parse(options);
 ```
 ## Related warehouse
 [js_api_module Subsystem](https://gitee.com/OHOS_STD/js_api_module)

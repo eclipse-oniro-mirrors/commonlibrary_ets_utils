@@ -16,11 +16,11 @@
 #include "securec.h"
 #include "utils/log.h"
 namespace OHOS::Xml {
-ConvertXml::ConvertXml(napi_env env): env_(env)
-{
-        spaceType_ = SpaceType::T_INIT;
-        strSpace_ = "";
-        iSpace_ = 0;
+    ConvertXml::ConvertXml(napi_env env): env_(env)
+    {
+            spaceType_ = SpaceType::T_INIT;
+            strSpace_ = "";
+            iSpace_ = 0;
     }
     std::string ConvertXml::GetNodeType(const xmlElementType enumType) const
     {
