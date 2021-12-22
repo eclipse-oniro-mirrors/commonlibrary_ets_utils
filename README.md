@@ -457,3 +457,7 @@ that.parse(options);
 [js_api_module Subsystem](https://gitee.com/OHOS_STD/js_api_module)
 
 [base/compileruntime/js_api_module/](base/compileruntime/js_api_module-readme.md)
+
+## License
+
+URL is available under [Mozilla license](https://www.mozilla.org/en-US/MPL/), and the documentation is detailed in [documentation](https://gitee.com/openharmony/js_api_module/blob/master/mozilla_docs.txt). See [LICENSE](https://gitee.com/openharmony/js_api_module/blob/master/LICENSE) for the full license text.
