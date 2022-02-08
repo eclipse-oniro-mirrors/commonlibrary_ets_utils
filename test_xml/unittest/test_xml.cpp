@@ -693,7 +693,7 @@ HWTEST_F(NativeEngineTest, SetCommentTest005, testing::ext::TestSize.Level0)
  * @tc.desc: Test .
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest001, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -705,11 +705,11 @@ HWTEST_F(NativeEngineTest, SetCDataTest001, testing::ext::TestSize.Level0)
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<![CDATA[root SYSTEM]]>");
 }
 
-/* @tc.name: SetCDataTest002
+/* @tc.name: SetCDATATest002
  * @tc.desc: Test whether Writes the CDATA successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest002, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest002, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -721,11 +721,11 @@ HWTEST_F(NativeEngineTest, SetCDataTest002, testing::ext::TestSize.Level0)
     ASSERT_STREQ(reinterpret_cast<char*>(pBuffer), "<![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>");
 }
 
-/* @tc.name: SetCDataTest003
+/* @tc.name: SetCDATATest003
  * @tc.desc: Test whether Writes the CDATA successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest003, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest003, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -740,11 +740,11 @@ HWTEST_F(NativeEngineTest, SetCDataTest003, testing::ext::TestSize.Level0)
                  "<note/>\r\n<![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>");
 }
 
-/* @tc.name: SetCDataTest004
+/* @tc.name: SetCDATATest004
  * @tc.desc: Test whether Writes the CDATA successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest004, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest004, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
@@ -759,11 +759,11 @@ HWTEST_F(NativeEngineTest, SetCDataTest004, testing::ext::TestSize.Level0)
                  "<![CDATA[root SYSTEM \"http://www.test.org/test.dtd\"]]>\r\n<note/>");
 }
 
-/* @tc.name: SetCDataTest005
+/* @tc.name: SetCDATATest005
  * @tc.desc: Test whether Writes the CDATA successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NativeEngineTest, SetCDataTest005, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SetCDATATest005, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     napi_value arrayBuffer = nullptr;
