@@ -53,6 +53,7 @@ action("gen_url_abc") {
     rebase_path("${ts2abc_build_path}"),
     "--node-modules",
     rebase_path("${node_modules}"),
+    "--module",
   ]
   deps = [
     ":build_ts_js",
