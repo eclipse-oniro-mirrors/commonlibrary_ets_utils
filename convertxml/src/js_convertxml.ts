@@ -13,14 +13,14 @@
  * limitations under the License.
  */
 
-interface MyRecv{
+interface ConvertXmlNative{
     obj : Object;
     spaces ?: string | number;
 }
 
 interface NativeConvertXml {
     new() : NativeConvertXml;
-    convert(strXml : string, options ?: Object) : MyRecv;
+    convert(strXml : string, options ?: Object) : ConvertXmlNative;
 }
 interface ConvertXML {
     ConvertXml : NativeConvertXml;
@@ -38,7 +38,7 @@ class ConvertXML {
         let converted = this.convertxmlclass.convert(strXml, options);
         var strEnd : string = '';
         if (converted.hasOwnProperty("spaces")) {
-            let space = converted.spaces;
+            let space : string | number | undefined = converted.spaces;
             delete converted.spaces;
             strEnd = JSON.stringify(converted, null, space);
         }

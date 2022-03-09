@@ -215,7 +215,7 @@ class URL {
     constructor() {
         let nativeUrl !: NativeURL;
         let inputUrl : string = '';
-        let inputBase :string | URL;
+        let inputBase : string | URL;
 
         if (arguments.length === 1) {
             inputUrl = arguments[0];
