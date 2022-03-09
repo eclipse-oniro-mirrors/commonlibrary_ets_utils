@@ -18,7 +18,7 @@ interface NativeURLSearchParams{
     append(params1 : string, params2 : string) : void;
     set(setname : string, setvalues : string) : void;
     sort() : void;
-    has(hasname:string) : boolean;
+    has(hasname : string) : boolean;
     toString() : string;
     keys() : Object;
     values(): Object;
@@ -55,7 +55,7 @@ const urlNative = requireInternal('url');
 
 var seachParamsArr : Array<string> = [];
 class URLSearchParams {
-    urlcalss:NativeURLSearchParams;
+    urlcalss : NativeURLSearchParams;
     constructor(input : object | string | Iterable<[]> | null | undefined) {
         let out = [];
         out = parameterProcessing(input);
