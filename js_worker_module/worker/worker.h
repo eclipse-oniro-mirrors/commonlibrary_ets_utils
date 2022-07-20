@@ -19,10 +19,10 @@
 #include <list>
 #include <map>
 #include <mutex>
-#include "base/compileruntime/js_worker_module/worker/message_queue.h"
-#include "base/compileruntime/js_worker_module/helper/napi_helper.h"
-#include "base/compileruntime/js_worker_module/helper/object_helper.h"
-#include "base/compileruntime/js_worker_module/worker/worker_runner.h"
+#include "message_queue.h"
+#include "../helper/napi_helper.h"
+#include "../helper/object_helper.h"
+#include "worker_runner.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "native_engine/native_engine.h"

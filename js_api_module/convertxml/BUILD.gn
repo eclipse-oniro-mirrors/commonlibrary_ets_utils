@@ -18,12 +18,12 @@ import("//foundation/arkui/ace_engine/ace_config.gni")
 
 # compile .ts to .js.
 action("build_ts_js") {
-  script = "//base/compileruntime/js_api_module/build_ts_js.py"
+  script = "//commonlibrary/ets_utils/js_api_module/build_ts_js.py"
   args = [
     "--dst-file",
     rebase_path(target_out_dir + "/js_convertxml.js"),
     "--module-path",
-    rebase_path("/base/compileruntime/js_api_module/convertxml"),
+    rebase_path("/commonlibrary/ets_utils/js_api_module/convertxml"),
     "--out-file",
     rebase_path("./out/js_convertxml.js"),
     "--relative-path",
@@ -81,7 +81,7 @@ ohos_shared_library("convertxml") {
     "//third_party/node/src",
     "//third_party/libxml2/include",
     "//foundation/arkui/napi/interfaces/kits",
-    "//base/compileruntime/js_api_module/convertxml",
+    "//commonlibrary/ets_utils/js_api_module/convertxml",
   ]
 
   sources = [
@@ -92,7 +92,7 @@ ohos_shared_library("convertxml") {
   deps = [
     ":convertxml_abc",
     ":js_convertxml",
-    "//base/compileruntime/js_api_module/convertxml/:js_convertxml",
+    "//commonlibrary/ets_utils/js_api_module/convertxml/:js_convertxml",
     "//foundation/arkui/napi/:ace_napi",
     "//foundation/arkui/napi/:ace_napi_quickjs",
     "//third_party/icu/icu4c:static_icuuc",
@@ -105,8 +105,8 @@ ohos_shared_library("convertxml") {
   } else {
     external_deps = [ "hilog:libhilog" ]
   }
-  subsystem_name = "utils"
-  part_name = "jsapi_api"
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
 
   relative_install_dir = "module"
 }

@@ -22,7 +22,7 @@ ohos_unittest("test_process_unittest") {
   configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
 
   include_dirs = [
-    "//base/compileruntime/js_sys_module/process",
+    "//commonlibrary/ets_utils/js_sys_module/process",
     "//arkcompiler/ets_runtime",
     "//foundation/arkui/napi",
     "//foundation/arkui/napi/interfaces/kits",
@@ -42,7 +42,7 @@ ohos_unittest("test_process_unittest") {
 
   deps = [
     "//arkcompiler/ets_runtime:libark_jsruntime",
-    "//base/compileruntime/js_sys_module/process:process_packages",
+    "//commonlibrary/ets_utils/js_sys_module/process:process_packages",
     "//foundation/arkui/napi/:ace_napi",
     "//foundation/arkui/napi/:ace_napi_ark",
     "//third_party/bounds_checking_function:libsec_static",

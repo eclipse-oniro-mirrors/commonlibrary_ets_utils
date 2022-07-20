@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "base/compileruntime/js_worker_module/worker/worker_runner.h"
+#include "worker_runner.h"
 
-#include "base/compileruntime/js_worker_module/helper/object_helper.h"
+#include "../helper/object_helper.h"
 
 namespace CompilerRuntime::WorkerModule {
 WorkerRunner::WorkerRunner(WorkerStartCallback callback) : callback_(callback), selfThreadId_(uv_thread_self()) {}

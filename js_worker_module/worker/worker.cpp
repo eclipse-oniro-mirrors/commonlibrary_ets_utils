@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "base/compileruntime/js_worker_module/worker/worker.h"
-#include "base/compileruntime/js_worker_module/plugin/timer.h"
+#include "worker.h"
+#include "../plugin/timer.h"
 
 namespace CompilerRuntime::WorkerModule {
 const static int MAXWORKERS = 8;

@@ -15,9 +15,9 @@ import("//build/ohos.gni")
 
 ohos_shared_library("worker") {
   include_dirs = [
-    "//base/compileruntime/js_worker_module/worker",
-    "//base/compileruntime/js_worker_module/helper",
-    "//base/compileruntime/js_worker_module/plugin",
+    "//commonlibrary/ets_utils/js_worker_module/worker",
+    "//commonlibrary/ets_utils/js_worker_module/helper",
+    "//commonlibrary/ets_utils/js_worker_module/plugin",
   ]
 
   sources = [
@@ -38,8 +38,8 @@ ohos_shared_library("worker") {
     external_deps = [ "hilog:libhilog" ]
   }
 
-  subsystem_name = "utils"
-  part_name = "jsapi_worker"
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
 
   relative_install_dir = "module"
 }

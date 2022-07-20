@@ -35,7 +35,7 @@ if __name__ == '__main__':
     input_arguments = parser.parse_args()
 
     build_path = os.path.abspath(os.path.join(os.getcwd(), input_arguments.relative_path))
-    os.chdir("%s/base/compileruntime/js_util_module/container/" % build_path)
+    os.chdir("%s/commonlibrary/ets_utils/js_util_module/container/" % build_path)
 
 
     NODE_PATH = '../../../../prebuilts/build-tools/common/nodejs/\

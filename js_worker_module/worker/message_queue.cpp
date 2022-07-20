@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "base/compileruntime/js_worker_module/worker/message_queue.h"
+#include "message_queue.h"
 #include "utils/log.h"
 
 namespace CompilerRuntime::WorkerModule {

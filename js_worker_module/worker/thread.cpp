@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "base/compileruntime/js_worker_module/worker/thread.h"
+#include "thread.h"
 
 namespace CompilerRuntime::WorkerModule {
 Thread::Thread() : tId_() {}

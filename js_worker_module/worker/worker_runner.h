@@ -19,7 +19,7 @@
 #include <functional>
 
 #include "native_engine/native_engine.h"
-#include "base/compileruntime/js_worker_module/worker/thread.h"
+#include "thread.h"
 
 namespace CompilerRuntime::WorkerModule {
 struct WorkerStartCallback {

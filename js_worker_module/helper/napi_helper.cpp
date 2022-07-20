@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "base/compileruntime/js_worker_module/helper/napi_helper.h"
+#include "napi_helper.h"
 
 #include "native_engine/native_value.h"
 

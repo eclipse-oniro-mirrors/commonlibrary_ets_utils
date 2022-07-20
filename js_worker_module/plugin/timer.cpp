@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "base/compileruntime/js_worker_module/plugin/timer.h"
+#include "timer.h"
 
 #include "utils/log.h"
 

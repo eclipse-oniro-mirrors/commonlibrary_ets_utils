@@ -19,8 +19,8 @@
 #include <map>
 #include <uv.h>
 
-#include "base/compileruntime/js_worker_module/helper/napi_helper.h"
-#include "base/compileruntime/js_worker_module/helper/object_helper.h"
+#include "../helper/napi_helper.h"
+#include "../helper/object_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 

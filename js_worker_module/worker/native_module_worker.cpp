@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "base/compileruntime/js_worker_module/worker/worker.h"
+#include "worker.h"
 
 /*
  * module define

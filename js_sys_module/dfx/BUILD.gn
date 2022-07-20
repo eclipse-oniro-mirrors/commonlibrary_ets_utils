@@ -20,7 +20,7 @@ ohos_shared_library("dfx") {
     "//third_party/icu/icu4c/source/common",
     "//third_party/node/src",
     "//foundation/arkui/napi/interfaces/kits",
-    "//base/compileruntime/js_api_module/dfx",
+    "//commonlibrary/ets_utils/js_api_module/dfx",
   ]
 
   sources = [ "native_module_dfx.cpp" ]
@@ -37,8 +37,8 @@ ohos_shared_library("dfx") {
   } else {
     external_deps = [ "hilog:libhilog" ]
   }
-  subsystem_name = "utils"
-  part_name = "jsapi_sys"
+  subsystem_name = "commonlibrary"
+  part_name = "ets_utils"
 
   relative_install_dir = "module"
 }
