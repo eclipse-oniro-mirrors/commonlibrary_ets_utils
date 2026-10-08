@@ -119,7 +119,7 @@ function decodeSafelyOut(input: string): string {
   return decodedTemp === '' ? decodedString : decodedString += decodedTemp;
 }
 
-function customEncodeForToString(str: string): string {
+function customEncodeForToString(str: string, spaceAsPlus: boolean = true): string {
   const hexStrLen = 2; // 2:String length of hexadecimal encoded values
   const hexAdecimal = 16; // 16:Hexadecimal number system
   const regex = /[!'()~]/g;
@@ -128,11 +128,11 @@ function customEncodeForToString(str: string): string {
   } catch (error) {
     str = encodeURIComponent(UrlInterface.fixUSVstring(str));
   }
-  return str.replace(regex, function (c) {
+  let encoded = str.replace(regex, function (c) {
     let hex = c.charCodeAt(0).toString(hexAdecimal);
     return '%' + (hex.length < hexStrLen ? '0' : '') + hex.toUpperCase();
-  })
-    .replace(/%20/g, '+');
+  });
+  return spaceAsPlus ? encoded.replace(/%20/g, '+') : encoded;
 }
 
 function removeKeyValuePairs(str: string, key: string): string {
@@ -294,6 +294,25 @@ class URLParams {
     let out = [];
     out = parameterProcess(input);
     this.urlClass.array = out;
+  }
+}
+
+class URLUtil {
+  static toString(urlParams: URLParams): string {
+    if (arguments.length !== 1 || !(urlParams instanceof URLParams)) {
+      throw new BusinessError(`Parameter error. The type of ${urlParams} must be URLParams`);
+    }
+    const resultArray: string[] = [];
+    let arrayLen: number = urlParams.urlClass.array.length;
+    let array: string[] = urlParams.urlClass.array;
+    let key: string = '';
+    let value: string = '';
+    for (let pos: number = 0; pos < arrayLen; pos += 2) { // 2:Even subscripts exist as key values
+      key = customEncodeForToString(array[pos], false).replace(/=/g, '%3D');
+      value = customEncodeForToString(array[pos + 1], false).replace(/=/g, '%3D');
+      resultArray.push(`${pos > 0 ? '&' : ''}${key}=${value}`);
+    }
+    return resultArray.join('');
   }
 }
 
@@ -833,4 +852,5 @@ export default {
   URLSearchParams: URLSearchParams,
   URL: URL,
   URLParams: URLParams,
+  URLUtil: URLUtil,
 };
