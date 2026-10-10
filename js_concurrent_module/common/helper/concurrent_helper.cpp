@@ -106,7 +106,11 @@ std::string ConcurrentHelper::GetCurrentTimeStampWithMS()
     std::tm localTm {};
     localTm.tm_isdst = -1; // -1: the system automatically determines whether it is in daylight saving time
 
-#if defined(OHOS_PLATFORM) || defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(OHOS_PLATFORM)
+    if (localtime_noenv_r(&timeVal, &localTm) == nullptr) { // LCOV_EXCL_BR_LINE
+        return "TIME_ERR";
+    }
+#elif defined(MAC_PLATFORM) || defined(IOS_PLATFORM)
     if (localtime_r(&timeVal, &localTm) == nullptr) { // LCOV_EXCL_BR_LINE
         return "TIME_ERR";
     }
