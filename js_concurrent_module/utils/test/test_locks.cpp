@@ -12,19 +12,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <unistd.h>
-#include <sys/syscall.h>
-
 #include <ctime>
-#include <latch>
-#include <thread>
 #include <gtest/gtest.h>
+#include <latch>
+#include <sys/syscall.h>
+#include <thread>
+#include <unistd.h>
 
 #include "ark_native_engine.h"
 #include "locks/async_lock.h"
 #include "locks/async_lock_manager.h"
 #include "locks/lock_request.h"
 #include "test/unittest/common/test_common.h"
+#include "utils.h"
 
 using namespace Commonlibrary::Concurrent::LocksModule;
 
@@ -161,6 +161,34 @@ thread_local napi_value LocksTest::asyncLockRequest_ {nullptr};
 thread_local napi_value LocksTest::sharedMode_ {nullptr};
 thread_local napi_value LocksTest::exclusiveMode_ {nullptr};
 thread_local napi_value LocksTest::undefined_ {nullptr};
+
+TEST_F(LocksTest, UtilsExportsSendableAtomics)
+{
+    napi_env env = GetEnv();
+    napi_value exports = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+    ASSERT_NE(Commonlibrary::Concurrent::Utils::Init(env, exports), nullptr);
+    napi_value global = nullptr;
+    napi_value expected = nullptr;
+    napi_value actual = nullptr;
+    ASSERT_CHECK_CALL(napi_get_global(env, &global));
+    ASSERT_CHECK_CALL(napi_get_named_property(env, global, "SendableAtomics", &expected));
+    ASSERT_CHECK_CALL(napi_get_named_property(env, exports, "Atomics", &actual));
+    napi_valuetype type = napi_undefined;
+    ASSERT_CHECK_CALL(napi_typeof(env, actual, &type));
+    ASSERT_EQ(type, napi_object);
+    bool equal = false;
+    ASSERT_CHECK_CALL(napi_strict_equals(env, actual, expected, &equal));
+    ASSERT_TRUE(equal);
+    const char *methods[] = {"add", "and", "compareExchange", "exchange", "isLockFree", "load",
+                             "or", "store", "sub", "wait", "notify", "xor"};
+    for (const char *name : methods) {
+        napi_value method = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, actual, name, &method));
+        ASSERT_CHECK_CALL(napi_typeof(env, method, &type));
+        ASSERT_EQ(type, napi_function) << name;
+    }
+}
 
 static napi_value ExclusiveLockSingleCb(napi_env env, napi_callback_info info)
 {
