@@ -2176,7 +2176,12 @@ std::string TaskManager::GetPendingMessage(Priority priority, std::string tag)
         return message;
     }
     uint64_t now = ConcurrentHelper::GetMilliseconds();
-    Task* task = GetTask(taskId);
+    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
+    auto iter = tasks_.find(taskId);
+    if (iter == tasks_.end()) {
+        return message;
+    }
+    Task* task = iter->second;
     uint64_t diffTime = 0;
     if (task != nullptr && IsNeedPrint(now, task->addTime_, task->enqueuePrintCount_, diffTime)) {
         task->enqueuePrintCount_++;

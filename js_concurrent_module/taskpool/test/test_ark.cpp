@@ -54,6 +54,7 @@ int main(int argc, char** argv)
     int ret = testing::UnitTest::GetInstance()->Run();
 
     g_nativeEngine->Loop(LOOP_NOWAIT);
+    Commonlibrary::Concurrent::TaskPoolModule::NativeEngineTest::CleanupTaskManager();
     if (g_nativeEngine) {
         delete g_nativeEngine;
         g_nativeEngine = nullptr;
