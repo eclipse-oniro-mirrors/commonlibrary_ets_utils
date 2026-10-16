@@ -123,6 +123,7 @@ public:
     static void EnqueueTask(void* data);
     static uint32_t NotifyDependencyTaskInfoWithRemainingDependency(napi_env env);
     static uint32_t NotifyDependencyTaskInfoWithNoDependency(napi_env env);
+    static void CleanupTaskManager();
 
     class ExceptionScope {
     public:

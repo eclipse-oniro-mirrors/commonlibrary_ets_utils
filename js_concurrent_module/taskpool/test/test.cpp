@@ -1359,4 +1359,16 @@ uint32_t NativeEngineTest::NotifyDependencyTaskInfoWithNoDependency(napi_env env
     ClearTaskQueue();
     return taskInfo.first;
 }
+
+void NativeEngineTest::CleanupTaskManager()
+{
+    TaskManager& taskManager = TaskManager::GetInstance();
+    if (taskManager.loop_ != nullptr) {
+        uv_stop(taskManager.loop_);
+    }
+    taskManager.balanceTimer_ = nullptr;
+    taskManager.expandTimer_ = nullptr;
+    taskManager.dispatchHandle_ = nullptr;
+    taskManager.loop_ = nullptr;
+}
 } // namespace Commonlibrary::Concurrent::TaskPoolModule
