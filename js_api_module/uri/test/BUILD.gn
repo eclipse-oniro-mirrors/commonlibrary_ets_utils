@@ -13,9 +13,13 @@
 
 import("//build/test.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
+import("//commonlibrary/ets_utils/ets_utils_host_test.gni")
 
 if (is_standard_system) {
   module_output_path = "ets_utils/ets_utils/jsapi/uri/napi"
+}
+
+ets_utils_host_test_bridge("test_uri_unittest_host_bridge") {
 }
 
 ohos_unittest("test_uri_unittest") {
@@ -46,6 +50,19 @@ ohos_unittest("test_uri_unittest") {
     "napi:ace_napi",
     "node:node_header_notice",
   ]
+
+  if (is_linux && current_toolchain == host_toolchain) {
+    # host(Linux) UT: c_utils is not available on the host toolchain.
+    defines = [
+      "LINUX_PLATFORM",
+      "ETS_UTILS_HOST_UT",
+    ]
+    deps += [ ":test_uri_unittest_host_bridge" ]
+    external_deps -= [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+  }
 }
 
 group("unittest") {

@@ -15,7 +15,11 @@
 
 #include "test.h"
 #include "ark_native_engine.h"
+#ifdef LINUX_PLATFORM
+#include "tools/log.h"
+#else
 #include "utils/log.h"
+#endif
 
 using panda::RuntimeOption;
 static NativeEngine *g_nativeEngine = nullptr;

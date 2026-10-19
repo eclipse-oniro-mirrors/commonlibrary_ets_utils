@@ -14,6 +14,7 @@
  */
 
 #include "js_process.h"
+#include <mutex>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <uv.h>

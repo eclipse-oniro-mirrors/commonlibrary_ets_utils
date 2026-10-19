@@ -16,6 +16,7 @@
 #ifndef URL_JS_URLHELPER_H
 #define URL_JS_URLHELPER_H
 
+#include <vector>
 #include <string>
 #include <string_view>
 

@@ -16,11 +16,25 @@
 #include "js_childprocess.h"
 
 #include <csignal>
+#include <cstdint>
 #include <map>
 #include <unistd.h>
 #include <sys/wait.h>
 #include "securec.h"
 #include "tools/log.h"
+
+#ifdef LINUX_PLATFORM
+// fdsan is an OHOS libc extension; on the linux host fall back to plain
+// close() and make tag exchange a no-op.
+static inline void fdsan_exchange_owner_tag(int fd, uint64_t, uint64_t)
+{
+    (void)fd;
+}
+static inline void fdsan_close_with_tag(int fd, uint64_t)
+{
+    close(fd);
+}
+#endif
 
 namespace OHOS::JsSysModule::Process {
     constexpr int MAXSIZE = 1024;

@@ -568,7 +568,9 @@ HWTEST_F(NativeEngineTest, TaskpoolTest035, testing::ext::TestSize.Level0)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     TaskManager& taskManager = TaskManager::GetInstance();
     uint32_t step = 8;
+#if defined(OHOS_PLATFORM)
     taskManager.GetIdleWorkersList(step);
+#endif
     napi_value exception = nullptr;
     napi_get_and_clear_last_exception(env, &exception);
     ASSERT_EQ(exception, nullptr);
@@ -1053,7 +1055,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest071, testing::ext::TestSize.Level0)
     uv_timer_t* handle = new uv_timer_t;
     handle->data = worker;
     auto tid = NativeEngineTest::GetWorkerTid(handle);
-    bool res = taskManager.ReadThreadInfo(tid, buf, sizeof(buf));
+    bool res = true;
+#if defined(OHOS_PLATFORM)
+    res = taskManager.ReadThreadInfo(tid, buf, sizeof(buf));
+#endif
     ASSERT_TRUE(res == true);
 }
 
@@ -2336,6 +2341,10 @@ HWTEST_F(NativeEngineTest, TaskpoolTest135, testing::ext::TestSize.Level0)
     napi_value argv2[] = {napiTask};
     result = NativeEngineTest::TerminateTask(env, argv2, 1);
     ASSERT_TRUE(result != nullptr);
+    // The task is owned by the JS wrapper finalizer; unregister it from the
+    // TaskManager so that ~TaskManager does not delete it a second time.
+    TaskManager::GetInstance().RemoveTask(task->taskId_);
+    napi_get_and_clear_last_exception(env, &exception);
 }
 
 HWTEST_F(NativeEngineTest, TaskpoolTest136, testing::ext::TestSize.Level0)

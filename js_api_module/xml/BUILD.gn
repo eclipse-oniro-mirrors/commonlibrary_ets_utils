@@ -150,6 +150,21 @@ ohos_source_set("xml_static") {
       "libuv:uv",
     ]
   }
+  if (is_linux && current_toolchain == host_toolchain) {
+    # host(Linux) UT: hilog is not available in minimal part sets; logging is
+    # a no-op via ETS_UTILS_HOST_UT in tools/log.h.
+    if (!defined(defines)) {
+      defines = []
+    }
+    defines += [ "ETS_UTILS_HOST_UT" ]
+    external_deps -= [ "hilog:libhilog" ]
+    # Variables used only by HILOG calls become unused once logging is a
+    # no-op on the host; silence the diagnostics for the host build.
+    cflags_cc = [
+      "-Wno-unused-variable",
+      "-Wno-unused-const-variable",
+    ]
+  }
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 }

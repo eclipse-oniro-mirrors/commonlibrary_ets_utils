@@ -15,6 +15,7 @@
 
 #include "url_helper.h"
 
+#include <algorithm>
 #include <chrono>
 #include <vector>
 

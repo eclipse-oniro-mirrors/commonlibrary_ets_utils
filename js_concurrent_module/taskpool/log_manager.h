@@ -18,6 +18,7 @@
 
 #include "tools/log.h"
 
+#include <atomic>
 #include <string>
 #include <deque>
 #include <mutex>

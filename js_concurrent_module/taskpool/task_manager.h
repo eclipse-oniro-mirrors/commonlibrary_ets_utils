@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASK_MANAGER_H
 
+#include <atomic>
 #include <array>
 #include <list>
 #include <memory>

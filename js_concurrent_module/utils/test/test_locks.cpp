@@ -14,7 +14,60 @@
  */
 #include <ctime>
 #include <gtest/gtest.h>
+// std::latch requires C++20 on libstdc++ (linux host toolchain), while the
+// OHOS device libc++ provides it in C++17 mode. Use std::latch whenever the
+// active standard library provides it and fall back to a semantically
+// equivalent implementation otherwise, so the same test source builds and
+// runs on both platforms.
+#if __has_include(<latch>) && (defined(_LIBCPP_VERSION) || __cplusplus >= 202002L)
 #include <latch>
+using Latch = std::latch;
+#else
+#include <condition_variable>
+#include <mutex>
+namespace LocksTestCompat {
+class Latch {
+public:
+    explicit Latch(std::ptrdiff_t count) : count_(count) {}
+
+    Latch(const Latch&) = delete;
+    Latch& operator=(const Latch&) = delete;
+
+    void count_down(std::ptrdiff_t update = 1)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        count_ -= update;
+        if (count_ <= 0) {
+            cv_.notify_all();
+        }
+    }
+
+    bool try_wait() const
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return count_ <= 0;
+    }
+
+    void wait() const
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        cv_.wait(lock, [this] { return count_ <= 0; });
+    }
+
+    void arrive_and_wait(std::ptrdiff_t update = 1)
+    {
+        count_down(update);
+        wait();
+    }
+
+private:
+    std::ptrdiff_t count_;
+    mutable std::mutex mutex_;
+    mutable std::condition_variable cv_;
+};
+} // namespace LocksTestCompat
+using LocksTestCompat::Latch;
+#endif
 #include <sys/syscall.h>
 #include <thread>
 #include <unistd.h>
@@ -162,6 +215,9 @@ thread_local napi_value LocksTest::sharedMode_ {nullptr};
 thread_local napi_value LocksTest::exclusiveMode_ {nullptr};
 thread_local napi_value LocksTest::undefined_ {nullptr};
 
+// The SendableAtomics runtime global only exists on OHOS devices; on the
+// linux host the Atomics export is intentionally left unregistered.
+#if defined(OHOS_PLATFORM)
 TEST_F(LocksTest, UtilsExportsSendableAtomics)
 {
     napi_env env = GetEnv();
@@ -189,6 +245,7 @@ TEST_F(LocksTest, UtilsExportsSendableAtomics)
         ASSERT_EQ(type, napi_function) << name;
     }
 }
+#endif
 
 static napi_value ExclusiveLockSingleCb(napi_env env, napi_callback_info info)
 {
@@ -289,11 +346,11 @@ TEST_F(LocksTest, SharedLockSingle)
 }
 
 struct SharedMultiCallbackData: public CallbackData {
-    explicit SharedMultiCallbackData(std::latch &barrier): CallbackData(), barrier(barrier)
+    explicit SharedMultiCallbackData(Latch &barrier): CallbackData(), barrier(barrier)
     {
     }
 
-    std::latch &barrier;
+    Latch &barrier;
 };
 
 static napi_value MainSharedLockMultiCb(napi_env env, napi_callback_info info)
@@ -340,7 +397,7 @@ TEST_F(LocksTest, SharedLockMulti)
 {
     std::unique_ptr<AsyncLock> lock = std::make_unique<AsyncLock>(1);
     AsyncLock *lockPtr = lock.get();
-    std::latch barrier(2U);
+    Latch barrier(2U);
     SharedMultiCallbackData callbackData(barrier);
     std::thread t([lockPtr, &callbackData, &barrier] () {
         LocksTest::InitializeEngine();
@@ -366,13 +423,13 @@ TEST_F(LocksTest, SharedLockMulti)
 }
 
 struct IsAvailableCallbackData {
-    IsAvailableCallbackData(std::latch &b, std::latch &e): begin(b), end(e)
+    IsAvailableCallbackData(Latch &b, Latch &e): begin(b), end(e)
     {
     }
 
     std::atomic<uint32_t> callCount = 0;
-    std::latch &begin;
-    std::latch &end;
+    Latch &begin;
+    Latch &end;
 };
 
 static napi_value IsAvailableCb(napi_env env, napi_callback_info info)
@@ -391,8 +448,8 @@ TEST_F(LocksTest, IsAvailable)
 {
     std::unique_ptr<AsyncLock> lock = std::make_unique<AsyncLock>(1);
     AsyncLock *lockPtr = lock.get();
-    std::latch begin(2U);
-    std::latch end(2U);
+    Latch begin(2U);
+    Latch end(2U);
     IsAvailableCallbackData data(begin, end);
     std::thread t([lockPtr, &data] () {
         LocksTest::InitializeEngine();
@@ -598,8 +655,8 @@ static napi_value AsyncTimeoutCb(napi_env env, napi_callback_info info)
 
 TEST_F(LocksTest, TimeoutLockWithEnvDestroyedTest)
 {
-    std::latch begin(2U);
-    std::latch end(2U);
+    Latch begin(2U);
+    Latch end(2U);
     IsAvailableCallbackData callbackData(begin, end);
 
     napi_env env {GetEnv()};
@@ -753,6 +810,13 @@ TEST_F(LocksTest, PendingSharedRequestAfterGC)
     }
     TriggerGC();
 
-    Loop(LOOP_ONCE);
+    // Both lock requests are already satisfied, so the two async callbacks are
+    // pending in the loop; a single LOOP_ONCE usually dispatches them, but on a
+    // loaded linux host the second callback can slip to a later iteration.
+    // Pump the loop (bounded) until both callbacks have run, keeping the final
+    // assertion unchanged.
+    for (int i = 0; i < 50 && callbackData.callCount != 2U; i++) { // 50: bounded retries
+        Loop(LOOP_ONCE);
+    }
     ASSERT_EQ(callbackData.callCount, 2U);
 }

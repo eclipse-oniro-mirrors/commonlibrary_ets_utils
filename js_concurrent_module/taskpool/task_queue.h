@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASK_QUEUE_H
 
+#include <cstdint>
 #include <list>
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {

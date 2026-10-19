@@ -128,8 +128,12 @@ ohos_shared_library("taskpool") {
     external_deps += [ "qos_manager:qos" ]
   }
 
-  if (is_linux && current_toolchain == host_toolchain) {
-    external_deps += [ "innerkits:libhilog_linux" ]
+  # libhilog_linux is not a registered innerapi (the "innerkits:" component
+  # does not exist and a raw cross-part label fails deps validation), so the
+  # SDK host branch links hilog:libhilog, whose is_linux branch compiles the
+  # same libhilog_source_linux host implementation.
+  if (is_linux && current_toolchain == host_toolchain && product_name == "ohos-sdk") {
+    external_deps += [ "hilog:libhilog" ]
     defines = [
       "LINUX_PLATFORM",
       "PREVIEW",
@@ -232,6 +236,26 @@ ohos_source_set("taskpool_static") {
       defines += [ "ENABLE_QOS" ]
       external_deps += [ "qos_manager:qos" ]
     }
+  }
+
+  if (is_linux && current_toolchain == host_toolchain) {
+    # host(Linux) UT: strip deps not available on the host toolchain.
+    defines += [
+      "LINUX_PLATFORM",
+      "PREVIEW",
+      "ETS_UTILS_HOST_UT",
+    ]
+    external_deps -= [
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+    ]
+    # OHOS-only feature blocks that use some module-level variables are disabled
+    # on the host toolchain, so silence the unused-variable diagnostics for the
+    # host build of these sources instead of annotating them in product code.
+    cflags_cc = [
+      "-Wno-unused-variable",
+      "-Wno-unused-const-variable",
+    ]
   }
 
   subsystem_name = "commonlibrary"
