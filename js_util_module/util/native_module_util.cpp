@@ -444,7 +444,10 @@ namespace OHOS::Util {
         napi_get_cb_info(env, info, &tempArgc, nullptr, &thisVar, nullptr);
         size_t argc = 0;
         void *dataPara = nullptr;
-        napi_typedarray_type type;
+        // Initialize the typed-array type: napi_get_typedarray_info leaves the out
+        // param untouched for non-TypedArray arguments, and comparing an
+        // uninitialized enum below would be undefined behavior.
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *data = nullptr;
         napi_value arraybuffer = nullptr;
@@ -461,7 +464,9 @@ namespace OHOS::Util {
             argc = 1;
             napi_value argv = nullptr;
             napi_get_cb_info(env, info, &argc, &argv, nullptr, &dataPara);
-            napi_get_typedarray_info(env, argv, &type, &length, &data, &arraybuffer, &byteOffset);
+            if (napi_get_typedarray_info(env, argv, &type, &length, &data, &arraybuffer, &byteOffset) != napi_ok) {
+                type = napi_int8_array;
+            }
             if (type != napi_uint8_array) {
                 return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
             }
@@ -470,7 +475,10 @@ namespace OHOS::Util {
             argc = 2; // 2: The number of parameters is 2.
             napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
             napi_get_cb_info(env, info, &argc, argvArr, nullptr, &dataPara);
-            napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset);
+            if (napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset)
+                != napi_ok) {
+                type = napi_int8_array;
+            }
             if (type != napi_uint8_array) {
                 return ThrowError(env, "Parameter error. The type of first Parameter must be Uint8Array.");
             }
@@ -497,7 +505,7 @@ namespace OHOS::Util {
         napi_get_cb_info(env, info, &tempArgc, nullptr, &thisVar, nullptr);
         size_t argc = 0;
         void *dataPara = nullptr;
-        napi_typedarray_type type;
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *data = nullptr;
         napi_value arraybuffer = nullptr;
@@ -514,7 +522,9 @@ namespace OHOS::Util {
             napi_value argv = nullptr;
             napi_get_cb_info(env, info, &argc, &argv, nullptr, &dataPara);
             // first para
-            napi_get_typedarray_info(env, argv, &type, &length, &data, &arraybuffer, &byteOffset);
+            if (napi_get_typedarray_info(env, argv, &type, &length, &data, &arraybuffer, &byteOffset) != napi_ok) {
+                type = napi_int8_array;
+            }
             if (type != napi_uint8_array) {
                 return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
             }
@@ -524,7 +534,10 @@ namespace OHOS::Util {
             napi_value argvArr[2] = { 0 }; // 2:The number of parameters is 2
             napi_get_cb_info(env, info, &argc, argvArr, nullptr, &dataPara);
             // first para
-            napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset);
+            if (napi_get_typedarray_info(env, argvArr[0], &type, &length, &data, &arraybuffer, &byteOffset)
+                != napi_ok) {
+                type = napi_int8_array;
+            }
             // second para
             if (type != napi_uint8_array) {
                 return ThrowError(env, "Parameter error. The type of Parameter must be string.");
@@ -727,12 +740,16 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
         napi_valuetype valuetype0;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype0));
-        napi_typedarray_type valuetype1;
+        // Initialize the typed-array type to avoid reading an uninitialized enum.
+        napi_typedarray_type valuetype1 = napi_int8_array;
         size_t length = 0;
         void *data = nullptr;
         napi_value arraybuffer = nullptr;
         size_t byteOffset = 0;
-        napi_get_typedarray_info(env, args[1], &valuetype1, &length, &data, &arraybuffer, &byteOffset);
+        if (napi_get_typedarray_info(env, args[1], &valuetype1, &length, &data, &arraybuffer, &byteOffset)
+            != napi_ok) {
+            valuetype1 = napi_int8_array;
+        }
         if (valuetype0 != napi_string) {
             return ThrowError(env, "Parameter error. The type of Parameter must be string.");
         }

@@ -20,6 +20,7 @@
 #include "helper/hitrace_helper.h"
 #include "sequence_runner_manager.h"
 #include "taskpool.h"
+#include "tools/security_fault_reporter.h"
 #include "worker.h"
 #if defined(ENABLE_CONCURRENCY_INTEROP)
 #include "napi/native_node_hybrid_api.h"
@@ -1509,8 +1510,20 @@ void Task::InitHandle(napi_env env)
     }
 #endif
     uv_loop_t* loop = NapiHelper::GetLibUV(env);
-    ConcurrentHelper::UvHandleInit(loop, onStartCancelSignal_, Task::Cancel);
-    ConcurrentHelper::UvHandleInit(loop, onStartDiscardSignal_, Task::DiscardTask);
+    if (ConcurrentHelper::UvHandleInit(loop, onStartCancelSignal_, Task::Cancel) != 0) {
+        // uv_async_init failed: the raw handle is not owned by libuv, release it here
+        // and keep it nullptr so later sends/closes are skipped safely.
+        HILOG_ERROR("taskpool:: uv_async_init onStartCancelSignal_ failed");
+        ReportEtsUtilsIncompatibleEvent("Task::InitHandle", "uv-async-init-failed");
+        delete onStartCancelSignal_;
+        onStartCancelSignal_ = nullptr;
+    }
+    if (ConcurrentHelper::UvHandleInit(loop, onStartDiscardSignal_, Task::DiscardTask) != 0) {
+        HILOG_ERROR("taskpool:: uv_async_init onStartDiscardSignal_ failed");
+        ReportEtsUtilsIncompatibleEvent("Task::InitHandle", "uv-async-init-failed");
+        delete onStartDiscardSignal_;
+        onStartDiscardSignal_ = nullptr;
+    }
     auto engine = reinterpret_cast<NativeEngine*>(env);
     isMainThreadTask_ = engine->IsMainThread();
 }
@@ -1834,6 +1847,10 @@ void Task::DiscardInner(DiscardTaskMessage* message)
         error = TaskManager::GetInstance().CancelError(task->env_, message->errCode);
     } else {
         error = ErrorHelper::NewError(task->env_, message->errCode);
+    }
+    if (task->currentTaskInfo_ == nullptr || task->currentTaskInfo_->deferred == nullptr) {
+        HILOG_ERROR("taskpool:: DiscardInner currentTaskInfo_ or deferred is nullptr");
+        ReportEtsUtilsIncompatibleEvent("Task::DiscardInner", "null-deferred");
     }
     napi_reject_deferred(task->env_, task->currentTaskInfo_->deferred, error);
     DisposeCanceledTask();

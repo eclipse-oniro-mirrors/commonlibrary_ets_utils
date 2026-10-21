@@ -42,4 +42,23 @@ inline void ReportEtsUtilsSecurityFault(const std::string &funcName, const std::
 #endif
 }
 
+// Detection-only helper for incompatible API usage: prints an error log and reports the
+// ARK_INCOMPATIBLE_EVENT HiSysEvent (STATISTIC). Never throws and never changes the caller's
+// control flow - callers must fall through and keep the original behavior.
+// Drop-in counterpart of ReportEtsUtilsSecurityFault (identical signature); differs only in
+// event classification (STATISTIC incompatible event vs FAULT security event), modeled on
+// ets_runtime's DFXHiSysEvent::SendRuntimeIncompatibleEvent (STATISTIC incompatible event).
+inline void ReportEtsUtilsIncompatibleEvent(const std::string &funcName, const std::string &errorType,
+                                            int32_t offset = -1, int32_t length = -1)
+{
+    HILOG_ERROR("EtsUtilsIncompatibleEvent: %{public}s detected %{public}s, offset: %{public}d, length: %{public}d",
+                funcName.c_str(), errorType.c_str(), offset, length);
+#ifdef ENABLE_ETS_UTILS_HISYSEVENT
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::ARKTS_TASKPOOL,
+        "ARK_INCOMPATIBLE_EVENT", OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "PID", getpid(), "TID", static_cast<int32_t>(syscall(SYS_gettid)),
+        "FUNCTION_NAME", funcName, "ERROR_TYPE", errorType, "OFFSET", offset, "LENGTH", length);
+#endif
+}
+
 #endif  // COMMONLIBRARY_ETS_UTILS_TOOLS_SECURITY_FAULT_REPORTER_H

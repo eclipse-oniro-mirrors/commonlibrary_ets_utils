@@ -15,6 +15,7 @@
 
 #include "js_xml.h"
 #include "securec.h"
+#include "tools/security_fault_reporter.h"
 namespace OHOS::xml {
     static const napi_type_tag xmlPullParserTypeTag = {
         0x8c52521acad34763,  // lower
@@ -199,6 +200,14 @@ namespace OHOS::xml {
     {
         out_ = "";
         size_t iLenTemp = 0;
+        if (depth_ == 0) {
+            // New guard branch (original branches below stay untouched): an
+            // unbalanced endElement() underflows depth_ and the following loops and
+            // elementStack indexing run far out of range. Detection only - report
+            // and skip the write, no original variable is modified.
+            ReportEtsUtilsIncompatibleEvent("XmlSerializer::EndElement", "unbalanced-end-element",
+                                            static_cast<int32_t>(depth_));
+        }
         if (type == "isStart" || type == "isAttri") {
             SplicNsp();
             out_.append("/>");
@@ -1302,6 +1311,10 @@ namespace OHOS::xml {
         ParseStartTag(true, true);
         if (attriCount_ < 1 || attributes[2] != "version") { // 2: number of args
             xmlPullParserError_ = "version expected";
+        }
+        if (attriCount_ < 1) {
+            ReportEtsUtilsIncompatibleEvent("XmlPullParser::ParseDeclaration", "missing-version-attribute",
+                                            static_cast<int32_t>(attriCount_));
         }
         version_ = attributes[3]; // 3: number of args
         size_t pos = 1;
