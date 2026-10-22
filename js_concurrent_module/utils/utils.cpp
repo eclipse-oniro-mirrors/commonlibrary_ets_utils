@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 #include "condition/condition_manager.h"
-#include "locks/async_lock_manager.h"
 #include "json/json_manager.h"
+#include "locks/async_lock_manager.h"
 #include "tools/log.h"
 #include "utils.h"
 
@@ -48,6 +48,16 @@ napi_value Utils::Init(napi_env env, napi_value exports)
     Commonlibrary::Concurrent::JsonManager::Init(env, exports);
     Commonlibrary::Concurrent::Condition::ConditionManager::Init(env, exports);
     InitGlobal(env, IS_SENDABLE_NAME, true, exports);
+
+    napi_value global = nullptr;
+    napi_value atomics = nullptr;
+    napi_valuetype atomicsType = napi_undefined;
+    NAPI_CALL(env, napi_get_global(env, &global));
+    NAPI_CALL(env, napi_get_named_property(env, global, "SendableAtomics", &atomics));
+    NAPI_CALL(env, napi_typeof(env, atomics, &atomicsType));
+    if (atomicsType == napi_object) {
+        NAPI_CALL(env, napi_set_named_property(env, exports, "Atomics", atomics));
+    }
 
     return exports;
 }

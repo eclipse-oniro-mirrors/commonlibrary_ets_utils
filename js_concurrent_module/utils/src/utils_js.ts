@@ -18,6 +18,7 @@ let locks = helpUtil.locks;
 let ASON = helpUtil.ASON;
 let ConditionVariable = helpUtil.ConditionVariable;
 let isSendable = helpUtil.isSendable;
+let Atomics = helpUtil.Atomics;
 
 export const typeErrorCode = 401;
 export class BusinessError extends Error {
@@ -267,4 +268,5 @@ export default {
   ASON: ASON,
   ConditionVariable: ConditionVariable,
   isSendable: isSendable,
+  Atomics: Atomics,
 };
