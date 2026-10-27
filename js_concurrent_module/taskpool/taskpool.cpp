@@ -20,6 +20,7 @@
 #include "helper/hitrace_helper.h"
 #include "sequence_runner_manager.h"
 #include "task_group_manager.h"
+#include "tools/security_fault_reporter.h"
 #if defined(ENABLE_CONCURRENCY_INTEROP)
 #include "napi/native_node_hybrid_api.h"
 #endif
@@ -989,7 +990,11 @@ napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)
         return undefined;
     }
     napi_value result = nullptr;
-    napi_get_reference_value(env, task->taskRef_, &result);
+    napi_status refStatus = napi_get_reference_value(env, task->taskRef_, &result);
+    if (refStatus != napi_ok || result == nullptr) {
+        HILOG_ERROR("taskpool:: get task reference failed, status: %{public}d", static_cast<int>(refStatus));
+        ReportEtsUtilsIncompatibleEvent("TaskPool::GetTask", "get-reference-failed", static_cast<int32_t>(refStatus));
+    }
     return result;
 }
 

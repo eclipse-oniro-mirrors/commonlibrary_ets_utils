@@ -18,6 +18,7 @@
 #include <map>
 #include "securec.h"
 #include "tools/log.h"
+#include "tools/security_fault_reporter.h"
 
 namespace OHOS::Util {
 static thread_local unsigned char g_uuidCache[MAX_CACHE_MASK * UUID_SIZE];
@@ -101,7 +102,10 @@ unsigned char ConvertBits(std::string &input)
 
 bool GenerateUUID(unsigned char *data, int32_t size)
 {
-    RAND_priv_bytes(data, size);
+    if (RAND_priv_bytes(data, size) != 1) {
+        HILOG_ERROR("Util:: RAND_priv_bytes failed, secure random generation failed");
+        ReportEtsUtilsIncompatibleEvent("UUID::GenerateUUID", "rand-priv-bytes-failed", size);
+    }
     return true;
 }
 

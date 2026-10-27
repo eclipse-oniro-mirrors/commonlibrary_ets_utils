@@ -15,6 +15,7 @@
 
 #include "js_convertxml.h"
 #include "tools/log.h"
+#include "tools/security_fault_reporter.h"
 namespace OHOS::Xml {
     std::string ConvertXml::GetNodeType(const xmlElementType enumType) const
     {
@@ -363,8 +364,13 @@ namespace OHOS::Xml {
             xmlFreeDoc(doc);
             DealSingleLine(env, strXml, object, isLarge || isFast);
             const xmlError* err = xmlGetLastError();
-            const char* message = err->message;
-            HILOG_ERROR("ConvertXml:: XMLParseMemory execution failed, reason for failure: %{public}s", message);
+            if (err != nullptr && err->message != nullptr) {
+                HILOG_ERROR("ConvertXml:: XMLParseMemory execution failed, reason for failure: %{public}s",
+                            err->message);
+            } else {
+                HILOG_ERROR("ConvertXml:: XMLParseMemory execution failed, no error detail available");
+                ReportEtsUtilsIncompatibleEvent("ConvertXml::Convert", "no-error-detail");
+            }
             return object;
         }
         napi_value subObject = nullptr;

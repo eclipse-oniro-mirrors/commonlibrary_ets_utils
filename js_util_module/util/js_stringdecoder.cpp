@@ -46,7 +46,7 @@ StringDecoder::StringDecoder(const std::string &encoding)
 
 napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
 {
-    napi_typedarray_type type;
+    napi_typedarray_type type = napi_int8_array;
     size_t length = 0;
     void *data = nullptr;
     size_t byteOffset = 0;
@@ -58,7 +58,11 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
             "Parameter error. The type of Parameter must be Uint8Array or string.");
         return nullptr;
     }
-    napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset);
+    if (napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset) != napi_ok) {
+        // Keep the out-params deterministic on failure instead of reading
+        // uninitialized values below (length/data are pre-initialized above).
+        type = napi_int8_array;
+    }
     const char *source = static_cast<char*>(data);
     const char *sourceStart = source;
     size_t limit = static_cast<size_t>(ucnv_getMinCharSize(conv_)) * length;
@@ -116,6 +120,7 @@ napi_value StringDecoder::End(napi_env env)
     UBool flush = true;
     ucnv_toUnicode(conv_, &target, targetEnd, &src, sourceEnd, nullptr, flush, &errorCode);
     if (U_FAILURE(errorCode)) {
+        ReportEtsUtilsIncompatibleEvent("StringDecoder::End", "truncated-tail", pendingLen_);
         std::string err = "decoder error, ";
         err += u_errorName(errorCode);
         napi_throw_error(env, ERROR_CODE, err.c_str());

@@ -27,6 +27,7 @@ void Buffer::Init(uint32_t size)
         if (raw_ == nullptr) {
             HILOG_FATAL("Buffer:: constructor malloc failed");
             length_ = 0;
+            ReportEtsUtilsIncompatibleEvent("Buffer::Init", "malloc-failed", size);
         }
     }
     length_ = size;
@@ -461,6 +462,11 @@ void Buffer::FillBuffer(Buffer *buffer, unsigned int offset, unsigned int end)
     if (end - offset <= 0) {
         return;
     }
+    if (buffer->GetLength() == 0) {
+        // New guard branch (the original return above stays untouched): an empty
+        // pattern never advances the offset, the loop below would spin forever.
+        ReportEtsUtilsIncompatibleEvent("Buffer::FillBuffer", "empty-pattern");
+    }
     unsigned int loop = buffer->GetLength() > end - offset ? end - offset : buffer->GetLength();
 
     while (offset < end) {
@@ -481,6 +487,11 @@ void Buffer::FillNumber(vector<uint8_t> numbers, unsigned int offset, unsigned i
     }
     if (end - offset <= 0) {
         return;
+    }
+    if (numbers.empty()) {
+        // New guard branch (the original return above stays untouched): an empty
+        // pattern never advances the offset, the loop below would spin forever.
+        ReportEtsUtilsIncompatibleEvent("Buffer::FillNumber", "empty-pattern");
     }
     unsigned int loop = numbers.size() > end - offset ? end - offset : numbers.size();
 
@@ -550,7 +561,7 @@ std::string Buffer::ToBase64(uint32_t start, uint32_t length)
         return "";
     }
     ReportFaults("Buffer::ToBase64", "out-of-range", start, length);
-    uint8_t *data = new (std::nothrow) uint8_t[length];
+    uint8_t *data = new (std::nothrow) uint8_t[length]();
     if (data == nullptr) {
         HILOG_ERROR("Buffer:: memory allocation failed.");
         return "";
@@ -569,7 +580,7 @@ std::string Buffer::ToBase64Url(uint32_t start, uint32_t length)
         return "";
     }
     ReportFaults("Buffer::ToBase64Url", "out-of-range", start, length);
-    uint8_t *data = new (std::nothrow) uint8_t[length];
+    uint8_t *data = new (std::nothrow) uint8_t[length]();
     if (data == nullptr) {
         HILOG_ERROR("Buffer:: memory allocation failed.");
         return "";

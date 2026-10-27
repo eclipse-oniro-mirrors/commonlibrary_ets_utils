@@ -19,6 +19,7 @@
 #include <string>
 #include "condition_variable.h"
 #include "helper/napi_helper.h"
+#include "tools/security_fault_reporter.h"
 
 namespace Commonlibrary::Concurrent::Condition {
 
@@ -105,13 +106,21 @@ void ConditionVariable::FinishTask(bool finishAll)
     while (!tasks_.empty()) {
         ConditionTask *task = tasks_.front();
         tasks_.pop_front();
-        napi_send_event(
+        napi_status sendStatus = napi_send_event(
             task->GetEnv(),
             [cond = this, task]() {
                 task->Finish(ConditionTaskFinishReason::NOTIFY);
                 cond->TryRemoveCondition();
             },
             napi_eprio_immediate);
+        if (sendStatus != napi_ok) {
+            // The queued task can never be finished: report it instead of silently
+            // leaking the pending reference.
+            HILOG_ERROR("ConditionVariable:: napi_send_event failed, status: %{public}d",
+                        static_cast<int>(sendStatus));
+            ReportEtsUtilsIncompatibleEvent("ConditionVariable::FinishTask", "send-event-failed",
+                                            static_cast<int32_t>(sendStatus));
+        }
         if (!finishAll) {
             break;
         }

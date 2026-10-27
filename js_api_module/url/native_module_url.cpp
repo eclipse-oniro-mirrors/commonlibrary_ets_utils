@@ -14,6 +14,7 @@
  */
 
 #include "native_module_url.h"
+#include "tools/security_fault_reporter.h"
 #include "tools/log.h"
 #include "url_helper.h"
 
@@ -135,6 +136,17 @@ namespace OHOS::Url {
             }
         } else if (argc == 2) { // 2:When the input parameter is set to 2
             UrlStructor(env, info, object);
+        }
+        if (object == nullptr) {
+            // Wrapping a nullptr keeps the constructor "succeeding" (historical
+            // behavior) but every later getter would dereference null. Fall back to
+            // an empty URL so the instance stays usable instead of crashing.
+            HILOG_ERROR("UrlStructor:: invalid parameter, create an empty URL instead");
+            ReportEtsUtilsIncompatibleEvent("UrlConstructor", "invalid-parameter-fallback");
+            object = new (std::nothrow) URL("");
+            if (object == nullptr) {
+                HILOG_ERROR("UrlStructor:: memory allocation failed, object is nullptr");
+            }
         }
         napi_status status = napi_wrap_s(env, thisVar, object,
             [](napi_env environment, void *data, void *hint) {

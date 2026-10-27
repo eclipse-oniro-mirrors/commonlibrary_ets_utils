@@ -924,6 +924,11 @@ static napi_value ToUtf8(napi_env env, napi_callback_info info)
     uint32_t end = 0;
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &start));
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &end));
+    if (end < start) {
+        // "end - start" underflows below. Detection only: the original flow is kept
+        // (the TS layer validates the range before reaching here).
+        ReportEtsUtilsIncompatibleEvent("ToUtf8", "out-of-range", start, end);
+    }
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void**>(&buf)));
     uint32_t length = end - start;
@@ -938,6 +943,7 @@ static napi_value ToUtf8(napi_env env, napi_callback_info info)
 static napi_value ToBase64(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
+    napi_value result = nullptr;
     size_t argc = 2;
     napi_value args[2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
@@ -945,11 +951,15 @@ static napi_value ToBase64(napi_env env, napi_callback_info info)
     uint32_t end = 0;
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &start));
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &end));
+    if (end < start) {
+        // "end - start" underflows below. Detection only: the original flow is kept
+        // (the TS layer validates the range before reaching here).
+        ReportEtsUtilsIncompatibleEvent("ToBase64", "out-of-range", start, end);
+    }
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void**>(&buf)));
     uint32_t length = end - start;
     std::string str = buf->ToBase64(start, length);
-    napi_value result = nullptr;
     napi_create_string_latin1(env, str.c_str(), str.length(), &result);
     return result;
 }
@@ -957,6 +967,7 @@ static napi_value ToBase64(napi_env env, napi_callback_info info)
 static napi_value ToBase64Url(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
+    napi_value result = nullptr;
     size_t argc = 2;
     napi_value args[2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr));
@@ -964,11 +975,15 @@ static napi_value ToBase64Url(napi_env env, napi_callback_info info)
     uint32_t end = 0;
     NAPI_CALL(env, napi_get_value_uint32(env, args[0], &start));
     NAPI_CALL(env, napi_get_value_uint32(env, args[1], &end));
+    if (end < start) {
+        // "end - start" underflows below. Detection only: the original flow is kept
+        // (the TS layer validates the range before reaching here).
+        ReportEtsUtilsIncompatibleEvent("ToBase64Url", "out-of-range", start, end);
+    }
     Buffer *buf = nullptr;
     NAPI_CALL(env, napi_unwrap_s(env, thisVar, &bufferTypeTag, reinterpret_cast<void**>(&buf)));
     uint32_t length = end - start;
     std::string str = buf->ToBase64Url(start, length);
-    napi_value result = nullptr;
     napi_create_string_latin1(env, str.c_str(), str.length(), &result);
     return result;
 }

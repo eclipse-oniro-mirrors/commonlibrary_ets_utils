@@ -88,10 +88,15 @@ namespace OHOS::Util {
     /* base64 encode */
     napi_value Base64::EncodeSync(napi_env env, napi_value src, Type valueType)
     {
-        napi_typedarray_type type;
+        // Initialize the out-param and re-check on failure: napi_get_typedarray_info
+        // leaves it untouched when the argument is not a TypedArray, and reading an
+        // uninitialized enum below would be undefined behavior.
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
+        if (napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr) != napi_ok) {
+            type = napi_int8_array;
+        }
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
@@ -121,10 +126,13 @@ namespace OHOS::Util {
     /* base64 encodeToString */
     napi_value Base64::EncodeToStringSync(napi_env env, napi_value src, Type valueType)
     {
-        napi_typedarray_type type;
+        // Same pattern as EncodeSync: never read an uninitialized typed-array type.
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
+        if (napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr) != napi_ok) {
+            type = napi_int8_array;
+        }
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
@@ -181,6 +189,7 @@ namespace OHOS::Util {
             size_t readLen = 0;
             if (g_base64EncodeFunc(input, inputLen, ret, outputLen, &readLen, &outputLen, options) != EOK) {
                 HILOG_ERROR("Base64::EncodeAchieve result is error");
+                FreeMemory(ret);
                 return nullptr;
             }
             return ret;
@@ -251,12 +260,15 @@ namespace OHOS::Util {
     {
         napi_valuetype valuetype = napi_undefined;
         napi_typeof(env, src, &valuetype);
-        napi_typedarray_type type;
+        // Same pattern as EncodeSync: never read an uninitialized typed-array type.
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *resultData = nullptr;
         char *inputString = nullptr;
         if (valuetype != napi_valuetype::napi_string) {
-            napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
+            if (napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr) != napi_ok) {
+                type = napi_int8_array;
+            }
         }
         if (valuetype == napi_valuetype::napi_string) {
             size_t prolen = 0;
@@ -444,10 +456,12 @@ namespace OHOS::Util {
 
     napi_value Base64::Encode(napi_env env, napi_value src, Type valueType)
     {
-        napi_typedarray_type type;
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
+        if (napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr) != napi_ok) {
+            type = napi_int8_array;
+        }
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
@@ -465,10 +479,12 @@ namespace OHOS::Util {
     
     napi_value Base64::EncodeToString(napi_env env, napi_value src, Type valueType)
     {
-        napi_typedarray_type type;
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *resultData = nullptr;
-        napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr);
+        if (napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr) != napi_ok) {
+            type = napi_int8_array;
+        }
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
                 "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
@@ -563,6 +579,7 @@ namespace OHOS::Util {
             if (g_base64EncodeFunc(input, inputLen, ret, outputLen,
                 &readLen, &encodeInfo->soutputLen, options) != EOK) {
                 HILOG_ERROR("EncodeAchieves result is error");
+                FreeMemory(ret);
                 return nullptr;
             }
             return ret;
@@ -697,7 +714,7 @@ namespace OHOS::Util {
     {
         napi_valuetype valuetype = napi_undefined;
         napi_typeof(env, src, &valuetype);
-        napi_typedarray_type type;
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *resultData = nullptr;
         char *inputString = nullptr;
@@ -738,6 +755,7 @@ namespace OHOS::Util {
         }
         if (stdDecodeInfo_ == nullptr) {
             HILOG_ERROR("Base64:: Decode return promise failed, stdDecodeInfo_ is nullptr");
+            FreeMemory(inputString);
             return nullptr;
         }
         return stdDecodeInfo_->promise;

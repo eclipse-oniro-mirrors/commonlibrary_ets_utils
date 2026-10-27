@@ -15,6 +15,7 @@
 
 #include "js_blob.h"
 #include "securec.h"
+#include "tools/security_fault_reporter.h"
 using namespace std;
 
 namespace OHOS::buffer {
@@ -80,6 +81,11 @@ void Blob::Init(Blob *blob, int start, int end)
     } else {
         this->length_ = length;
         if (start >= 0) {
+            if (start + length > blob->length_) {
+                // The window reads past the source blob. Detection only, the
+                // original read below is kept.
+                ReportEtsUtilsIncompatibleEvent("Blob::Init", "out-of-range", start, end);
+            }
             if ((blob->raw_ + start) == nullptr) {
                 HILOG_FATAL("Blob:: constructor(start >= 0, end) memcpy_s failed");
                 return;
@@ -88,6 +94,14 @@ void Blob::Init(Blob *blob, int start, int end)
                 HILOG_FATAL("Blob:: constructor(start >= 0, end) memcpy_s failed");
             }
         } else {
+            int srcLen = static_cast<int>(blob->length_);
+            long srcOff = static_cast<long>(srcLen) + static_cast<long>(start);
+            if (srcOff < 0) {
+                // start < -source_length wraps the source pointer before the start
+                // of the allocation (wild pointer). Detected and reported only,
+                // the original read below is kept.
+                ReportEtsUtilsIncompatibleEvent("Blob::Init", "start-out-of-range", start, end);
+            }
             if ((blob->raw_ + blob->length_ + start) == nullptr) {
                 HILOG_FATAL("Blob:: constructor(start, end) memcpy_s failed");
                 return;

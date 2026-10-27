@@ -1887,7 +1887,7 @@ void Worker::HostOnGlobalCallInner()
     MessageDataType data = nullptr;
     uint32_t currentCallId = 0;
     size_t size = hostGlobalCallQueue_.GetSize();
-    if (size < 0 || size > GLOBAL_CALL_MAX_COUNT) {
+    if (size > GLOBAL_CALL_MAX_COUNT) {
         HILOG_ERROR("worker:: hostGlobalCallQueue_ size error");
         globalCallSuccess_ = false;
         cv_.notify_one();

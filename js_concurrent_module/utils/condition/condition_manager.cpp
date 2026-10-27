@@ -16,6 +16,7 @@
 #include "condition_manager.h"
 #include "condition_variable.h"
 #include "helper/error_helper.h"
+#include "tools/security_fault_reporter.h"
 
 namespace Commonlibrary::Concurrent::Condition {
 
@@ -52,8 +53,17 @@ napi_value ConditionManager::Wait(napi_env env, napi_callback_info cbinfo)
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
 
-    ConditionVariable *cond;
-    napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
+    ConditionVariable *cond = nullptr;
+    napi_status status = napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
+    if (status != napi_ok) {
+        HILOG_ERROR("ConditionManager:: Wait unwrap failed, this is not a ConditionVariable instance");
+        ReportEtsUtilsIncompatibleEvent("ConditionManager::Wait", "unwrap-failed");
+    }
+    if (cond == nullptr) {
+        HILOG_ERROR("ConditionManager:: Wait unwrap failed, cond is nullptr");
+        ReportEtsUtilsIncompatibleEvent("ConditionManager::Wait", "cond-nullptr");
+        return nullptr;
+    }
     napi_deferred deferred;
     napi_value promise;
     NAPI_CALL(env, napi_create_promise(env, &deferred, &promise));
@@ -84,8 +94,17 @@ napi_value ConditionManager::WaitFor(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
 
-    ConditionVariable *cond;
-    napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
+    ConditionVariable *cond = nullptr;
+    napi_status unwrapStatus = napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
+    if (unwrapStatus != napi_ok) {
+        HILOG_ERROR("ConditionManager:: WaitFor unwrap failed, this is not a ConditionVariable instance");
+        ReportEtsUtilsIncompatibleEvent("ConditionManager::WaitFor", "unwrap-failed");
+    }
+    if (cond == nullptr) {
+        HILOG_ERROR("ConditionManager:: WaitFor unwrap failed, cond is nullptr");
+        ReportEtsUtilsIncompatibleEvent("ConditionManager::WaitFor", "cond-nullptr");
+        return nullptr;
+    }
     napi_deferred deferred;
     napi_value promise;
     NAPI_CALL(env, napi_create_promise(env, &deferred, &promise));
@@ -103,8 +122,17 @@ napi_value ConditionManager::NotifyAll(napi_env env, napi_callback_info cbinfo)
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
 
-    ConditionVariable *cond;
-    napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
+    ConditionVariable *cond = nullptr;
+    napi_status status = napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
+    if (status != napi_ok) {
+        HILOG_ERROR("ConditionManager:: NotifyAll unwrap failed, this is not a ConditionVariable instance");
+        ReportEtsUtilsIncompatibleEvent("ConditionManager::NotifyAll", "unwrap-failed");
+    }
+    if (cond == nullptr) {
+        HILOG_ERROR("ConditionManager:: NotifyAll unwrap failed, cond is nullptr");
+        ReportEtsUtilsIncompatibleEvent("ConditionManager::NotifyAll", "cond-nullptr");
+        return nullptr;
+    }
 
     cond->FinishTask(true);
     return nullptr;
@@ -115,8 +143,17 @@ napi_value ConditionManager::NotifyOne(napi_env env, napi_callback_info cbinfo)
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr);
 
-    ConditionVariable *cond;
-    napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
+    ConditionVariable *cond = nullptr;
+    napi_status status = napi_unwrap_sendable(env, thisVar, reinterpret_cast<void **>(&cond));
+    if (status != napi_ok) {
+        HILOG_ERROR("ConditionManager:: NotifyOne unwrap failed, this is not a ConditionVariable instance");
+        ReportEtsUtilsIncompatibleEvent("ConditionManager::NotifyOne", "unwrap-failed");
+    }
+    if (cond == nullptr) {
+        HILOG_ERROR("ConditionManager:: NotifyOne unwrap failed, cond is nullptr");
+        ReportEtsUtilsIncompatibleEvent("ConditionManager::NotifyOne", "cond-nullptr");
+        return nullptr;
+    }
 
     cond->FinishTask();
     return nullptr;

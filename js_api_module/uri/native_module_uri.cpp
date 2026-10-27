@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "native_module_uri.h"
+#include "tools/security_fault_reporter.h"
 #include "tools/log.h"
 
 extern const char _binary_js_uri_js_start[];
@@ -46,6 +47,17 @@ namespace OHOS::Uri {
             if (object == nullptr) {
                 HILOG_ERROR("UriConstructor:: memory allocation failed, object is nullptr");
                 return nullptr;
+            }
+        }
+        if (object == nullptr) {
+            // Wrapping a nullptr keeps the constructor "succeeding" (historical
+            // behavior) but every later method call would dereference null. Fall back
+            // to an empty Uri so the instance stays usable instead of crashing.
+            HILOG_ERROR("UriConstructor:: invalid parameter, create an empty Uri instead");
+            ReportEtsUtilsIncompatibleEvent("UriConstructor", "invalid-parameter-fallback");
+            object = new (std::nothrow) Uri("");
+            if (object == nullptr) {
+                HILOG_ERROR("UriConstructor:: memory allocation failed, object is nullptr");
             }
         }
         NAPI_CALL(env, napi_wrap_s(env, thisVar, object,

@@ -99,7 +99,7 @@ namespace OHOS::Util {
         flags |= (iflag ? 0 : static_cast<uint8_t>(ConverterFlags::FLUSH_FLG));
         UBool flush = ((flags & static_cast<uint8_t>(ConverterFlags::FLUSH_FLG))) ==
         static_cast<uint8_t>(ConverterFlags::FLUSH_FLG);
-        napi_typedarray_type type;
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *data = nullptr;
         size_t byteOffset = 0;
@@ -129,6 +129,7 @@ namespace OHOS::Util {
         UErrorCode codeFlag = U_ZERO_ERROR;
         ucnv_toUnicode(GetConverterPtr(), &target, target + len, &source, source + length, nullptr, flush, &codeFlag);
         if (codeFlag != U_ZERO_ERROR) {
+            FreedMemory(arr);
             return ThrowError(env, "TextDecoder decoding error.");
         }
         size_t resultLength = 0;
@@ -184,12 +185,14 @@ namespace OHOS::Util {
         flags |= (iflag ? 0 : static_cast<uint8_t>(ConverterFlags::FLUSH_FLG));
         UBool flush = (flags & static_cast<uint8_t>(ConverterFlags::FLUSH_FLG)) ==
             static_cast<uint8_t>(ConverterFlags::FLUSH_FLG);
-        napi_typedarray_type type;
+        napi_typedarray_type type = napi_int8_array;
         size_t length = 0;
         void *data = nullptr;
         size_t byteOffset = 0;
         napi_value arrayBuffer = nullptr;
-        napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset);
+        if (napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset) != napi_ok) {
+            type = napi_int8_array;
+        }
         const char *source = static_cast<char *>(data);
         size_t limit = GetMinByteSize() * length;
         size_t len = limit * sizeof(UChar);
