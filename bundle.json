@@ -142,7 +142,8 @@
                 "//commonlibrary/ets_utils/js_util_module/util/test:unittest",
                 "//commonlibrary/ets_utils/js_sys_module/console/test:unittest",
                 "//commonlibrary/ets_utils/js_sys_module/timer/test:unittest",
-                "//commonlibrary/ets_utils/js_sys_module/test:unittest"
+                "//commonlibrary/ets_utils/js_sys_module/test:unittest",
+                "//commonlibrary/ets_utils:ets_utils_host_unittest"
             ]
         }
     }

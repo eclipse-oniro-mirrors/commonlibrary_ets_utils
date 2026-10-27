@@ -749,16 +749,14 @@ public:
         worker->isMainThreadWorker_ = true;
         worker->isLimitedWorker_ = false;
         worker->PublishWorkerOverSignal();
-        worker->PostWorkerErrorTask();
-        worker->PostWorkerMessageTask();
-        worker->PostWorkerGlobalCallTask();
-        worker->PostWorkerExceptionTask();
         worker->EraseWorker();
+#if defined(ENABLE_WORKER_EVENTHANDLER)
         worker->PostWorkerOverTask();
         worker->PostWorkerErrorTask();
         worker->PostWorkerMessageTask();
         worker->PostWorkerGlobalCallTask();
         worker->PostWorkerExceptionTask();
+#endif
     }
 
     static void TestWorkerOnMessageInner(Worker *worker, napi_env env)
@@ -2141,6 +2139,20 @@ HWTEST_F(WorkersTest, WorkerTest004, testing::ext::TestSize.Level0)
     ASSERT_TRUE(success);
 }
 
+#if defined(ENABLE_QOS)
+// QOS level updates come from the resource schedule service, which only
+// exists on OHOS devices.
+static void AssertQosLevelUpdated(Worker* worker)
+{
+    // 200: max ms to wait for a qos level update callback before checking it
+    constexpr unsigned int QOS_CALLBACK_WAIT_MS = 200;
+    bool qosUpdated = false;
+    worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
+    uv_sleep(QOS_CALLBACK_WAIT_MS);
+    ASSERT_TRUE(qosUpdated);
+}
+#endif
+
 HWTEST_F(WorkersTest, WorkerTest005, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
@@ -2176,10 +2188,9 @@ HWTEST_F(WorkersTest, WorkerTest005, testing::ext::TestSize.Level0)
         napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &result);
         Worker* worker = nullptr;
         napi_unwrap(workerEnv, result, reinterpret_cast<void**>(&worker));
-        bool qosUpdated = false;
-        worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
-        uv_sleep(200);
-        ASSERT_TRUE(qosUpdated);
+#if defined(ENABLE_QOS)
+        AssertQosLevelUpdated(worker);
+#endif
         worker->EraseWorker();
         ClearWorkerHandle(worker);
         result = Worker_Terminate(workerEnv, workerGlobal);
@@ -5445,10 +5456,9 @@ HWTEST_F(WorkersTest, QOSTest004, testing::ext::TestSize.Level0)
             ASSERT_TRUE(result != nullptr);
             Worker* worker = nullptr;
             napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
-            bool qosUpdated = false;
-            worker->SetQOSLevelUpdatedCallback([&qosUpdated] { qosUpdated = true; });
-            uv_sleep(200);
-            ASSERT_TRUE(qosUpdated);
+#if defined(ENABLE_QOS)
+            AssertQosLevelUpdated(worker);
+#endif
             worker->EraseWorker();
             ClearWorkerHandle(worker);
         }

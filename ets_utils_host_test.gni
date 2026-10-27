@@ -1,0 +1,51 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Host(Linux) unit test helpers for ets_utils.
+#
+# On the linux host toolchain, OHOS-only feature macros
+# (ENABLE_TASKPOOL_FFRT / ENABLE_CONCURRENCY_INTEROP / ...) are off, so
+# parts of the test code that only use variables inside those feature
+# blocks trigger -Werror=unused-variable. Also the default
+# '-std=c++17' from //build/config/compiler:compiler is ordered after
+# target-level flags, which prevents overriding it via 'cflags_cc'.
+#
+# Instantiating this template and adding the produced source_set as the
+# (last) dep of a host test target makes the config below apply after
+# all inherited configs, because public_configs of deps are appended
+# after the default compiler configs.
+template("ets_utils_host_test_bridge") {
+  _cfg_name = target_name + "_config"
+  _extra_cflags_cc = []
+  if (defined(invoker.cflags_cc)) {
+    _extra_cflags_cc = invoker.cflags_cc
+  }
+  not_needed(invoker, [ "cflags_cc" ])
+
+  _bridge_cflags_cc = [
+    "-Wno-unused-variable",
+    "-Wno-unused-const-variable",
+  ]
+  _bridge_cflags_cc += _extra_cflags_cc
+
+  config(_cfg_name) {
+    visibility = [ ":*" ]
+    cflags_cc = _bridge_cflags_cc
+  }
+
+  source_set(target_name) {
+    testonly = true
+    sources = []
+    public_configs = [ ":" + _cfg_name ]
+  }
+}

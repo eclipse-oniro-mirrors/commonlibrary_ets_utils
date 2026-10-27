@@ -23,6 +23,19 @@
 #include <string>
 
 #include "utils/macros.h"
+
+#ifdef ETS_UTILS_HOST_UT
+// Host(UT) builds run without the hilog part in the build graph: logging is
+// a no-op so the host toolchain targets do not pull the hilog component.
+#define LOG_DOMAIN 0x3D00
+#define LOG_TAG "JSAPP"
+
+#define HILOG_FATAL(fmt, ...) ((void)0)
+#define HILOG_ERROR(fmt, ...) ((void)0)
+#define HILOG_WARN(fmt, ...) ((void)0)
+#define HILOG_INFO(fmt, ...) ((void)0)
+#define HILOG_DEBUG(fmt, ...) ((void)0)
+#else
 #include "hilog/log.h"
 
 #undef LOG_DOMAIN
@@ -41,5 +54,6 @@
 #define HILOG_WARN(fmt, ...) ((void)HILOG_IMPL(LOG_APP, LOG_WARN, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__))
 #define HILOG_INFO(fmt, ...) ((void)HILOG_IMPL(LOG_APP, LOG_INFO, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__))
 #define HILOG_DEBUG(fmt, ...) ((void)HILOG_IMPL(LOG_APP, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__))
+#endif
 
 #endif /* JCONSOLE_LOG_H */

@@ -92,12 +92,16 @@ ohos_shared_library("utils") {
     defines += [ "MAC_PLATFORM" ]
   }
 
-  if (is_linux && current_toolchain == host_toolchain) {
+  # libhilog_linux is not a registered innerapi (the "innerkits:" component
+  # does not exist and a raw cross-part label fails deps validation), so the
+  # SDK host branch links hilog:libhilog, whose is_linux branch compiles the
+  # same libhilog_source_linux host implementation.
+  if (is_linux && current_toolchain == host_toolchain && product_name == "ohos-sdk") {
     defines = [
       "LINUX_PLATFORM",
       "PREVIEW",
     ]
-    external_deps += [ "innerkits:libhilog_linux" ]
+    external_deps += [ "hilog:libhilog" ]
   } else {
     external_deps += [ "hilog:libhilog" ]
   }
@@ -173,6 +177,25 @@ ohos_source_set("utils_static") {
     external_deps += [
       "hilog:libhilog",
       "hitrace:hitrace_meter",
+    ]
+  }
+
+  if (is_linux && current_toolchain == host_toolchain) {
+    # host(Linux) UT: strip deps not available on the host toolchain.
+    defines += [
+      "LINUX_PLATFORM",
+      "PREVIEW",
+      "ETS_UTILS_HOST_UT",
+    ]
+    external_deps -= [
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+    ]
+    # Variables used only by HILOG calls become unused once logging is a
+    # no-op on the host; silence the diagnostics for the host build.
+    cflags_cc = [
+      "-Wno-unused-variable",
+      "-Wno-unused-const-variable",
     ]
   }
 

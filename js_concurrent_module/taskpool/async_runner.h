@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_ASYNC_RUNNER_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_ASYNC_RUNNER_H
 
+#include <atomic>
 #include <unordered_map>
 #include "task.h"
 #include "base_runner.h"

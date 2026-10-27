@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_BASE_RUNNER_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_BASE_RUNNER_H
 
+#include <atomic>
 #include <mutex>
 #include <deque>
 #include <unordered_map>

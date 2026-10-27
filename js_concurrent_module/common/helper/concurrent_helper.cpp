@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <iomanip>
+
 #include "concurrent_helper.h"
 #include "tools/log.h"
 
@@ -128,11 +130,11 @@ std::string ConcurrentHelper::GetCurrentTimeStampWithMS()
     const int kTimeFieldWidth = 2;
     const int kMillisecondWidth = 3;
 
-    oss << std::setfill('0')
-        << std::setw(kTimeFieldWidth) << localTm.tm_hour << ":"
-        << std::setw(kTimeFieldWidth) << localTm.tm_min << ":"
-        << std::setw(kTimeFieldWidth) << localTm.tm_sec << "."
-        << std::setw(kMillisecondWidth) << outMs;
+    oss << std::setfill('0') <<
+        std::setw(kTimeFieldWidth) << localTm.tm_hour << ":" <<
+        std::setw(kTimeFieldWidth) << localTm.tm_min << ":" <<
+        std::setw(kTimeFieldWidth) << localTm.tm_sec << "." <<
+        std::setw(kMillisecondWidth) << outMs;
 
     return oss.str();
 }

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#if !defined(__ARKUI_CROSS__)
+#if !defined(__ARKUI_CROSS__) && !defined(ETS_UTILS_HOST_UT)
 #include "hitrace_meter.h"
 
 #define HITRACE_HELPER_METER_NAME(msg) HITRACE_METER_NAME(HITRACE_TAG_COMMONLIBRARY, msg)

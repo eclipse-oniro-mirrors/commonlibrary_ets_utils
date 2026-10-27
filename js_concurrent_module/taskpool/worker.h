@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_WORKER_H
 
+#include <atomic>
 #include <mutex>
 
 #if defined(ENABLE_TASKPOOL_FFRT)

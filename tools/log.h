@@ -24,6 +24,19 @@
 
 #include "utils/macros.h"
 
+#ifdef ETS_UTILS_HOST_UT
+// Host(UT) builds run without the hilog part in the build graph: logging is
+// a no-op so the host toolchain targets do not pull the hilog component.
+#define LOG_DOMAIN 0xD003F05
+#define LOG_TAG "NAPI"
+
+#define HILOG_FATAL(fmt, ...) ((void)0)
+#define HILOG_ERROR(fmt, ...) ((void)0)
+#define HILOG_WARN(fmt, ...) ((void)0)
+#define HILOG_INFO(fmt, ...) ((void)0)
+#define HILOG_TASK_INFO(...) ((void)0)
+#define HILOG_DEBUG(fmt, ...) ((void)0)
+#else
 #include "hilog/log.h"
 
 #undef LOG_DOMAIN
@@ -49,5 +62,6 @@
     ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, ##__VA_ARGS__))
 #define HILOG_DEBUG(fmt, ...) \
     ((void)HILOG_IMPL(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, fmt, ##__VA_ARGS__))
+#endif
 
 #endif /* COMMONLIBRARY_ETS_UTILS_TOOLS_LOG_H */

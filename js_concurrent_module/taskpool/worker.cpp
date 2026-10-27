@@ -280,7 +280,7 @@ bool Worker::PrepareForWorkerInstance()
 {
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(ETS_UTILS_HOST_UT)
     workerEngine->SetDebuggerPostTaskFunc([this](std::function<void()>&& task) {
         this->DebuggerOnPostTask(std::move(task));
     });

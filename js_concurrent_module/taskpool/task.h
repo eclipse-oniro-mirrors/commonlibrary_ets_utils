@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASK_H
 
+#include <atomic>
 #include <list>
 #include <map>
 #include <mutex>

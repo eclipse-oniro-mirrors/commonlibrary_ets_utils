@@ -16,6 +16,9 @@
 #ifndef JS_CONCURRENT_MODULE_UTILS_LOCKS_COMMON_H
 #define JS_CONCURRENT_MODULE_UTILS_LOCKS_COMMON_H
 
+#include <cstdint>
+#include <limits>
+
 namespace Commonlibrary::Concurrent::LocksModule {
 
 using tid_t = uint32_t;

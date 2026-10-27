@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include "task_queue.h"
 
 namespace Commonlibrary::Concurrent::TaskPoolModule {

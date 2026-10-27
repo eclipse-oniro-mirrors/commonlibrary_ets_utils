@@ -191,9 +191,14 @@ void NativeEngineTest::UpdateGroupInfoByResult(napi_env env, uv_timer_t* handle,
 void NativeEngineTest::TryTriggerExpand()
 {
     TaskManager& taskManager = TaskManager::GetInstance();
+    // Temporarily force the flag off so the call takes the safe fallback
+    // branch; restore the previous value afterwards so the flag keeps
+    // reflecting whether dispatchHandle_ was really initialized (leaving it
+    // unconditionally true makes later uv_async_send(nullptr) calls crash).
+    bool handleInited = taskManager.isHandleInited_;
     taskManager.isHandleInited_ = false;
     taskManager.TryTriggerExpand();
-    taskManager.isHandleInited_ = true;
+    taskManager.isHandleInited_ = handleInited;
     taskManager.needChecking_ = false;
 }
 
@@ -929,12 +934,16 @@ void* NativeEngineTest::WorkerConstructor(napi_env env)
     usleep(sleepTime);
     uv_loop_t* loop = worker->GetWorkerLoop();
     int num = 0;
-    while (loop == nullptr && num < 10) { // 10: is loop 10 times
+    // 100: retry up to 100 times (5s in total); creating the worker engine
+    // and its loop can be slow on a loaded linux host.
+    while (loop == nullptr && num < 100) { // 100: is loop 100 times
         usleep(sleepTime);
         loop = worker->GetWorkerLoop();
         num++;
     }
-    ConcurrentHelper::UvHandleInit(loop, worker->performTaskSignal_, NativeEngineTest::foo, worker);
+    if (loop != nullptr) {
+        ConcurrentHelper::UvHandleInit(loop, worker->performTaskSignal_, NativeEngineTest::foo, worker);
+    }
     return worker;
 }
 
@@ -959,7 +968,9 @@ void NativeEngineTest::WorkerPostTask(napi_env env)
     uv_async_t* req = new uv_async_t;
     req->data = nullptr;
     Worker::HandleDebuggerTask(req);
+#if defined(ENABLE_TASKPOOL_FFRT)
     worker->IsLoopActive();
+#endif
     worker->NotifyExecuteTask();
     Worker::TriggerGCCheck(nullptr);
     Worker::TriggerGCCheck(req);

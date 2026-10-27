@@ -13,9 +13,13 @@
 
 import("//build/test.gni")
 import("//commonlibrary/ets_utils/ets_utils_config.gni")
+import("//commonlibrary/ets_utils/ets_utils_host_test.gni")
 
 if (is_standard_system) {
   module_output_path = "ets_utils/ets_utils/js_concurrent_module/worker"
+}
+
+ets_utils_host_test_bridge("test_worker_unittest_host_bridge") {
 }
 
 ohos_unittest("test_worker_unittest") {
@@ -48,12 +52,35 @@ ohos_unittest("test_worker_unittest") {
     "node:node_header_notice",
   ]
 
+  if (is_linux && current_toolchain == host_toolchain) {
+    # host(Linux) UT: c_utils is not available on the host toolchain.
+    defines = [
+      "LINUX_PLATFORM",
+      "ETS_UTILS_HOST_UT",
+    ]
+    deps += [ ":test_worker_unittest_host_bridge" ]
+    external_deps -= [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+  }
+
   if (is_ohos && is_standard_system && !is_arkui_x) {
-    defines = [ "ENABLE_CONCURRENCY_INTEROP" ]
+    # keep test macros consistent with worker_static (ODR: PostWorker*Task /
+    # QOS callbacks are only defined under these macros in worker.cpp)
+    defines = [
+      "ENABLE_CONCURRENCY_INTEROP",
+      "ENABLE_WORKER_EVENTHANDLER",
+    ]
     external_deps += [
       "runtime_core:ani",
       "runtime_core:libarkruntime",
     ]
+  }
+
+  if (is_ohos && is_standard_system && !is_arkui_x && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_qos_manager)) {
+    defines += [ "ENABLE_QOS" ]
   }
 }
 

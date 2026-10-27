@@ -117,6 +117,34 @@ ohos_source_set("process_static") {
     ]
   }
 
+  if (is_linux && current_toolchain == host_toolchain && !is_arkui_x) {
+    # host(Linux) UT: strip deps not available on the host toolchain.
+    if (!defined(defines)) {
+      defines = []
+    }
+    defines += [
+      "LINUX_PLATFORM",
+      "PREVIEW",
+      "ETS_UTILS_HOST_UT",
+    ]
+    external_deps -= [
+      "c_utils:utils",
+      "ability_runtime:ability_manager",
+      "hicollie:libhicollie",
+      "hilog:libhilog",
+      "icu:shared_icuuc",
+    ]
+    # Variables used only by HILOG calls become unused once logging is a
+    # no-op on the host; silence the diagnostics for the host build.
+    cflags_cc = [
+      "-Wno-unused-variable",
+      "-Wno-unused-const-variable",
+    ]
+    if (is_standard_system) {
+      defines -= [ "ENABLE_RECORD" ]
+    }
+  }
+
   subsystem_name = "commonlibrary"
   part_name = "ets_utils"
 }

@@ -1708,7 +1708,7 @@ bool Worker::PrepareForWorkerInstance()
         auto workerEngine = reinterpret_cast<NativeEngine*>(workerEnv_);
         auto hostEngine = reinterpret_cast<NativeEngine*>(hostEnv_);
         // 1. init worker environment
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(ETS_UTILS_HOST_UT)
         workerEngine->SetDebuggerPostTaskFunc([this](std::function<void()>&& task) {
             this->DebuggerOnPostTask(std::move(task));
         });

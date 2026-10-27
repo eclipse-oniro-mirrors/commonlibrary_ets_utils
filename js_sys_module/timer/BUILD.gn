@@ -52,11 +52,31 @@ ohos_shared_library("timer") {
     "libuv:uv",
   ]
 
-  if (is_linux && current_toolchain == host_toolchain) {
-    deps += [ "$hilog_linux" ]
+  # libhilog_linux is not a registered innerapi (the "innerkits:" component
+  # does not exist and a raw cross-part label fails deps validation), so the
+  # SDK host branch links hilog:libhilog, whose is_linux branch compiles the
+  # same libhilog_source_linux host implementation. Keep this branch only for
+  # the LINUX_PLATFORM/PREVIEW defines and the host(UT) fallback below.
+  if (is_linux && current_toolchain == host_toolchain && product_name == "ohos-sdk") {
+    # SDK host build: real hilog logging.
+    external_deps += [ "hilog:libhilog" ]
     defines += [
       "LINUX_PLATFORM",
       "PREVIEW",
+    ]
+  } else if (is_linux && current_toolchain == host_toolchain) {
+    # host(UT) build: hilog is not available in minimal part sets; logging is
+    # a no-op via ETS_UTILS_HOST_UT in tools/log.h.
+    defines += [
+      "LINUX_PLATFORM",
+      "PREVIEW",
+      "ETS_UTILS_HOST_UT",
+    ]
+    # Variables used only by HILOG calls become unused once logging is a
+    # no-op on the host; silence the diagnostics for the host build.
+    cflags_cc = [
+      "-Wno-unused-variable",
+      "-Wno-unused-const-variable",
     ]
   } else {
     if (is_standard_system) {
@@ -145,6 +165,23 @@ ohos_source_set("timer_static") {
       defines += [ "ENABLE_HITRACE_HELPER_METER" ]
     }
     defines += [ "ENABLE_CONTAINER_SCOPE" ]
+  }
+
+  if (is_linux && current_toolchain == host_toolchain) {
+    # host(Linux) UT: align platform macros with the linux host toolchain and
+    # drop the hilog part (logging is a no-op via ETS_UTILS_HOST_UT).
+    defines += [
+      "LINUX_PLATFORM",
+      "PREVIEW",
+      "ETS_UTILS_HOST_UT",
+    ]
+    external_deps -= [ "hilog:libhilog" ]
+    # Variables used only by HILOG calls become unused once logging is a
+    # no-op on the host; silence the diagnostics for the host build.
+    cflags_cc = [
+      "-Wno-unused-variable",
+      "-Wno-unused-const-variable",
+    ]
   }
 
   subsystem_name = "commonlibrary"

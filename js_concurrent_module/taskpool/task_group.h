@@ -16,6 +16,7 @@
 #ifndef JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H
 #define JS_CONCURRENT_MODULE_TASKPOOL_TASK_GROUP_H
 
+#include <atomic>
 #include <list>
 
 #include "task.h"
