@@ -371,6 +371,9 @@ HWTEST_F(NativeEngineTest, textEncodeTest003, testing::ext::TestSize.Level0)
     ASSERT_STREQ(res, excepted);
 }
 
+#if !defined(ETS_UTILS_HOST_UT)
+// Table-driven converters (gbk/big5/shift_jis/...) need the ICU data
+// file under /system/usr/icu, which only exists on OHOS devices.
 /**
  * @tc.name: textEncodeTest004
  * @tc.desc: Test encode src.
@@ -404,6 +407,8 @@ HWTEST_F(NativeEngineTest, textEncodeTest004, testing::ext::TestSize.Level0)
     res[srcLength] = 0;
     ASSERT_STREQ(res, excepted);
 }
+#endif
+
 
 /**
  * @tc.name: textEncodeTest005
@@ -419,6 +424,9 @@ HWTEST_F(NativeEngineTest, textEncodeTest005, testing::ext::TestSize.Level0)
     ASSERT_TRUE(result == nullptr);
 }
 
+#if !defined(ETS_UTILS_HOST_UT)
+// Table-driven converters (gbk/big5/shift_jis/...) need the ICU data
+// file under /system/usr/icu, which only exists on OHOS devices.
 /**
  * @tc.name: textEncodeTest006
  * @tc.desc: Test encode src.
@@ -453,7 +461,12 @@ HWTEST_F(NativeEngineTest, textEncodeTest006, testing::ext::TestSize.Level0)
     res[srcLength] = 0;
     ASSERT_STREQ(res, excepted);
 }
+#endif
 
+
+#if !defined(ETS_UTILS_HOST_UT)
+// Table-driven converters (gbk/big5/shift_jis/...) need the ICU data
+// file under /system/usr/icu, which only exists on OHOS devices.
 /**
  * @tc.name: textEncodeTest007
  * @tc.desc: Test encode src.
@@ -488,7 +501,12 @@ HWTEST_F(NativeEngineTest, textEncodeTest007, testing::ext::TestSize.Level0)
     res[srcLength] = 0;
     ASSERT_STREQ(res, excepted);
 }
+#endif
 
+
+#if !defined(ETS_UTILS_HOST_UT)
+// Table-driven converters (gbk/big5/shift_jis/...) need the ICU data
+// file under /system/usr/icu, which only exists on OHOS devices.
 /**
  * @tc.name: textEncodeTest008
  * @tc.desc: Test encode src.
@@ -523,7 +541,12 @@ HWTEST_F(NativeEngineTest, textEncodeTest008, testing::ext::TestSize.Level0)
     res[srcLength] = 0;
     ASSERT_STREQ(res, excepted);
 }
+#endif
 
+
+#if !defined(ETS_UTILS_HOST_UT)
+// Table-driven converters (gbk/big5/shift_jis/...) need the ICU data
+// file under /system/usr/icu, which only exists on OHOS devices.
 /**
  * @tc.name: textEncodeTest009
  * @tc.desc: Test encode src.
@@ -558,7 +581,12 @@ HWTEST_F(NativeEngineTest, textEncodeTest009, testing::ext::TestSize.Level0)
     res[srcLength] = 0;
     ASSERT_STREQ(res, excepted);
 }
+#endif
 
+
+#if !defined(ETS_UTILS_HOST_UT)
+// Table-driven converters (gbk/big5/shift_jis/...) need the ICU data
+// file under /system/usr/icu, which only exists on OHOS devices.
 /**
  * @tc.name: textEncodeTest010
  * @tc.desc: Test encode src.
@@ -593,6 +621,8 @@ HWTEST_F(NativeEngineTest, textEncodeTest010, testing::ext::TestSize.Level0)
     res[srcLength] = 0;
     ASSERT_STREQ(res, excepted);
 }
+#endif
+
 
 /**
  * @tc.name: textEncodeIntoTest001
@@ -3807,6 +3837,9 @@ HWTEST_F(NativeEngineTest, DecodeToStringWithStream001, testing::ext::TestSize.L
     textDecoder.DecodeToString(env, result, iflag);
 }
 
+#if !defined(ETS_UTILS_HOST_UT)
+// Table-driven converters (gbk/big5/shift_jis/...) need the ICU data
+// file under /system/usr/icu, which only exists on OHOS devices.
 /**
  * @tc.name: decoderGBK
  * @tc.desc: Testing the decoding result of GBK data with BOM.
@@ -4232,6 +4265,8 @@ HWTEST_F(NativeEngineTest, decoderwindows1255, testing::ext::TestSize.Level0)
         ch = nullptr;
     }
 }
+#endif
+
 
 /**
  * @tc.name: textEncodeIntoTest008
@@ -4425,6 +4460,9 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest013, testing::ext::TestSize.Level0)
     ASSERT_EQ(resWritten, static_cast<uint32_t>(5)); // 5: resWritten expected results
 }
 
+#if !defined(ETS_UTILS_HOST_UT)
+// Table-driven converters (gbk/big5/shift_jis/...) need the ICU data
+// file under /system/usr/icu, which only exists on OHOS devices.
 /**
  * @tc.name: textEncodeIntoTest014
  * @tc.desc: Test returns a dictionary object indicating the progress of the encoding
@@ -4456,6 +4494,8 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest014, testing::ext::TestSize.Level0)
     ASSERT_EQ(resRead, static_cast<uint32_t>(5)); // 5: resRead expected results
     ASSERT_EQ(resWritten, static_cast<uint32_t>(7)); // 7: resWritten expected results
 }
+#endif
+
 
 /**
  * @tc.name: textEncodeIntoTest015
@@ -4489,6 +4529,9 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest015, testing::ext::TestSize.Level0)
     ASSERT_EQ(resWritten, static_cast<uint32_t>(7)); // 7: resWritten expected results
 }
 
+#if !defined(ETS_UTILS_HOST_UT)
+// Table-driven converters (gbk/big5/shift_jis/...) need the ICU data
+// file under /system/usr/icu, which only exists on OHOS devices.
 /**
  * @tc.name: textEncodeIntoTest016
  * @tc.desc: Test returns a dictionary object indicating the progress of the encoding
@@ -4904,6 +4947,8 @@ HWTEST_F(NativeEngineTest, textEncodeIntoTest028, testing::ext::TestSize.Level0)
     ASSERT_EQ(resRead, static_cast<uint32_t>(3)); // 3: resRead expected results
     ASSERT_EQ(resWritten, static_cast<uint32_t>(4)); // 4: resWritten expected results
 }
+#endif
+
 
 /**
  * @tc.name: textIsTypedArray001

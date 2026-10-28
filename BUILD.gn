@@ -17,7 +17,12 @@
 group("ets_utils_host_unittest") {
   testonly = true
   deps = []
-  if (host_os == "linux") {
+  # The indep (component-precise) build injects device macros (USE_OHOS_DFX,
+  # NAPI_TARGET_ARM32, ...) into host-toolchain targets, which breaks this
+  # graph (uv.h pulls the musl-only info/fatal_message.h). Keep the host UT
+  # group out of the indep build; full builds are unaffected.
+  if (host_os == "linux" &&
+      !(defined(ohos_indep_compiler_enable) && ohos_indep_compiler_enable)) {
     deps += [
       "//commonlibrary/ets_utils/js_api_module/buffer/test:test_buffer_unittest($host_toolchain)",
       "//commonlibrary/ets_utils/js_api_module/convertxml/test:test_convertxml_unittest($host_toolchain)",
