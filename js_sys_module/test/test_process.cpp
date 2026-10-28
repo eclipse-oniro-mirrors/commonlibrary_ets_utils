@@ -491,9 +491,19 @@ HWTEST_F(NativeEngineTest, ProcessChdirTest001, testing::ext::TestSize.Level0)
 {
     napi_env env = (napi_env)engine_;
     OHOS::JsSysModule::Process::Process process;
-    std::string catalogue = "/system/lib";
+    // "/" exists on both OHOS devices and the linux host, unlike the device-only
+    // "/system/lib"; restore the original cwd afterwards so the change does not
+    // leak into subsequent tests.
+    std::string catalogue = "/";
     napi_value temp = nullptr;
     napi_create_string_utf8(env, catalogue.c_str(), catalogue.length(), &temp);
+    napi_value cwdBefore = process.Cwd(env);
+    size_t originSize = 0;
+    std::string origin = "";
+    if (napi_get_value_string_utf8(env, cwdBefore, nullptr, 0, &originSize) == napi_ok) {
+        origin.resize(originSize);
+        napi_get_value_string_utf8(env, cwdBefore, origin.data(), originSize + 1, &originSize);
+    }
     process.Chdir(env, temp);
     napi_value cwd = process.Cwd(env);
     size_t bufferSize = 0;
@@ -506,13 +516,24 @@ HWTEST_F(NativeEngineTest, ProcessChdirTest001, testing::ext::TestSize.Level0)
     if (napi_get_value_string_utf8(env, cwd, result.data(), bufferSize + 1, &bufferSize) != napi_ok) {
         HILOG_ERROR("can not get str value");
     }
-    std::string tag = "";
-    tag = result;
-    bool res = false;
-    if (tag == catalogue) {
-        res = true;
+    bool changedOk = (result == catalogue);
+    // Restore the original working directory and verify the round trip.
+    napi_value originValue = nullptr;
+    napi_create_string_utf8(env, origin.c_str(), origin.length(), &originValue);
+    process.Chdir(env, originValue);
+    napi_value cwdAfter = process.Cwd(env);
+    size_t afterSize = 0;
+    if (napi_get_value_string_utf8(env, cwdAfter, nullptr, 0, &afterSize) != napi_ok) {
+        HILOG_ERROR("can not get str size");
     }
-    ASSERT_TRUE(res);
+    std::string restored = "";
+    restored.reserve(afterSize + 1);
+    restored.resize(afterSize);
+    if (napi_get_value_string_utf8(env, cwdAfter, restored.data(), afterSize + 1, &afterSize) != napi_ok) {
+        HILOG_ERROR("can not get str value");
+    }
+    bool restoredOk = (restored == origin);
+    ASSERT_TRUE(changedOk && restoredOk);
 }
 
 /**
