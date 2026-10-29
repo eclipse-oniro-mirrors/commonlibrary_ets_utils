@@ -75,6 +75,11 @@ ohos_unittest("test_worker_unittest") {
     external_deps += [
       "runtime_core:ani",
       "runtime_core:libarkruntime",
+      # worker.h includes event_handler.h under ENABLE_WORKER_EVENTHANDLER;
+      # the full build resolves it via worker_static's transitive public
+      # config, but the indep (component-precise) build provisions prebuilt
+      # innerapis per direct declaration and needs it stated here.
+      "eventhandler:libeventhandler",
     ]
   }
 
