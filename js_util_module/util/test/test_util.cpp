@@ -10649,3 +10649,127 @@ HWTEST_F(NativeEngineTest, stringDecoderWriteCompleteFaultTest001, testing::ext:
 
     ASSERT_STREQ("", NapiStringToString(env, stringDecoder.End(env)).c_str());
 }
+
+/**
+ * @tc.name: HintGC_001
+ * @tc.desc: Test hintGC is registered on ArkTSVM and is a function.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, HintGC_001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value hintGcFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "hintGC", &hintGcFunc));
+        ASSERT_NE(hintGcFunc, nullptr);
+
+        napi_valuetype funcType;
+        ASSERT_CHECK_CALL(napi_typeof(env, hintGcFunc, &funcType));
+        ASSERT_EQ(funcType, napi_function);
+    });
+}
+
+/**
+ * @tc.name: HintGC_002
+ * @tc.desc: Test hintGC with no argument (default LOW) returns undefined without error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, HintGC_002, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value hintGcFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "hintGC", &hintGcFunc));
+        ASSERT_NE(hintGcFunc, nullptr);
+
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, hintGcFunc, 0, nullptr, &result));
+        ASSERT_NE(result, nullptr);
+
+        napi_valuetype resultType;
+        ASSERT_CHECK_CALL(napi_typeof(env, result, &resultType));
+        ASSERT_EQ(resultType, napi_undefined);
+    });
+}
+
+/**
+ * @tc.name: HintGC_003
+ * @tc.desc: Test hintGC with UrgencyLevel.LOW(0), MEDIUM(1), HIGH(2) returns undefined.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, HintGC_003, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value hintGcFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "hintGC", &hintGcFunc));
+        ASSERT_NE(hintGcFunc, nullptr);
+
+        for (int degree = 0; degree <= 2; degree++) {
+            napi_value arg = nullptr;
+            ASSERT_CHECK_CALL(napi_create_int32(env, degree, &arg));
+            napi_value result = nullptr;
+            ASSERT_CHECK_CALL(napi_call_function(env, arktsvm, hintGcFunc, 1, &arg, &result));
+            ASSERT_NE(result, nullptr);
+            napi_valuetype resultType;
+            ASSERT_CHECK_CALL(napi_typeof(env, result, &resultType));
+            ASSERT_EQ(resultType, napi_undefined);
+        }
+    });
+}
+
+/**
+ * @tc.name: HintGC_004
+ * @tc.desc: Test hintGC with invalid parameter type (string) throws error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, HintGC_004, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        napi_value exports = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &exports));
+        OHOS::Util::UtilInit(env, exports);
+
+        napi_value arktsvm = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, exports, ARKTSVM_NAME, &arktsvm));
+        ASSERT_NE(arktsvm, nullptr);
+
+        napi_value hintGcFunc = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, arktsvm, "hintGC", &hintGcFunc));
+        ASSERT_NE(hintGcFunc, nullptr);
+
+        napi_value strArg = nullptr;
+        ASSERT_CHECK_CALL(napi_create_string_utf8(env, "LOW", NAPI_AUTO_LENGTH, &strArg));
+        napi_value result = nullptr;
+        napi_call_function(env, arktsvm, hintGcFunc, 1, &strArg, &result);
+        bool isExceptionPending = false;
+        napi_is_exception_pending(env, &isExceptionPending);
+        ASSERT_TRUE(isExceptionPending);
+        if (isExceptionPending) {
+            napi_value exception = nullptr;
+            ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &exception));
+            ASSERT_NE(exception, nullptr);
+        }
+    });
+}

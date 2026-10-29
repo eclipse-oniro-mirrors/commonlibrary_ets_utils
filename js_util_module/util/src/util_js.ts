@@ -1937,6 +1937,12 @@ class AutoFinalizerCleaner {
   }
 }
 
+enum UrgencyLevel {
+  LOW = 0,
+  MEDIUM = 1,
+  HIGH = 2
+}
+
 export default {
   printf: printf,
   format: format,
@@ -1963,6 +1969,7 @@ export default {
   Scope: Scope,
   ScopeHelper: ScopeHelper,
   Type: Type,
+  UrgencyLevel: UrgencyLevel,
   Aspect: Aspect,
   StringDecoder: stringdecoder,
   AutoFinalizerCleaner: AutoFinalizerCleaner,

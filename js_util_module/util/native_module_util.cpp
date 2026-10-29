@@ -2180,6 +2180,35 @@ namespace OHOS::Util {
         return exports;
     }
 
+    static napi_value HintGC(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 1;
+        napi_value args[1] = {nullptr};
+        NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+
+        int urgencyLevel = 0; // default LOW
+        if (argc >= 1) {
+            napi_valuetype valuetype;
+            NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
+            if (valuetype != napi_number) {
+                return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                    "Parameter error. hintGC: input parameter must be of type UrgencyLevel.");
+            }
+            NAPI_CALL(env, napi_get_value_int32(env, args[0], &urgencyLevel));
+            if (urgencyLevel < 0 || urgencyLevel > 2) { // 2: max urgency level
+                return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                    "Parameter error. hintGC: urgencyLevel must be UrgencyLevel.LOW(0), MEDIUM(1) or HIGH(2).");
+            }
+        }
+
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        engine->HintGC(static_cast<UrgencyLevel>(urgencyLevel));
+
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        return result;
+    }
+
     napi_value ArkTSVMInit(napi_env env, napi_value exports)
     {
         napi_value ArkTSVMInterface = nullptr;
@@ -2193,6 +2222,7 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("setTrackGlobalRef", SetTrackGlobalRef),
             DECLARE_NAPI_FUNCTION("getGlobalHandleCount", GetGlobalHandleCount),
             DECLARE_NAPI_FUNCTION("enableHandleMemoryOptimization", EnableHandleMemoryOptimization),
+            DECLARE_NAPI_FUNCTION("hintGC", HintGC),
         };
         NAPI_CALL(env, napi_define_properties(env, ArkTSVMInterface,
                                               sizeof(ArkTSVMDesc) / sizeof(ArkTSVMDesc[0]), ArkTSVMDesc));
