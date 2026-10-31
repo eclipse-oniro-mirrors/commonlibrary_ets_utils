@@ -2256,10 +2256,10 @@ void Worker::TerminateWorker()
         std::lock_guard<std::mutex> lock(workerOnmessageMutex_);
         ConcurrentHelper::UvHandleClose(workerOnMessageSignal_);
         ConcurrentHelper::UvHandleClose(workerOnTerminateSignal_);
-    }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    ConcurrentHelper::UvHandleClose(debuggerOnPostTaskSignal_);
+        ConcurrentHelper::UvHandleClose(debuggerOnPostTaskSignal_);
 #endif
+    }
     CloseWorkerCallback();
     uv_loop_t* loop = GetWorkerLoop();
     if (loop != nullptr) {

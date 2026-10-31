@@ -105,6 +105,7 @@ TaskManager::~TaskManager()
     TimerStop(expandTimer_, "taskpool:: expandTimer_ is nullptr");
 
     ConcurrentHelper::UvHandleClose(dispatchHandle_);
+    isHandleInited_ = false;
 
     if (loop_ != nullptr) {
         uv_stop(loop_);
@@ -198,7 +199,12 @@ napi_value TaskManager::GetThreadInfos(napi_env env)
             auto threadInfo = std::make_unique<ThreadInfo>();
             threadInfo->tid = worker->tid_;
             threadInfo->priority = worker->priority_;
-            for (auto& id : worker->currentTaskId_) {
+            std::vector<uint32_t> currentTaskIdSnapshot;
+            {
+                std::lock_guard<std::mutex> taskIdLock(worker->currentTaskIdMutex_);
+                currentTaskIdSnapshot = worker->currentTaskId_;
+            }
+            for (auto& id : currentTaskIdSnapshot) {
                 threadInfo->currentTaskId.emplace_back(id);
             }
             threadInfoSet.emplace(std::move(threadInfo));
@@ -357,6 +363,7 @@ void TaskManager::TryTriggerExpand()
         return;
     }
     uv_async_send(dispatchHandle_);
+    ConcurrentHelper::UvCheckAndAsyncSend(dispatchHandle_);
 }
 
 #if defined(OHOS_PLATFORM)
