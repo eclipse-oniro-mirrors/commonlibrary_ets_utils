@@ -236,8 +236,6 @@ private:
     void TimerInit(uv_timer_t*& timer, bool startFlag, uv_timer_cb cb, uint64_t repeat);
     bool IsNeedPrint(uint64_t nowTime, uint64_t startTime, uint32_t printCount, uint64_t& diffTime);
     void PushRunningTaskLog();
-    void PrintPendingTaskLog();
-    std::string GetPendingMessage(Priority priority, std::string tag);
 
     // <taskId, Task>
     std::unordered_map<uint32_t, Task*> tasks_ {};

@@ -2065,7 +2065,6 @@ void TaskManager::IncreaseTaskIdSalt()
 void TaskManager::PrintLogs(uv_work_t* req)
 {
     TaskManager& taskManager = TaskManager::GetInstance();
-    taskManager.PrintPendingTaskLog();
     taskManager.PushRunningTaskLog();
     taskManager.logManager_.PrintLog();
 }
@@ -2116,79 +2115,6 @@ void TaskManager::PushRunningTaskLog()
     for (auto& log : logs) {
         PushLogFront(log);
     }
-}
-
-void TaskManager::PrintPendingTaskLog()
-{
-    std::ostringstream oss;
-    oss << "Task is pending";
-    bool hasEntries = false;
-    std::string message = "";
-    if (IsSystemApp()) {
-        message = GetPendingMessage(Priority::USER_INTERACTION, "InterActionTask");
-        if (message != "") {
-            oss << message;
-            hasEntries = true;
-        }
-        message = GetPendingMessage(Priority::DEADLINE_REQUEST, "DeadLineTask");
-        if (message != "") {
-            oss << message;
-            hasEntries = true;
-        }
-    }
-    message = GetPendingMessage(Priority::HIGH, "highTask");
-    if (message != "") {
-        oss << message;
-        hasEntries = true;
-    }
-    message = GetPendingMessage(Priority::MEDIUM, "mediumTask");
-    if (message != "") {
-        oss << message;
-        hasEntries = true;
-    }
-    message = GetPendingMessage(Priority::LOW, "lowTask");
-    if (message != "") {
-        oss << message;
-        hasEntries = true;
-    }
-    if (hasEntries) {
-        HILOG_INFO("taskpool::%{public}s", oss.str().c_str());
-    } else {
-        HILOG_DEBUG("taskpool::no wating task now");
-    }
-}
-
-std::string TaskManager::GetPendingMessage(Priority priority, std::string tag)
-{
-    std::string message = "";
-    uint32_t taskId = 0;
-    {
-        std::lock_guard<std::mutex> lock(taskQueuesMutex_);
-        auto& queue = taskQueues_[priority];
-        if (queue->IsEmpty()) {
-            return message;
-        }
-        taskId = queue->GetHead();
-    }
-
-    std::string enqueueTime = GetTaskEnqueueTime(taskId);
-    if (enqueueTime.empty()) {
-        return message;
-    }
-    uint64_t now = ConcurrentHelper::GetMilliseconds();
-    std::lock_guard<std::recursive_mutex> lock(tasksMutex_);
-    auto iter = tasks_.find(taskId);
-    if (iter == tasks_.end()) {
-        return message;
-    }
-    Task* task = iter->second;
-    uint64_t diffTime = 0;
-    if (task != nullptr && IsNeedPrint(now, task->addTime_, task->enqueuePrintCount_, diffTime)) {
-        task->enqueuePrintCount_++;
-        message = ", " + tag + ": " + std::to_string(taskId) + ", " + task->name_ + ", enqueueT:" + enqueueTime +
-                ", duration: " + std::to_string(diffTime / RATIO) + "s";
-    }
-    return message;
 }
 
 void TaskManager::NotifyShrinkByInBackground(bool inBackground)
