@@ -127,7 +127,8 @@ namespace OHOS::Util {
         UChar *target = arr;
         size_t tarStartPos = reinterpret_cast<uintptr_t>(arr);
         UErrorCode codeFlag = U_ZERO_ERROR;
-        ucnv_toUnicode(GetConverterPtr(), &target, target + len, &source, source + length, nullptr, flush, &codeFlag);
+        ucnv_toUnicode(GetConverterPtr(), &target, target + limit + 1, &source, source + length, nullptr, flush,
+                       &codeFlag);
         if (codeFlag != U_ZERO_ERROR) {
             FreedMemory(arr);
             return ThrowError(env, "TextDecoder decoding error.");
@@ -195,7 +196,6 @@ namespace OHOS::Util {
         }
         const char *source = static_cast<char *>(data);
         size_t limit = GetMinByteSize() * length;
-        size_t len = limit * sizeof(UChar);
         UChar *arr = nullptr;
         if (limit > 0) {
             arr = new (std::nothrow) UChar[limit + 1]{0};
@@ -209,7 +209,8 @@ namespace OHOS::Util {
         }
         UChar *target = arr;
         UErrorCode codeFlag = U_ZERO_ERROR;
-        ucnv_toUnicode(GetConverterPtr(), &target, target + len, &source, source + length, nullptr, flush, &codeFlag);
+        ucnv_toUnicode(GetConverterPtr(), &target, target + limit + 1, &source, source + length, nullptr, flush,
+                       &codeFlag);
         if (codeFlag != U_ZERO_ERROR) {
             FreedMemory(arr);
             napi_throw_error(env, "401",
