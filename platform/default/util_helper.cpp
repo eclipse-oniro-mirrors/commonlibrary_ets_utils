@@ -23,8 +23,8 @@
 
 namespace Commonlibrary::Platform {
 using namespace OHOS::Util;
-bool isChineseEncoding = false;
-std::string targetEncStr;
+static thread_local bool isChineseEncoding = false;
+static thread_local std::string targetEncStr;
 
 UConverter* CreateConverter(const std::string& encStr_, UErrorCode& codeflag)
 {
