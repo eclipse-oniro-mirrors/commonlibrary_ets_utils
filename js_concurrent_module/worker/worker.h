@@ -20,6 +20,7 @@
 #include <condition_variable>
 #include <list>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 
@@ -83,11 +84,16 @@ public:
         ListenerMode mode_ {PERMANENT};
     };
 
+    using WorkerListenerPtr = std::shared_ptr<WorkerListener>;
+
     struct FindWorkerListener {
         FindWorkerListener(napi_env env, napi_ref ref) : env_(env), ref_(ref) {}
 
-        bool operator()(const WorkerListener* listener) const
+        bool operator()(const WorkerListenerPtr& listener) const
         {
+            if (listener == nullptr) {
+                return false;
+            }
             napi_value compareObj = NapiHelper::GetReferenceValue(env_, listener->callback_);
             napi_value obj = NapiHelper::GetReferenceValue(env_, ref_);
             // the env of listener and cmp listener must be same env because of Synchronization method
@@ -460,7 +466,7 @@ public:
         scriptMode_ = mode;
     }
 
-    void AddListenerInner(napi_env env, const char* type, const WorkerListener* listener);
+    void AddListenerInner(napi_env env, const char* type, WorkerListenerPtr listener);
     void RemoveListenerInner(napi_env env, const char* type, napi_ref callback);
     void RemoveAllListenerInner();
     void EraseWorker();
@@ -608,7 +614,7 @@ private:
     void ReleaseHostThreadContent();
     bool PrepareForWorkerInstance();
     void ApplyNameSetting();
-    void ParentPortAddListenerInner(napi_env env, const char* type, const WorkerListener* listener);
+    void ParentPortAddListenerInner(napi_env env, const char* type, WorkerListenerPtr listener);
     void ParentPortRemoveAllListenerInner();
     void ParentPortRemoveListenerInner(napi_env env, const char* type, napi_ref callback);
     void GetContainerScopeId(napi_env env);
@@ -687,8 +693,8 @@ private:
     napi_ref workerRef_ {nullptr};
     napi_ref workerPort_ {nullptr};
 
-    std::map<std::string, std::list<WorkerListener*>> eventListeners_ {};
-    std::map<std::string, std::list<WorkerListener*>> parentPortEventListeners_ {};
+    std::map<std::string, std::list<WorkerListenerPtr>> eventListeners_ {};
+    std::map<std::string, std::list<WorkerListenerPtr>> parentPortEventListeners_ {};
     std::unordered_map<std::string, napi_ref> globalCallObjects_ {};
     std::queue<std::pair<int32_t, napi_value>> globalCallErrors_ {};
     std::atomic<uint32_t> globalCallId_ = 1; // 0: reserved for error check
