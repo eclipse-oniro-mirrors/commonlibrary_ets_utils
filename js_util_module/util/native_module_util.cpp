@@ -1970,6 +1970,15 @@ namespace OHOS::Util {
         return result;
     }
 
+    static napi_value EnableHandleMemoryOptimization(napi_env env, [[maybe_unused]] napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        engine->EnableHandleMemoryOptimization();
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        return result;
+    }
+
     static double GetThresholdProperty(napi_env env, napi_value obj, const char* propName)
     {
         double threshold = 0.0;
@@ -2183,6 +2192,7 @@ namespace OHOS::Util {
             DECLARE_NAPI_FUNCTION("offVMHeapMemoryPressure", OffVMHeapMemoryPressure),
             DECLARE_NAPI_FUNCTION("setTrackGlobalRef", SetTrackGlobalRef),
             DECLARE_NAPI_FUNCTION("getGlobalHandleCount", GetGlobalHandleCount),
+            DECLARE_NAPI_FUNCTION("enableHandleMemoryOptimization", EnableHandleMemoryOptimization),
         };
         NAPI_CALL(env, napi_define_properties(env, ArkTSVMInterface,
                                               sizeof(ArkTSVMDesc) / sizeof(ArkTSVMDesc[0]), ArkTSVMDesc));
