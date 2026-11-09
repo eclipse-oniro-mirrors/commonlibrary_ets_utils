@@ -34,30 +34,6 @@ The component uses GN build system configured through BUILD.gn with the followin
 - **Bytecode Compiler**: es2abc compiler that converts JavaScript to ArkTS ABC bytecode
 - **Integration**: Seamless integration with ArkTS runtime and N-API framework
 
-### Build Process Flow
-```text
-├──────────────────────────────────────────────────────────────────────┐
-│                    TypeScript Source Files                          │
-│            (src/js_uri.ts)                            │
-│                    ↓                                       │
-│            [build_ts_js action]                        │
-│                    ↓                                       │
-│            JavaScript Intermediate (.js)                │
-│                    ↓                                       │
-│            [gen_uri_abc action]                       │
-│                    ↓                                       │
-│            ABC Bytecode File (.abc)                    │
-│                    ↓                                       │
-│            C++ Compiler (clang++)                    │
-│                    ↓                                       │
-│            Native Object Files (.o)                     │
-│                    ↓                                       │
-│            Linker (ld)                                │
-│                    ↓                                       │
-│            Target Shared Library (liburi.so/.dylib)     │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
 ### Build Targets
 BUILD.gn defines the following build targets:
 
@@ -133,7 +109,6 @@ The test suite includes comprehensive tests organized by category:
 - **RFC 3986 Compliance**: Verify adherence to URI specification requirements
 
 #### 3. Unit Test Framework
-- **Framework**: Google Test framework for test and mocking
 - **Assertions**: EXPECT_EQ, EXPECT_TRUE, EXPECT_THROW for validating expected behaviors
 - **Test Coverage**: Measure code coverage across all URI functionality
 - **Performance**: Benchmark critical parsing paths for optimization validation
