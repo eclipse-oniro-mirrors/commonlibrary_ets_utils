@@ -25,8 +25,11 @@
 #include "native_module_xml.h"
 #include "securec.h"
 #include "tools/log.h"
+#include <chrono>
+#include <functional>
 #include <memory>
 #include <thread>
+#include <vector>
 
 using namespace OHOS::xml;
 
@@ -4672,4 +4675,524 @@ HWTEST_F(NativeEngineTest, XmlSAXParserBranchTest020, testing::ext::TestSize.Lev
         ASSERT_EQ(it->first, std::string("ns:attr"));
         ASSERT_EQ(it->second, std::string("testvalue"));
     }
+}
+
+namespace {
+constexpr int SAX_PUMP_MAX_ITERATIONS = 400;
+constexpr int SAX_PUMP_INTERVAL_MS = 5;
+std::vector<int> g_saxEventSequence;
+
+void RecordSaxEvent(int eventId)
+{
+    g_saxEventSequence.push_back(eventId);
+}
+}
+
+napi_value SaxRecordStartDocumentCb(napi_env env, napi_callback_info info)
+{
+    RecordSaxEvent(static_cast<int>(OHOS::xml::SAXCallbackType::START_DOCUMENT));
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value SaxRecordEndDocumentCb(napi_env env, napi_callback_info info)
+{
+    RecordSaxEvent(static_cast<int>(OHOS::xml::SAXCallbackType::END_DOCUMENT));
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value SaxRecordStartElementCb(napi_env env, napi_callback_info info)
+{
+    RecordSaxEvent(static_cast<int>(OHOS::xml::SAXCallbackType::START_ELEMENT));
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value SaxRecordEndElementCb(napi_env env, napi_callback_info info)
+{
+    RecordSaxEvent(static_cast<int>(OHOS::xml::SAXCallbackType::END_ELEMENT));
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value SaxRecordCharactersCb(napi_env env, napi_callback_info info)
+{
+    RecordSaxEvent(static_cast<int>(OHOS::xml::SAXCallbackType::CHARACTERS));
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    return result;
+}
+
+napi_value BuildSaxRecordingHandler(napi_env env)
+{
+    napi_value handler = nullptr;
+    napi_create_object(env, &handler);
+    napi_value fn = nullptr;
+    napi_create_function(env, nullptr, 0, SaxRecordStartDocumentCb, nullptr, &fn);
+    napi_set_named_property(env, handler, "startDocument", fn);
+    napi_create_function(env, nullptr, 0, SaxRecordEndDocumentCb, nullptr, &fn);
+    napi_set_named_property(env, handler, "endDocument", fn);
+    napi_create_function(env, nullptr, 0, SaxRecordStartElementCb, nullptr, &fn);
+    napi_set_named_property(env, handler, "startElement", fn);
+    napi_create_function(env, nullptr, 0, SaxRecordEndElementCb, nullptr, &fn);
+    napi_set_named_property(env, handler, "endElement", fn);
+    napi_create_function(env, nullptr, 0, SaxRecordCharactersCb, nullptr, &fn);
+    napi_set_named_property(env, handler, "characters", fn);
+    return handler;
+}
+
+void PumpSaxLoop(uv_loop_t* loop, const std::function<bool()>& done)
+{
+    for (int i = 0; i < SAX_PUMP_MAX_ITERATIONS && !done(); i++) {
+        uv_run(loop, UV_RUN_NOWAIT);
+        if (!done()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(SAX_PUMP_INTERVAL_MS));
+        }
+    }
+}
+
+/* @tc.name: XmlSAXParserCleanupTest001
+ * @tc.desc: InitParserContext resets parse completion flags and keeps them on re-init.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest001, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        // Simulate a previous completed parse, then re-init.
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, true, true);
+        OHOS::xml::XmlSAXParserTestHelper::SetHasParseError(*parser, true);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::GetIsParseComplete(*parser));
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::GetEndDocumentHandled(*parser));
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::GetHasParseError(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::HasParserContext(*parser));
+        // Branch: already initialized -> early return without resetting flags.
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, true, true);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetIsParseComplete(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetEndDocumentHandled(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest002
+ * @tc.desc: TryCleanup does nothing while parse is not complete.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest002, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        napi_value handler = BuildSaxRecordingHandler(env);
+        OHOS::xml::XmlSAXParserTestHelper::SetupCallbacksFromHandler(*parser, env, handler);
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, false, false);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeTryCleanup(*parser);
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::HasParserContext(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::HasCallbacks(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest003
+ * @tc.desc: TryCleanup waits for the endDocument callback when one is registered.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest003, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        napi_value handler = BuildSaxRecordingHandler(env);
+        OHOS::xml::XmlSAXParserTestHelper::SetupCallbacksFromHandler(*parser, env, handler);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::HasEndDocumentRef(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, true, false);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeTryCleanup(*parser);
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest004
+ * @tc.desc: TryCleanup runs cleanup and clears pending callbacks when no endDocument ref exists.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest004, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::SetCallbacks(*parser,
+            OHOS::xml::XmlSAXParserTestHelper::NewEmptyCallbacks(env));
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::HasEndDocumentRef(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, true, false);
+        OHOS::xml::XmlSAXParserTestHelper::PushPendingCallback(*parser, 2);
+        ASSERT_EQ(OHOS::xml::XmlSAXParserTestHelper::GetPendingCallbackCount(*parser),
+            static_cast<size_t>(2));
+        OHOS::xml::XmlSAXParserTestHelper::InvokeTryCleanup(*parser);
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_EQ(OHOS::xml::XmlSAXParserTestHelper::GetPendingCallbackCount(*parser),
+            static_cast<size_t>(2));
+        OHOS::xml::XmlSAXParserTestHelper::DrainPendingCallbacks(*parser);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeTryCleanup(*parser);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_EQ(OHOS::xml::XmlSAXParserTestHelper::GetPendingCallbackCount(*parser),
+            static_cast<size_t>(0));
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest005
+ * @tc.desc: TryCleanup defers cleanup while events are pending event after endDocument was handled,
+ *           then runs cleanup once the queue is empty.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest005, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        napi_value handler = BuildSaxRecordingHandler(env);
+        OHOS::xml::XmlSAXParserTestHelper::SetupCallbacksFromHandler(*parser, env, handler);
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, true, true);
+        OHOS::xml::XmlSAXParserTestHelper::PushPendingCallback(*parser, 2);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeTryCleanup(*parser);
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_EQ(OHOS::xml::XmlSAXParserTestHelper::GetPendingCallbackCount(*parser),
+            static_cast<size_t>(2));
+        OHOS::xml::XmlSAXParserTestHelper::DrainPendingCallbacks(*parser);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeTryCleanup(*parser);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest006
+ * @tc.desc: TryCleanup is idempotent: a second call returns early after cleanup.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest006, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::SetCallbacks(*parser,
+            OHOS::xml::XmlSAXParserTestHelper::NewEmptyCallbacks(env));
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, true, true);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeTryCleanup(*parser);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        // Branch: parserCtxt_ == nullptr && callbacks_ == nullptr -> early return.
+        OHOS::xml::XmlSAXParserTestHelper::InvokeTryCleanup(*parser);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest007
+ * @tc.desc: CallEndDocumentCallback records the JS callback and triggers cleanup when complete.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest007, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        g_saxEventSequence.clear();
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        napi_value handler = BuildSaxRecordingHandler(env);
+        OHOS::xml::XmlSAXParserTestHelper::SetupCallbacksFromHandler(*parser, env, handler);
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, true, false);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeCallEndDocument(*parser, env);
+        ASSERT_FALSE(g_saxEventSequence.empty());
+        ASSERT_EQ(g_saxEventSequence.back(),
+            static_cast<int>(OHOS::xml::SAXCallbackType::END_DOCUMENT));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetEndDocumentHandled(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest008
+ * @tc.desc: CallEndDocumentCallback defers cleanup while parse is incomplete.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest008, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        g_saxEventSequence.clear();
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        napi_value handler = BuildSaxRecordingHandler(env);
+        OHOS::xml::XmlSAXParserTestHelper::SetupCallbacksFromHandler(*parser, env, handler);
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, false, false);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeCallEndDocument(*parser, env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetEndDocumentHandled(*parser));
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::HasParserContext(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest009
+ * @tc.desc: ExecuteParse sets isParseComplete_ after a final chunk.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest009, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        OHOS::xml::AsyncParseWorkData* workData =
+            OHOS::xml::XmlSAXParserTestHelper::NewWorkData(parser, "<root/>", true);
+        OHOS::xml::XmlSAXParserTestHelper::QueueWorkData(*parser, workData);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeExecuteParse(env, workData);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetIsParseComplete(*parser));
+        ASSERT_TRUE(workData->error.empty());
+        delete workData;
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest010
+ * @tc.desc: ExecuteParse leaves isParseComplete_ false for non-final chunks.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest010, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        OHOS::xml::AsyncParseWorkData* workData =
+            OHOS::xml::XmlSAXParserTestHelper::NewWorkData(parser, "<root>", false);
+        OHOS::xml::XmlSAXParserTestHelper::QueueWorkData(*parser, workData);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeExecuteParse(env, workData);
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::GetIsParseComplete(*parser));
+        delete workData;
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest011
+ * @tc.desc: ExecuteParse handles multiple queued chunks and completes on the final one.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest011, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        OHOS::xml::AsyncParseWorkData* first =
+            OHOS::xml::XmlSAXParserTestHelper::NewWorkData(parser, "<root>", false);
+        OHOS::xml::AsyncParseWorkData* second =
+            OHOS::xml::XmlSAXParserTestHelper::NewWorkData(parser, "</root>", true);
+        OHOS::xml::XmlSAXParserTestHelper::QueueWorkData(*parser, first);
+        OHOS::xml::XmlSAXParserTestHelper::QueueWorkData(*parser, second);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeExecuteParse(env, first);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetIsParseComplete(*parser));
+        ASSERT_EQ(OHOS::xml::XmlSAXParserTestHelper::GetQueuedWorkCount(*parser),
+            static_cast<size_t>(0));
+        ASSERT_TRUE(first->error.empty());
+        ASSERT_TRUE(second->error.empty());
+        delete first;
+        delete second;
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest012
+ * @tc.desc: ExecuteParse returns immediately when another execution is in flight.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest012, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        OHOS::xml::AsyncParseWorkData* workData =
+            OHOS::xml::XmlSAXParserTestHelper::NewWorkData(parser, "<root>", false);
+        OHOS::xml::XmlSAXParserTestHelper::QueueWorkData(*parser, workData);
+        OHOS::xml::XmlSAXParserTestHelper::SetIsExecuting(*parser, true);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeExecuteParse(env, workData);
+        ASSERT_EQ(OHOS::xml::XmlSAXParserTestHelper::GetQueuedWorkCount(*parser),
+            static_cast<size_t>(1));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetIsExecuting(*parser));
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::GetIsParseComplete(*parser));
+        // Drain the queue so the parser can be disposed safely.
+        OHOS::xml::XmlSAXParserTestHelper::SetIsExecuting(*parser, false);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeExecuteParse(env, workData);
+        ASSERT_EQ(OHOS::xml::XmlSAXParserTestHelper::GetQueuedWorkCount(*parser),
+            static_cast<size_t>(0));
+        delete workData;
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest013
+ * @tc.desc: CompleteParse error path defers cleanup while events are pending (hasParseError_ gate)
+ *           and converges after the queue is drained.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest013, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        napi_value handler = BuildSaxRecordingHandler(env);
+        OHOS::xml::XmlSAXParserTestHelper::SetupCallbacksFromHandler(*parser, env, handler);
+        // Error session: pending events must still be dispatched before cleanup.
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, false, false);
+        OHOS::xml::XmlSAXParserTestHelper::SetHasParseError(*parser, true);
+        OHOS::xml::XmlSAXParserTestHelper::PushPendingCallback(*parser, 3);
+        OHOS::xml::AsyncParseWorkData* workData =
+            OHOS::xml::XmlSAXParserTestHelper::NewCompletedWorkData(env, parser, "XML parsing failed: ut", true);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeCompleteParse(env, napi_ok, workData);
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_EQ(OHOS::xml::XmlSAXParserTestHelper::GetPendingCallbackCount(*parser),
+            static_cast<size_t>(3));
+        OHOS::xml::XmlSAXParserTestHelper::DrainPendingCallbacks(*parser);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeTryCleanup(*parser);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_EQ(OHOS::xml::XmlSAXParserTestHelper::GetPendingCallbackCount(*parser),
+            static_cast<size_t>(0));
+        delete workData;
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest014
+ * @tc.desc: Error session cleanup is idempotent: a second CompleteParse after cleanup returns early.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest014, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::SetHasParseError(*parser, true);
+        OHOS::xml::AsyncParseWorkData* first =
+            OHOS::xml::XmlSAXParserTestHelper::NewCompletedWorkData(env, parser, "XML parsing failed: ut", true);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeCompleteParse(env, napi_ok, first);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        delete first;
+        // Branch: parserCtxt_ == nullptr && callbacks_ == nullptr -> early return.
+        OHOS::xml::AsyncParseWorkData* second =
+            OHOS::xml::XmlSAXParserTestHelper::NewCompletedWorkData(env, parser, "XML parsing failed: ut", true);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeCompleteParse(env, napi_ok, second);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        delete second;
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest015
+ * @tc.desc: CompleteParse success path defers cleanup while the chunk is not final.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest015, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        napi_value handler = BuildSaxRecordingHandler(env);
+        OHOS::xml::XmlSAXParserTestHelper::SetupCallbacksFromHandler(*parser, env, handler);
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, false, false);
+        OHOS::xml::AsyncParseWorkData* workData =
+            OHOS::xml::XmlSAXParserTestHelper::NewCompletedWorkData(env, parser, "", false);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeCompleteParse(env, napi_ok, workData);
+        ASSERT_FALSE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::HasParserContext(*parser));
+        delete workData;
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest016
+ * @tc.desc: CompleteParse success path cleans up when final chunk parsed without endDocument ref.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest016, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::InitParserContextForTest(*parser));
+        OHOS::xml::XmlSAXParserTestHelper::SetCallbacks(*parser,
+            OHOS::xml::XmlSAXParserTestHelper::NewEmptyCallbacks(env));
+        OHOS::xml::XmlSAXParserTestHelper::SetParseFlags(*parser, true, false);
+        OHOS::xml::AsyncParseWorkData* workData =
+            OHOS::xml::XmlSAXParserTestHelper::NewCompletedWorkData(env, parser, "", true);
+        OHOS::xml::XmlSAXParserTestHelper::InvokeCompleteParse(env, napi_ok, workData);
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        delete workData;
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest017
+ * @tc.desc: Integration: full async parse delivers all events and cleans up after END_DOCUMENT.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest017, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        g_saxEventSequence.clear();
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        napi_value handler = BuildSaxRecordingHandler(env);
+        napi_value promise = parser->Parse(env, handler, "<root><child>hello</child></root>", true);
+        ASSERT_NE(promise, nullptr);
+        uv_loop_t* loop = nullptr;
+        ASSERT_EQ(napi_get_uv_event_loop(env, &loop), napi_ok);
+        ASSERT_NE(loop, nullptr);
+        PumpSaxLoop(loop, [parser]() {
+            return OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser);
+        });
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetIsParseComplete(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetEndDocumentHandled(*parser));
+        ASSERT_EQ(g_saxEventSequence.size(), static_cast<size_t>(7));
+        ASSERT_EQ(g_saxEventSequence.front(),
+            static_cast<int>(OHOS::xml::SAXCallbackType::START_DOCUMENT));
+        ASSERT_EQ(g_saxEventSequence.back(),
+            static_cast<int>(OHOS::xml::SAXCallbackType::END_DOCUMENT));
+        bool sawCharacters = false;
+        for (size_t i = 0; i < g_saxEventSequence.size(); i++) {
+            if (g_saxEventSequence[i] == static_cast<int>(OHOS::xml::SAXCallbackType::CHARACTERS)) {
+                sawCharacters = true;
+            }
+        }
+        ASSERT_TRUE(sawCharacters);
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
+}
+
+/* @tc.name: XmlSAXParserCleanupTest018
+ * @tc.desc: Integration: without an endDocument callback the final chunk still triggers cleanup.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, XmlSAXParserCleanupTest018, testing::ext::TestSize.Level0)
+{
+    RunInNapiTestEnv([this](napi_env env) {
+        g_saxEventSequence.clear();
+        OHOS::xml::XmlSAXParser* parser = OHOS::xml::XmlSAXParserTestHelper::NewParser(env);
+        OHOS::xml::XmlSAXParserTestHelper::SetCallbacks(*parser,
+            OHOS::xml::XmlSAXParserTestHelper::NewEmptyCallbacks(env));
+        napi_value handler = nullptr;
+        napi_create_object(env, &handler);
+        napi_value promise = parser->Parse(env, handler, "<root/>", true);
+        ASSERT_NE(promise, nullptr);
+        uv_loop_t* loop = nullptr;
+        ASSERT_EQ(napi_get_uv_event_loop(env, &loop), napi_ok);
+        PumpSaxLoop(loop, [parser]() {
+            return OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser);
+        });
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::IsCleanedUp(*parser));
+        ASSERT_TRUE(OHOS::xml::XmlSAXParserTestHelper::GetIsParseComplete(*parser));
+        ASSERT_TRUE(g_saxEventSequence.empty());
+        OHOS::xml::XmlSAXParserTestHelper::DisposeParser(parser);
+    });
 }

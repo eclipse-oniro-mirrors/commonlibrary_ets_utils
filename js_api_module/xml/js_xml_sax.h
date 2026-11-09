@@ -17,6 +17,7 @@
 #define XML_JS_XML_SAX_H
 
 #include <libxml/parser.h>
+#include <atomic>
 #include <map>
 #include <string>
 #include <vector>
@@ -152,6 +153,16 @@ private:
     void Cleanup();
 
     /**
+     * Attempt cleanup only after the parse session has finished (final chunk
+     * parsed or parse error), all queued SAX events have been dispatched to
+     * JS, and when an endDocument handler is registered - the END_DOCUMENT
+     * JS callback has been invoked. Called from both CallEndDocumentCallback,
+     * CompleteParse and ProcessCallbackQueue. Synchronized by cleanupMutex_
+     * so cleanup runs exactly once.
+     */
+    void TryCleanup();
+
+    /**
      * SAX callback wrappers for libxml2 with namespace support.
      */
     static void StartDocumentCallback(void* userData);
@@ -228,6 +239,11 @@ private:
 
     std::mutex callbackQueueMutex_;
     std::queue<SAXCallbackData> callbackQueue_;
+
+    std::atomic_bool isParseComplete_ = false;
+    std::atomic_bool endDocumentHandled_ = false;
+    std::atomic_bool hasParseError_ = false;
+    std::mutex cleanupMutex_;
 
     friend class XmlSAXParserTestHelper;
 };

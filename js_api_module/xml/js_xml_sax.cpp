@@ -106,6 +106,10 @@ bool XmlSAXParser::InitParserContext()
         return true;
     }
 
+    isParseComplete_.store(false, std::memory_order_release);
+    endDocumentHandled_.store(false, std::memory_order_release);
+    hasParseError_.store(false, std::memory_order_release);
+
     // Create SAX2 handler structure with namespace support
     static xmlSAXHandler saxHandler = {0};
     saxHandler.initialized = XML_SAX2_MAGIC;
@@ -305,13 +309,18 @@ void XmlSAXParser::ExecuteParse(napi_env env, void* data)
         std::lock_guard<std::mutex> lock(parser->dataQueueMutex_);
         std::swap(parser->workDataQueue_, tmpQueue);
     }
+    bool sawFinalChunk = false;
     while (!tmpQueue.empty()) {
         AsyncParseWorkData* workData = tmpQueue.front();
         tmpQueue.pop();
         int parseResult = xmlParseChunk(parser->parserCtxt_, workData->chunk.c_str(),
                                         static_cast<int>(workData->chunk.length()),
                                         workData->isFinal ? 1 : 0);
+        if (workData->isFinal) {
+            sawFinalChunk = true;
+        }
         if (parseResult != 0) {
+            parser->hasParseError_.store(true, std::memory_order_release);
             workData->error = "XML parsing failed";
             if (parser->parserCtxt_->lastError.message != nullptr) {
                 workData->error += ": ";
@@ -328,6 +337,9 @@ void XmlSAXParser::ExecuteParse(napi_env env, void* data)
     }
     if (needExecuteAgain) {
         ExecuteParse(env, data);
+    }
+    if (sawFinalChunk) {
+        parser->isParseComplete_.store(true, std::memory_order_release);
     }
 }
 
@@ -364,12 +376,12 @@ void XmlSAXParser::CompleteParse(napi_env env, napi_status status, void* data)
     XmlSAXParser* parser = workData->parser;
 
     bool hasError = parser->HandleParseError(env, workData);
-    bool isFinal = false;
     if (!hasError) {
-        isFinal = parser->HandleParseSuccess(env, workData);
+        parser->HandleParseSuccess(env, workData);
     }
 
     napi_delete_async_work(env, workData->asyncWork);
+    parser->TryCleanup();
 }
 
 void XmlSAXParser::AsyncCallback(uv_async_t* handle)
@@ -404,6 +416,7 @@ void XmlSAXParser::ProcessCallbackQueue()
         CallJSCallbackFromData(env_, callbackData);
     }
 
+    TryCleanup();
     napi_close_handle_scope(env_, scope);
 }
 
@@ -451,14 +464,15 @@ void XmlSAXParser::CallEndDocumentCallback(napi_env env)
 {
     napi_value callback = nullptr;
     napi_get_reference_value(env, callbacks_->endDocumentRef, &callback);
-    
+
     napi_value global = nullptr;
     napi_get_global(env, &global);
-    
+
     napi_value result = nullptr;
     napi_call_function(env, global, callback, 0, nullptr, &result);
 
-    Cleanup();
+    endDocumentHandled_.store(true, std::memory_order_release);
+    TryCleanup();
 }
 
 void XmlSAXParser::CallStartElementCallback(napi_env env, const SAXCallbackData& callbackData)
@@ -628,4 +642,37 @@ void XmlSAXParser::CharactersCallback(void* userData, const xmlChar* ch, int len
     parser->QueueCallback(callbackData);
 }
 
+void XmlSAXParser::TryCleanup()
+{
+    // Gate 1: the parse session must be finished - either the final chunk was
+    // parsed or a parse error ended the session.
+    if (!isParseComplete_.load(std::memory_order_acquire) &&
+        !hasParseError_.load(std::memory_order_acquire)) {
+        return;
+    }
+
+    // Gate 2: when an endDocument handler is registered and the session ended
+    // without a parse error, wait for the END_DOCUMENT JS callback. On error
+    // the remaining queued events (including a possible endDocument emitted by libxm12's
+    // error/terminate path) must still be dispatched, so only gate on the queue being empty.
+    bool needEndDocument = (callbacks_ != nullptr && callbacks_->endDocumentRef != nullptr);
+    if (!hasParseError_.load(std::memory_order_acquire) && needEndDocument &&
+        !endDocumentHandled_.load(std::memory_order_acquire)) {
+        return;
+    }
+    // Gate 3: never clean up while SAX events are still waiting to be
+    // dispatched to JS - clearing the parser here would drop them (and
+    // deleting callbacks_ first would turn ProcessCallbackQueue into a UAF).
+    {
+        std::lock_guard<std::mutex> clock(callbackQueueMutex_);
+        if (!callbackQueue_.empty()) {
+            return;
+        }
+    }
+    std::lock_guard<std::mutex> lock(cleanupMutex_);
+    if (parserCtxt_ == nullptr && callbacks_ == nullptr) {
+        return;
+    }
+    Cleanup();
+}
 } // namespace OHOS::xml
