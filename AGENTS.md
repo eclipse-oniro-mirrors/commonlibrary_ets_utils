@@ -26,7 +26,7 @@ commonlibrary_ets_utils/
 ├── js_concurrent_module/  # 并发：taskpool, worker, utils(locks/ASON/条件变量)
 ├── js_sys_module/         # 系统：console, process, timer, dfx
 ├── js_util_module/        # 工具：util, container, collections, json, stream
-├── platform/              # 跨平台适配（仅 ohos/android/ios/default 四个子目录；Windows/Linux/Mac 等经 default + 平台宏支持）→ 详见 code_map
+├── platform/              # 跨平台适配（Windows/Linux/Mac 等经 default + 平台宏支持）→ 详见 code_map
 └── tools/                 # 公共 NAPI 工具、HILOG 宏、ErrorHelper → 详见 code_map
 ```
 
@@ -145,7 +145,7 @@ commonlibrary_ets_utils/
 - **构建产物**（`.abc`、gen_obj `.o`/`.c`）→ 修改源码后重新生成，禁止直接编辑产物
 - **第三方依赖版本升级**（libxml2、openssl、ICU）→ 确认许可证兼容性及全量回归测试
 - **`hisysevent.yaml`** HiSysEvent 事件定义变更 → 确认下游消费方不受影响（典型消费方：故障管理 hiview、事件统计 hisyseventservice、DFX 上报链路）
-- **`ets_utils_config.gni`** 全局构建变量与平台依赖（`platform_root`、`hilog_windows/linux/mac/ios/android` 等）→ 确认所有目标平台编译通过
+- **`ets_utils_config.gni`** 全局构建变量与平台依赖（`platform_root`、`hilog_windows/linux/mac` 等）→ 确认所有目标平台编译通过
 
 ### Agent 常见错误模式
 
