@@ -90,15 +90,9 @@ js_xml.ts → js_xml.js → xml.o/xml.c → shared library
 - `bounds_checking_function:libsec_shared` - Security functions
 - `c_utils:utils` - Common utilities (non-standard systems only)
 
-**ArkUI X (cross-platform):**
-- `$plugins_root/libs/napi:napi_${target_os}` - Platform-specific NAPI
-- `$plugins_root/libs/icu:icu_${target_os}` - Platform-specific ICU
-- `$plugins_root/libs/securec:sec_${target_os}` - Secure C library
-
 ### Compiler Configuration
 - C++ Standard: Default (uses platform-specific standards)
 - Security: Branch protector (pac_ret), CFI enabled, CFI cross-DSO
-- Platform defines: `ANDROID_PLATFORM` (for Android)
 - Optimization: -g3 for debug builds in tests
 
 ### Build Commands
@@ -215,11 +209,6 @@ The component has a dedicated test directory with comprehensive unit tests:
    - Usage: Utility functions and helpers
    - Integration: Shared utility functions across OpenHarmony (non-standard systems)
 
-#### Platform-Specific Dependencies (ArkUI X)
-- **Platform-specific NAPI**: Android/iOS NAPI implementations
-- **Platform-specific ICU**: ICU libraries for Android/iOS
-- **Platform-specific SecureC**: Secure C libraries for Android/iOS
-
 ### Runtime Dependencies
 - **ArkTS Runtime**: Must support standard JavaScript/ArkTS APIs
 - **Global Object**: Access to global scope for requireInternal utility
@@ -231,7 +220,6 @@ The component has a dedicated test directory with comprehensive unit tests:
 2. **Runtime Core**: Integrates with ArkTS runtime's object model
 3. **Framework Integration**: Installed to `module` directory
 4. **ets_util_path**: Uses shared build scripts and includes from parent directory
-5. **Plugin System**: Integrates with platform-specific libraries for ArkUI X
 
 ## Boundaries
 
@@ -409,7 +397,6 @@ The component has a dedicated test directory with comprehensive unit tests:
 3. **Error Handling**: Use BusinessError with error codes (401 for parameter errors, 10200064 for empty parameters, 10200066 for encoding errors)
 4. **Performance**: Optimize parsing for typical XML document sizes
 5. **Security**: Use SecureC for C operations, enable CFI and branch protector
-6. **Platform Support**: Support both standard OpenHarmony and ArkUI X platforms
 7. **Encoding Support**: Only UTF-8 encoding is supported
 8. **Validation**: Always validate input parameters
 9. **Documentation**: Maintain clear API documentation
@@ -424,7 +411,6 @@ When extending this component:
 5. Use SecureC functions for C operations
 6. Support both synchronous and asynchronous operations where appropriate
 7. Maintain backward compatibility with existing APIs
-8. Test on all supported platforms (standard OpenHarmony, ArkUI X Android/iOS)
 9. Consider performance implications for frequently called functions
 10. Use native code only for performance-critical operations
 11. Document all public APIs clearly

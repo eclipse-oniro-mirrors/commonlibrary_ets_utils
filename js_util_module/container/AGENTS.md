@@ -105,11 +105,6 @@ Each of the 15 collections builds independently:
 - `hilog:libhilog` - Logging framework
 - `napi:ace_napi` - Node-API bindings
 
-**ArkUI X (cross-platform):**
-- `plugins_root/libs/icu:icu_${target_os}` - ICU library
-- `plugins_root/libs/napi:napi_${target_os}` - Platform-specific NAPI
-- `plugins_root/libs/securec:sec_${target_os}` - Secure C library
-
 ### Compiler Configuration
 - C++ Standard: C++17
 - Warnings: `-Wno-deprecated-declarations`
@@ -175,10 +170,6 @@ When extending this component, ensure tests cover:
    - Usage: Convert .js files to .abc for runtime execution
    - Integration: Part of build toolchain
 
-#### Platform-Specific Dependencies (ArkUI X)
-- **ICU**: Internationalization components for Unicode support
-- **Platform-specific NAPI**: Android/iOS NAPI implementations
-- **SecureC**: Secure C library replacement for memory safety
 
 ### Runtime Dependencies
 - **ArkTS Runtime**: Must support standard JavaScript collections API
@@ -297,7 +288,6 @@ When extending this component, ensure tests cover:
 2. **Optional Optimization**: Use ArkPrivate fast path when available, fallback to TS implementation
 3. **Type Safety**: Maintain TypeScript type safety throughout implementation
 4. **Performance**: Optimize for typical use cases while maintaining flexibility
-5. **Compatibility**: Support both standard OpenHarmony and ArkUI X platforms
 6. **Embedding**: JS and ABC code embedded in native modules for distribution
 7. **Proxy Usage**: Leverage ES6 Proxy for property interception where appropriate
 8. **Error Consistency**: Use consistent error checking patterns across all collections
@@ -312,5 +302,4 @@ When extending this component:
 6. Maintain consistent API naming and behavior across collections
 7. Update BUILD.gn template if adding new collection types
 8. Ensure compatibility with util.struct base class where applicable
-9. Test on all supported platforms (standard OpenHarmony, ArkUI X)
 10. Document performance characteristics and use case recommendations

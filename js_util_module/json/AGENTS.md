@@ -72,15 +72,9 @@ json_js.ts → json_js.js → json.o/json.c → shared library
 - `bounds_checking_function:libsec_shared` - Secure bounds checking
 - `icu:shared_icuuc` - ICU library for Unicode support
 
-**ArkUI X (cross-platform):**
-- `plugins_root/libs/icu:icu_${target_os}` - ICU library
-- `plugins_root/libs/napi:napi_${target_os}` - Platform-specific NAPI
-- `plugins_root/libs/securec:sec_${target_os}` - Secure C library
-
 ### Compiler Configuration
 - C++ Standard: Default (not explicitly specified in config)
 - Security: PAC_RET branch protection, CFI sanitization
-- Platform defines: ANDROID_PLATFORM, IOS_PLATFORM (for ArkUI X)
 
 ### Build Commands
 ```bash
@@ -150,10 +144,6 @@ When extending this component, ensure tests cover:
    - Purpose: Compile JavaScript to ArkTS bytecode
    - Usage: Convert .js files to .abc for runtime execution
    - Integration: Part of build toolchain
-
-#### Platform-Specific Dependencies (ArkUI X)
-- **Platform-specific NAPI**: Android/iOS NAPI implementations
-- **SecureC**: Secure C library replacement for memory safety
 
 ### Runtime Dependencies
 - **ArkTS Runtime**: Must support standard JSON API extensions
@@ -304,7 +294,6 @@ When extending this component:
 5. Maintain backward compatibility with existing API
 6. Test edge cases including circular references and malformed JSON
 7. Ensure type safety with TypeScript generics where applicable
-8. Test on all supported platforms (standard OpenHarmony, ArkUI X)
 9. Document any new features or behavioral changes
 10. Consider performance implications for large JSON payloads
 11. Handle Unicode and special characters properly

@@ -32,18 +32,12 @@ The component uses the GN (Generate Ninja) build system with the following build
 
 2. **collections_static (ohos_source_set)**: Static source set containing the implementation
    - Include directories: `include`, `ets_util_path`
-   - Conditional dependencies for ArkUI X vs standard OpenHarmony
 
 ### Build Dependencies
 **Standard OpenHarmony:**
 - `hilog:libhilog` - Logging framework
 - `napi:ace_napi` - Node-API bindings
 - `bounds_checking_function:libsec_shared` - Secure bounds checking
-
-**ArkUI X (cross-platform):**
-- ICU library
-- NAPI library (platform-specific)
-- SecureC library (platform-specific)
 
 ### Build Commands
 ```bash
@@ -94,10 +88,6 @@ When extending this component, ensure tests cover:
    - Purpose: Security bounds checking for memory operations
    - Usage: Memory safety in native code
 
-#### Platform-Specific Dependencies (ArkUI X)
-- **ICU**: Internationalization components
-- **Platform-specific NAPI**: Android/iOS NAPI implementations
-- **SecureC**: Secure C library replacement
 
 ### Runtime Dependencies
 - **ArkTS Runtime**: Collection classes must be available in the ArkTS runtime environment
@@ -199,4 +189,3 @@ When extending this component:
 3. Maintain backward compatibility with existing exports
 4. Update documentation for any new collections
 5. Ensure proper error handling for all new exports
-6. Test on all supported platforms (standard OpenHarmony, ArkUI X)

@@ -72,13 +72,9 @@ stream_js.ts → stream_js.js → stream.o/stream.c → shared library
 - `hilog:libhilog` - Logging framework
 - `napi:ace_napi` - Node-API bindings
 
-**ArkUI X (cross-platform):**
-- `plugins_root/libs/napi:napi_${target_os}` - Platform-specific NAPI
-
 ### Compiler Configuration
 - C++ Standard: Default (not explicitly specified in config)
 - Security: No explicit security features configured
-- Platform defines: ANDROID_PLATFORM, IOS_PLATFORM (for ArkUI X)
 
 ### Build Commands
 ```bash
@@ -144,9 +140,6 @@ When extending this component, ensure tests cover:
    - Purpose: Provides TextEncoder and StringDecoder utilities
    - Usage: Required via `requireNapi('util')`
    - Integration: Used for encoding/decoding stream data
-
-#### Platform-Specific Dependencies (ArkUI X)
-- **Platform-specific NAPI**: Android/iOS NAPI implementations
 
 ### Runtime Dependencies
 - **ArkTS Runtime**: Must support standard stream-like API patterns
@@ -337,7 +330,6 @@ When extending this component:
 9. Test pipe operations between different stream types
 10. Ensure proper cleanup in error conditions and stream end
 11. Use Promise.resolve() and setTimeout() for async operation scheduling
-12. Test on all supported platforms (standard OpenHarmony, ArkUI X)
 13. Document all event types and their data formats
 14. Consider performance implications for large data chunks
 15. Handle encoding conversions properly for international character sets
