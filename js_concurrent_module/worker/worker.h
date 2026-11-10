@@ -582,6 +582,12 @@ private:
     bool CallWorkerFunction(size_t argc, const napi_value* argv, const char* methodName, bool tryCatch);
     void CallHostFunction(size_t argc, const napi_value* argv, const char* methodName) const;
 
+    using ListenerContainer = std::map<std::string, std::list<WorkerListenerPtr>>;
+    bool TakeListenerSnapshot(const ListenerContainer& container, const std::string& type,
+                              std::list<WorkerListenerPtr>& snapshot);
+    bool IsListenerDispatchable(const ListenerContainer& container, const std::string& type,
+                                const WorkerListenerPtr& data);
+    void RemoveOnceListener(ListenerContainer& container, const std::string& type, const WorkerListenerPtr& data);
     bool HandleEventListeners(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type);
     void ParentPortHandleEventListeners(napi_env env, napi_value recv, size_t argc,
                                         const napi_value* argv, const char* type, bool tryCatch);
