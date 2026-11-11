@@ -387,6 +387,7 @@ namespace OHOS::xml {
         TagEnum DealLtGroup();
         void DealWhiteSpace(unsigned char c);
         friend class XmlTest;
+        friend class XmlCharRefTest;
     private:
         bool HandleTagFunc(napi_env env, napi_value thisVar);
         bool HandleTokenFunc(napi_env env, napi_value thisVar);

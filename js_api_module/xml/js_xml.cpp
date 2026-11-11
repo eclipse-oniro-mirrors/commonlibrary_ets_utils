@@ -16,6 +16,8 @@
 #include "js_xml.h"
 #include "securec.h"
 #include "tools/security_fault_reporter.h"
+#include <cstdint>
+#include <limits>
 namespace OHOS::xml {
     static const napi_type_tag xmlPullParserTypeTag = {
         0x8c52521acad34763,  // lower
@@ -897,6 +899,89 @@ namespace OHOS::xml {
         }
     }
 
+    // Returns the digit value of ch for the given base, or -1 when ch is not a
+    // valid digit of that base.
+    static int CharRefDigitValue(char ch, int base)
+    {
+        int digit = -1;
+        if (ch >= '0' && ch <= '9') {
+            digit = ch - '0';
+        } else if (ch >= 'a' && ch <= 'f') {
+            digit = ch - 'a' + 10; // 10: value offset of hex letter 'a'
+        } else if (ch >= 'A' && ch <= 'F') {
+            digit = ch - 'A' + 10; // 10: value offset of hex letter 'A'
+        }
+        if (digit < 0 || digit >= base) {
+            return -1;
+        }
+        return digit;
+    }
+
+    // Returns whether ch is one of the six characters std::stoi (through
+    // strtol) skips as leading whitespace in the C locale.
+    static bool IsRefSpace(char ch)
+    {
+        return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\v' || ch == '\f' || ch == '\r';
+    }
+
+    // Returns whether the strtol-style "0x"/"0X" prefix starts at i in text
+    // and a hex digit follows it; strtol only skips the prefix in base 16
+    // and only when a hex digit actually follows.
+    static bool HasStrtolHexPrefix(const std::string &text, size_t i)
+    {
+        constexpr int hexBase = 16; // 16: hex base
+        if (i + 2 >= text.size()) { // 2: prefix length
+            return false;
+        }
+        bool hasPrefix = text[i] == '0' && (text[i + 1] == 'x' || text[i + 1] == 'X');
+        return hasPrefix && CharRefDigitValue(text[i + 2], hexBase) >= 0; // 2: prefix length
+    }
+
+    // Converts the digit part of a numeric character reference exactly like
+    // std::stoi(text, nullptr, base) used to: skip leading whitespace, accept
+    // an optional sign, accept the strtol-style "0x"/"0X" prefix in base 16,
+    // consume the leading digit run, and stop at the first non-digit. Returns
+    // false exactly where std::stoi would throw (no digits at all, or a value
+    // outside [INT_MIN, INT_MAX]), so only the former SIGABRT paths turn into
+    // parser errors; every input std::stoi silently accepted keeps producing
+    // the same byte. Whitespace and '+' never survive the ParseEntity scan,
+    // but are handled anyway so the equivalence holds for any input.
+    static bool ParseCharRefValue(const std::string &text, int base, int &value)
+    {
+        size_t i = 0;
+        while (i < text.size() && IsRefSpace(text[i])) {
+            i++;
+        }
+        bool negative = false;
+        if (i < text.size() && (text[i] == '+' || text[i] == '-')) {
+            negative = (text[i] == '-');
+            i++;
+        }
+        if (base == 16 && HasStrtolHexPrefix(text, i)) { // 16: hex base
+            i += 2; // 2: skip the prefix only when hex digits follow, like strtol
+        }
+        const int64_t limit = negative ? -(static_cast<int64_t>(std::numeric_limits<int>::min()))
+                                       : static_cast<int64_t>(std::numeric_limits<int>::max());
+        int64_t result = 0;
+        bool hasDigit = false;
+        for (; i < text.size(); i++) {
+            int digit = CharRefDigitValue(text[i], base);
+            if (digit < 0) {
+                break; // stop at the first non-digit, like std::stoi
+            }
+            hasDigit = true;
+            result = result * base + digit;
+            if (result > limit) {
+                return false; // std::out_of_range
+            }
+        }
+        if (!hasDigit) {
+            return false; // std::invalid_argument
+        }
+        value = static_cast<int>(negative ? -result : result);
+        return true;
+    }
+
     void XmlPullParser::ParseEntityFunc(size_t start, std::string &out, bool isEntityToken, TextEnum textEnum)
     {
         std::string strEntity = out.substr(start + 1, out.length() - 1);
@@ -905,10 +990,20 @@ namespace OHOS::xml {
         }
         if (strEntity.size() && strEntity[0] == '#') {
             int c = 0;
+            bool isLegal = false;
             if (strEntity.size() >= 2 && strEntity[1] == 'x') { // 2: number of args
-                c = std::stoi(strEntity.substr(2), nullptr, 16); // 16: number of args 2: number of args
+                isLegal = ParseCharRefValue(strEntity.substr(2), 16, c); // 16: hex base
             } else {
-                c = std::stoi(strEntity.substr(1), nullptr);
+                isLegal = ParseCharRefValue(strEntity.substr(1), 10, c); // 10: decimal base
+            }
+            if (!isLegal) {
+                // Numeric character references such as "&#xyz;" or "&#;" are not convertible
+                // and values such as "&#99999999999;" exceed the int range. They must be
+                // reported through the parser error channel and kept unresolved instead of
+                // aborting the application, consistent with the handling of unknown entities.
+                xmlPullParserError_ = "illegal character reference: &" + strEntity;
+                bUnresolved_ = true;
+                return;
             }
             out = "";
             out += static_cast<char>(c);
