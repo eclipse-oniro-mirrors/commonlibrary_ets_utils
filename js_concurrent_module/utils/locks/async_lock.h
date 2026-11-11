@@ -31,6 +31,12 @@ struct RequestCreationInfo {
     std::string creationStacktrace;
 };
 
+struct AsyncLockIdentity {
+    bool isAnonymous;
+    uint32_t id;
+    std::string name;
+};
+
 class AsyncLock {
 public:
     explicit AsyncLock(const std::string &lockName);
@@ -50,6 +56,13 @@ public:
     // Any way you cannot use the instance if the method returns 0.
     uint32_t DecRefCount();
     bool IsReadyForDeletion();
+
+    // Must be called while holding asyncLockMutex_ (or before the instance
+    // can be deleted, i.e. while lockMutex holders cannot free it).
+    AsyncLockIdentity GetIdentity() const
+    {
+        return AsyncLockIdentity { anonymousLockId_ != 0, anonymousLockId_, lockName_ };
+    }
 
     std::vector<RequestCreationInfo> GetSatisfiedRequestInfos();
     std::vector<RequestCreationInfo> GetPendingRequestInfos();

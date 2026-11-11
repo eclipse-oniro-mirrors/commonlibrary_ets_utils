@@ -227,6 +227,7 @@ void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] voi
             return;
         }
         AsyncLock *asyncLock = it->second;
+        asyncLock->DecRefCount();
         if (!asyncLock->IsReadyForDeletion()) {
             return;
         }
@@ -238,6 +239,7 @@ void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] voi
             return;
         }
         AsyncLock *asyncLock = it->second;
+        asyncLock->DecRefCount();
         if (!asyncLock->IsReadyForDeletion()) {
             return;
         }
@@ -246,26 +248,25 @@ void AsyncLockManager::Destructor(napi_env env, void *data, [[maybe_unused]] voi
     }
 }
 
-void AsyncLockManager::CheckAndRemoveLock(AsyncLock *lock)
+void AsyncLockManager::CheckAndRemoveLock(const AsyncLockIdentity &ident, AsyncLock *lock)
 {
+    AsyncLockIdentity id = ident;
     std::unique_lock<std::mutex> guard(lockMutex);
-    if (!lock->IsReadyForDeletion()) {
+    AsyncLock *found = FindAsyncLockUnsafe(&id);
+    if (found == nullptr || found != lock) {
+        // The lock was already deleted, or a new lock with the same identity
+        // was created in the meantime; either way it must not be touched.
         return;
     }
-    uint32_t id = lock->GetLockId();
-    if (id == 0) {
-        std::string name = lock->GetLockName();
-        auto it = lockMap.find(name);
-        if (it != lockMap.end()) {
-            lockMap.erase(it);
-        }
-    } else {
-        auto it = anonymousLockMap.find(id);
-        if (it != anonymousLockMap.end()) {
-            anonymousLockMap.erase(it);
-        }
+    if (!found->IsReadyForDeletion()) {
+        return;
     }
-    delete lock;
+    if (id.isAnonymous) {
+        anonymousLockMap.erase(id.id);
+    } else {
+        lockMap.erase(id.name);
+    }
+    delete found;
 }
 
 napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)

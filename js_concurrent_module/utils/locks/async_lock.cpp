@@ -73,8 +73,9 @@ void AsyncLock::CleanUpLockRequestOnCompletion(LockRequest* lockRequest)
     delete lockRequest;
     if (pendingList_.empty()) {
         if (refCount_ == 0 && heldList_.empty()) {
+            AsyncLockIdentity ident = GetIdentity();
             lock.unlock();
-            AsyncLockManager::CheckAndRemoveLock(this);
+            AsyncLockManager::CheckAndRemoveLock(ident, this);
         }
         return;
     }
@@ -113,8 +114,9 @@ void AsyncLock::ProcessPendingLockRequest(napi_env env, LockRequest* syncLockReq
     std::unique_lock<std::mutex> lock(asyncLockMutex_);
     if (pendingList_.empty()) {
         if (refCount_ == 0 && heldList_.empty()) {
+            AsyncLockIdentity ident = GetIdentity();
             lock.unlock();
-            AsyncLockManager::CheckAndRemoveLock(this);
+            AsyncLockManager::CheckAndRemoveLock(ident, this);
         }
         return;
     }

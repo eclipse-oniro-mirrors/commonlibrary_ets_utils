@@ -67,19 +67,18 @@ public:
     explicit Graph(AdjacencyList &&adj)
     {
         std::map<VertexId, size_t> vDataPtrToVidx;
-        size_t size = v_.size() > 0 ? v_.size() - 1 : 0;
         for (auto &edef : adj) {
             // from
             auto fromVertexPtr = std::get<0>(edef);
             if (vDataPtrToVidx.find(fromVertexPtr) == vDataPtrToVidx.end()) {
                 v_.push_back({VColor::WHITE, fromVertexPtr});
-                vDataPtrToVidx[fromVertexPtr] = size;
+                vDataPtrToVidx[fromVertexPtr] = v_.size() - 1;
             }
             // to
             auto toVertexPtr = std::get<1>(edef);
             if (vDataPtrToVidx.find(toVertexPtr) == vDataPtrToVidx.end()) {
                 v_.push_back({VColor::WHITE, toVertexPtr});
-                vDataPtrToVidx[toVertexPtr] = size;
+                vDataPtrToVidx[toVertexPtr] = v_.size() - 1;
             }
         }
         // For now let's use an adjacency matrix as the storage.
