@@ -28,6 +28,186 @@ public:
     {
         return parser.ConvertSAX2Attributes(attrs, attributeSize);
     }
+
+    static XmlSAXParser* NewParser(napi_env env)
+    {
+        XmlSAXParser* parser = new XmlSAXParser(env);
+        napi_value holder = nullptr;
+        napi_create_object(env, &holder);
+        napi_create_reference(env, holder, 1, &parser->ref_);
+        return parser;
+    }
+
+    static void DisposeParser(XmlSAXParser* parser)
+    {
+        delete parser;
+    }
+
+    static bool GetIsParseComplete(const XmlSAXParser& parser)
+    {
+        return parser.isParseComplete_.load(std::memory_order_acquire);
+    }
+
+    static bool GetEndDocumentHandled(const XmlSAXParser& parser)
+    {
+        return parser.endDocumentHandled_.load(std::memory_order_acquire);
+    }
+
+    static void SetParseFlags(XmlSAXParser& parser, bool isParseComplete, bool endDocumentHandled)
+    {
+        parser.isParseComplete_.store(isParseComplete, std::memory_order_release);
+        parser.endDocumentHandled_.store(endDocumentHandled, std::memory_order_release);
+    }
+
+    static bool GetHasParseError(const XmlSAXParser& parser)
+    {
+        return parser.hasParseError_.load(std::memory_order_acquire);
+    }
+
+    static void SetHasParseError(XmlSAXParser& parser, bool value)
+    {
+        parser.hasParseError_.store(value, std::memory_order_release);
+    }
+
+    static bool GetIsExecuting(const XmlSAXParser& parser)
+    {
+        return parser.isExecuting_.load(std::memory_order_acquire);
+    }
+
+    static void SetIsExecuting(XmlSAXParser& parser, bool value)
+    {
+        parser.isExecuting_.store(value, std::memory_order_release);
+    }
+
+    static bool IsCleanedUp(const XmlSAXParser& parser)
+    {
+        return parser.parserCtxt_ == nullptr && parser.callbacks_ == nullptr;
+    }
+
+    static bool HasParserContext(const XmlSAXParser& parser)
+    {
+        return parser.parserCtxt_ != nullptr;
+    }
+
+    static bool HasCallbacks(const XmlSAXParser& parser)
+    {
+        return parser.callbacks_ != nullptr;
+    }
+
+    static bool HasEndDocumentRef(const XmlSAXParser& parser)
+    {
+        return parser.callbacks_ != nullptr && parser.callbacks_->endDocumentRef != nullptr;
+    }
+
+    static size_t GetPendingCallbackCount(XmlSAXParser& parser)
+    {
+        std::lock_guard<std::mutex> lock(parser.callbackQueueMutex_);
+        return parser.callbackQueue_.size();
+    }
+
+    static void PushPendingCallback(XmlSAXParser& parser, size_t count)
+    {
+        std::lock_guard<std::mutex> lock(parser.callbackQueueMutex_);
+        for (size_t i = 0; i < count; i++) {
+            SAXCallbackData callbackData;
+            callbackData.type = SAXCallbackType::CHARACTERS;
+            callbackData.content = "pending";
+            parser.callbackQueue_.push(callbackData);
+        }
+    }
+
+    static void DrainPendingCallbacks(XmlSAXParser& parser)
+    {
+        std::lock_guard<std::mutex> lock(parser.callbackQueueMutex_);
+        std::queue<SAXCallbackData> empty;
+        std::swap(parser.callbackQueue_, empty);
+    }
+
+    static size_t GetQueuedWorkCount(XmlSAXParser& parser)
+    {
+        std::lock_guard<std::mutex> lock(parser.dataQueueMutex_);
+        return parser.workDataQueue_.size();
+    }
+
+    static void QueueWorkData(XmlSAXParser& parser, AsyncParseWorkData* workData)
+    {
+        std::lock_guard<std::mutex> lock(parser.dataQueueMutex_);
+        parser.workDataQueue_.push(workData);
+    }
+
+    static bool InitParserContextForTest(XmlSAXParser& parser)
+    {
+        return parser.InitParserContext();
+    }
+
+    static void InvokeTryCleanup(XmlSAXParser& parser)
+    {
+        parser.TryCleanup();
+    }
+
+    static void InvokeExecuteParse(napi_env env, void* data)
+    {
+        XmlSAXParser::ExecuteParse(env, data);
+    }
+
+    static void InvokeCompleteParse(napi_env env, napi_status status, void* data)
+    {
+        XmlSAXParser::CompleteParse(env, status, data);
+    }
+
+    static void InvokeCallEndDocument(XmlSAXParser& parser, napi_env env)
+    {
+        parser.CallEndDocumentCallback(env);
+    }
+
+    static void SetCallbacks(XmlSAXParser& parser, SAXCallbackRefs* callbacks)
+    {
+        parser.callbacks_ = callbacks;
+    }
+
+    static void SetupCallbacksFromHandler(XmlSAXParser& parser, napi_env env, napi_value handler)
+    {
+        SAXCallbackRefs* callbacks = new SAXCallbackRefs();
+        callbacks->env = env;
+        parser.ExtractCallbacks(env, handler, *callbacks);
+        parser.callbacks_ = callbacks;
+    }
+
+    static SAXCallbackRefs* NewEmptyCallbacks(napi_env env)
+    {
+        SAXCallbackRefs* callbacks = new SAXCallbackRefs();
+        callbacks->env = env;
+        return callbacks;
+    }
+
+    static AsyncParseWorkData* NewWorkData(XmlSAXParser* parser, const std::string& chunk, bool isFinal)
+    {
+        AsyncParseWorkData* workData = new AsyncParseWorkData();
+        workData->parser = parser;
+        workData->chunk = chunk;
+        workData->isFinal = isFinal;
+        workData->asyncWork = nullptr;
+        workData->deferred = nullptr;
+        return workData;
+    }
+
+    static AsyncParseWorkData* NewCompletedWorkData(napi_env env, XmlSAXParser* parser,
+                                                    const std::string& error, bool isFinal)
+    {
+        AsyncParseWorkData* workData = NewWorkData(parser, "", isFinal);
+        workData->error = error;
+        napi_value resourceName = nullptr;
+        napi_create_string_utf8(env, "SaxCleanupTestWork", NAPI_AUTO_LENGTH, &resourceName);
+        napi_create_async_work(env, nullptr, resourceName, DummyWorkExecute, DummyWorkComplete,
+                               workData, &workData->asyncWork);
+        napi_value promise = nullptr;
+        napi_create_promise(env, &workData->deferred, &promise);
+        return workData;
+    }
+
+    static void DummyWorkExecute(napi_env env, void* data) {}
+
+    static void DummyWorkComplete(napi_env env, napi_status status, void* data) {}
 };
 
 class XmlTest {
