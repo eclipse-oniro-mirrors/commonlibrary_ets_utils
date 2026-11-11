@@ -15,6 +15,7 @@
 
 #include "worker.h"
 
+#include <algorithm>
 #include <unordered_map>
 
 #include "sys_timer.h"
@@ -839,7 +840,7 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
     }
 
     napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
-    auto listener = new WorkerListener(env, callback, mode);
+    auto listener = std::make_shared<WorkerListener>(env, callback, mode);
     if (mode == ONCE && argc > NUM_WORKER_ARGS) {
         if (NapiHelper::IsObject(env, args[NUM_WORKER_ARGS])) {
             napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
@@ -1186,25 +1187,26 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     }
     worker->hostGlobalCallQueue_.Push(worker->globalCallId_, data);
 
-    std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
-    if (env != nullptr && !worker->HostIsStop() && !worker->isHostEnvExited_) {
-        worker->InitGlobalCallStatus(env);
+    {
+        std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+        if (env != nullptr && !worker->HostIsStop() && !worker->isHostEnvExited_) {
+            worker->InitGlobalCallStatus(env);
 #if defined(ENABLE_WORKER_EVENTHANDLER)
-        if (worker->isMainThreadWorker_ && !worker->isLimitedWorker_) {
-            worker->PostWorkerGlobalCallTask();
-        } else {
-            ConcurrentHelper::UvCheckAndAsyncSend(worker->hostOnGlobalCallSignal_);
-        }
+            if (worker->isMainThreadWorker_ && !worker->isLimitedWorker_) {
+                worker->PostWorkerGlobalCallTask();
+            } else {
+                ConcurrentHelper::UvCheckAndAsyncSend(worker->hostOnGlobalCallSignal_);
+            }
 #else
-        ConcurrentHelper::UvCheckAndAsyncSend(worker->hostOnGlobalCallSignal_);
+            ConcurrentHelper::UvCheckAndAsyncSend(worker->hostOnGlobalCallSignal_);
 #endif
-    } else {
-        HILOG_ERROR("worker:: worker host engine is nullptr when callGloballCallObjectMethod.");
-        ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING,
-            "worker is null when callGlobalCallObjectMethod");
-        return nullptr;
+        } else {
+            HILOG_ERROR("worker:: worker host engine is nullptr when callGloballCallObjectMethod.");
+            ErrorHelper::ThrowError(env, ErrorHelper::ERR_WORKER_NOT_RUNNING,
+                "worker is null when callGlobalCallObjectMethod");
+            return nullptr;
+        }
     }
-
     if (!reinterpret_cast<NativeEngine*>(env)->GetIsDebugModeEnabled()) {
         std::unique_lock lock(worker->globalCallMutex_);
         if (!worker->cv_.wait_for(lock, std::chrono::milliseconds(timeout), [worker]() {
@@ -1335,7 +1337,7 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
     }
 
     napi_ref callback = NapiHelper::CreateReference(env, args[1], 1);
-    auto listener = new WorkerListener(env, callback, PERMANENT);
+    auto listener = std::make_shared<WorkerListener>(env, callback, PERMANENT);
     if (argc > NUM_WORKER_ARGS && NapiHelper::IsObject(env, args[NUM_WORKER_ARGS])) {
         napi_value onceValue = NapiHelper::GetNameProperty(env, args[NUM_WORKER_ARGS], "once");
         bool isOnce = NapiHelper::GetBooleanValue(env, onceValue);
@@ -2465,33 +2467,83 @@ void Worker::WorkerOnMessageInner()
     napi_close_handle_scope(workerEnv_, scope);
 }
 
+bool Worker::TakeListenerSnapshot(const ListenerContainer& container, const std::string& type,
+                                  std::list<WorkerListenerPtr>& snapshot)
+{
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+    auto iter = container.find(type);
+    if (iter == container.end()) {
+        return false;
+    }
+    // Copy the listener list so that listeners removed reentrantly from the JS callback
+    // stay alive until this dispatch round finishes.
+    snapshot = iter->second;
+    return true;
+}
+
+bool Worker::IsListenerDispatchable(const ListenerContainer& container, const std::string& type,
+                                    const WorkerListenerPtr& data)
+{
+    if (data == nullptr) {
+        return false;
+    }
+    // A listener may have been removed reentrantly by a previous callback in this round.
+    {
+        std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+        auto iter = container.find(type);
+        if (iter == container.end() ||
+            std::find(iter->second.begin(), iter->second.end(), data) == iter->second.end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Worker::RemoveOnceListener(ListenerContainer& container, const std::string& type, const WorkerListenerPtr& data)
+{
+    if (data->NextIsAvailable()) {
+        return;
+    }
+    // Erasing only drops the container's reference; the snapshot still owns the listener,
+    // so the destructor (which deletes a napi reference) runs outside this lock when
+    // the snapshot is released.
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+    auto iter = container.find(type);
+    if (iter == container.end()) {
+        return;
+    }
+    auto pos = std::find(iter->second.begin(), iter->second.end(), data);
+    if (pos != iter->second.end()) {
+        iter->second.erase(pos);
+    }
+}
+
 bool Worker::HandleEventListeners(napi_env env, napi_value recv, size_t argc, const napi_value* argv, const char* type)
 {
     std::string listener(type);
-    auto iter = eventListeners_.find(listener);
-    if (iter == eventListeners_.end()) {
+    std::list<WorkerListenerPtr> snapshot;
+    if (!TakeListenerSnapshot(eventListeners_, listener, snapshot)) {
         HILOG_DEBUG("worker:: there is no listener for type %{public}s in host thread", type);
         return false;
     }
 
-    std::list<WorkerListener*>& listeners = iter->second;
-    std::list<WorkerListener*>::iterator it = listeners.begin();
-    while (it != listeners.end()) {
-        WorkerListener* data = *it++;
+    bool allCallable = true;
+    for (const auto& data : snapshot) {
+        if (!IsListenerDispatchable(eventListeners_, listener, data)) {
+            continue;
+        }
         napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
         if (!NapiHelper::IsCallable(env, callbackObj)) {
             HILOG_WARN("worker:: host thread listener %{public}s is not callable", type);
-            return false;
+            allCallable = false;
+            break;
         }
         AsyncStackScope asyncStackScope(this);
         napi_value callbackResult = nullptr;
         napi_call_function(env, recv, callbackObj, argc, argv, &callbackResult);
-        if (!data->NextIsAvailable()) {
-            listeners.remove(data);
-            CloseHelp::DeletePointer(data, false);
-        }
+        RemoveOnceListener(eventListeners_, listener, data);
     }
-    return true;
+    return allCallable;
 }
 
 void Worker::HandleHostException() const
@@ -2601,44 +2653,51 @@ bool Worker::WorkerListener::operator==(const WorkerListener& listener) const
     return NapiHelper::StrictEqual(env_, compareObj, obj);
 }
 
-void Worker::AddListenerInner(napi_env env, const char* type, const WorkerListener* listener)
+void Worker::AddListenerInner(napi_env env, const char* type, WorkerListenerPtr listener)
 {
+    // The listener is released when the last shared_ptr reference is dropped.
+    if (listener == nullptr) {
+        return;
+    }
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
     std::string typestr(type);
     auto iter = eventListeners_.find(typestr);
     if (iter == eventListeners_.end()) {
-        std::list<WorkerListener*> listeners;
-        listeners.emplace_back(const_cast<WorkerListener*>(listener));
+        std::list<WorkerListenerPtr> listeners;
+        listeners.emplace_back(listener);
         eventListeners_[typestr] = listeners;
     } else {
-        std::list<WorkerListener*>& listenerList = iter->second;
-        std::list<WorkerListener*>::iterator it = std::find_if(
+        std::list<WorkerListenerPtr>& listenerList = iter->second;
+        std::list<WorkerListenerPtr>::iterator it = std::find_if(
             listenerList.begin(), listenerList.end(), Worker::FindWorkerListener(env, listener->callback_));
         if (it != listenerList.end()) {
             return;
         }
-        listenerList.emplace_back(const_cast<WorkerListener*>(listener));
+        listenerList.emplace_back(listener);
     }
 }
 
 void Worker::RemoveListenerInner(napi_env env, const char* type, napi_ref callback)
 {
+    // Move the removed listeners out of the container first and destroy them after the
+    // container lock is released, because the destructor releases a napi reference and may
+    // re-enter the worker.
+    std::list<WorkerListenerPtr> removed;
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
     std::string typestr(type);
     auto iter = eventListeners_.find(typestr);
     if (iter == eventListeners_.end()) {
         return;
     }
-    std::list<WorkerListener*>& listenerList = iter->second;
+    std::list<WorkerListenerPtr>& listenerList = iter->second;
     if (callback != nullptr) {
-        std::list<WorkerListener*>::iterator it =
+        std::list<WorkerListenerPtr>::iterator it =
             std::find_if(listenerList.begin(), listenerList.end(), Worker::FindWorkerListener(env, callback));
         if (it != listenerList.end()) {
-            CloseHelp::DeletePointer(*it, false);
-            listenerList.erase(it);
+            removed.splice(removed.end(), listenerList, it);
         }
     } else {
-        for (auto it = listenerList.begin(); it != listenerList.end(); it++) {
-            CloseHelp::DeletePointer(*it, false);
-        }
+        removed.splice(removed.end(), listenerList);
         eventListeners_.erase(typestr);
     }
 }
@@ -2657,14 +2716,12 @@ Worker::~Worker()
 
 void Worker::RemoveAllListenerInner()
 {
-    for (auto iter = eventListeners_.begin(); iter != eventListeners_.end(); iter++) {
-        std::list<WorkerListener*>& listeners = iter->second;
-        for (auto item = listeners.begin(); item != listeners.end(); item++) {
-            WorkerListener* listener = *item;
-            CloseHelp::DeletePointer(listener, false);
-        }
-    }
-    eventListeners_.clear();
+    // Detach the listeners from the container first and destroy them after the container
+    // lock is released, because the destructor releases a napi reference and may re-enter
+    // the worker.
+    std::map<std::string, std::list<WorkerListenerPtr>> removed;
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+    removed.swap(eventListeners_);
 }
 
 void Worker::ReleaseHostThreadContent()
@@ -2771,56 +2828,61 @@ void Worker::ReleaseWorkerThreadContent()
     workerEnv_ = nullptr;
 }
 
-void Worker::ParentPortAddListenerInner(napi_env env, const char* type, const WorkerListener* listener)
+void Worker::ParentPortAddListenerInner(napi_env env, const char* type, WorkerListenerPtr listener)
 {
+    // The listener is released when the last shared_ptr reference is dropped.
+    if (listener == nullptr) {
+        return;
+    }
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
     std::string typestr(type);
     auto iter = parentPortEventListeners_.find(typestr);
     if (iter == parentPortEventListeners_.end()) {
-        std::list<WorkerListener*> listeners;
-        listeners.emplace_back(const_cast<WorkerListener*>(listener));
+        std::list<WorkerListenerPtr> listeners;
+        listeners.emplace_back(listener);
         parentPortEventListeners_[typestr] = listeners;
     } else {
-        std::list<WorkerListener*>& listenerList = iter->second;
-        std::list<WorkerListener*>::iterator it = std::find_if(
+        std::list<WorkerListenerPtr>& listenerList = iter->second;
+        std::list<WorkerListenerPtr>::iterator it = std::find_if(
             listenerList.begin(), listenerList.end(), Worker::FindWorkerListener(env, listener->callback_));
         if (it != listenerList.end()) {
             return;
         }
-        listenerList.emplace_back(const_cast<WorkerListener*>(listener));
+        listenerList.emplace_back(listener);
     }
 }
 
 void Worker::ParentPortRemoveAllListenerInner()
 {
-    for (auto iter = parentPortEventListeners_.begin(); iter != parentPortEventListeners_.end(); iter++) {
-        std::list<WorkerListener*>& listeners = iter->second;
-        for (auto item = listeners.begin(); item != listeners.end(); item++) {
-            WorkerListener* listener = *item;
-            CloseHelp::DeletePointer(listener, false);
-        }
-    }
-    parentPortEventListeners_.clear();
+    // Detach the listeners from the container first and destroy them after the container
+    // lock is released, because the destructor releases a napi reference and may re-enter
+    // the worker.
+    std::map<std::string, std::list<WorkerListenerPtr>> removed;
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
+    removed.swap(parentPortEventListeners_);
 }
 
 void Worker::ParentPortRemoveListenerInner(napi_env env, const char* type, napi_ref callback)
 {
+    // Move the removed listeners out of the container first and destroy them after the
+    // container lock is released, because the destructor releases a napi reference and may
+    // re-enter the worker.
+    std::list<WorkerListenerPtr> removed;
+    std::lock_guard<std::recursive_mutex> lock(liveStatusLock_);
     std::string typestr(type);
     auto iter = parentPortEventListeners_.find(typestr);
     if (iter == parentPortEventListeners_.end()) {
         return;
     }
-    std::list<WorkerListener*>& listenerList = iter->second;
+    std::list<WorkerListenerPtr>& listenerList = iter->second;
     if (callback != nullptr) {
-        std::list<WorkerListener*>::iterator it =
+        std::list<WorkerListenerPtr>::iterator it =
             std::find_if(listenerList.begin(), listenerList.end(), Worker::FindWorkerListener(env, callback));
         if (it != listenerList.end()) {
-            CloseHelp::DeletePointer(*it, false);
-            listenerList.erase(it);
+            removed.splice(removed.end(), listenerList, it);
         }
     } else {
-        for (auto it = listenerList.begin(); it != listenerList.end(); it++) {
-            CloseHelp::DeletePointer(*it, false);
-        }
+        removed.splice(removed.end(), listenerList);
         parentPortEventListeners_.erase(typestr);
     }
 }
@@ -2829,17 +2891,17 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_
                                             const napi_value* argv, const char* type, bool tryCatch)
 {
     std::string listener(type);
-    auto iter = parentPortEventListeners_.find(listener);
-    if (iter == parentPortEventListeners_.end()) {
+    std::list<WorkerListenerPtr> snapshot;
+    if (!TakeListenerSnapshot(parentPortEventListeners_, listener, snapshot)) {
         HILOG_DEBUG("worker:: there is no listener for type %{public}s in worker thread", type);
         return;
     }
 
-    std::list<WorkerListener*>& listeners = iter->second;
-    std::list<WorkerListener*>::iterator it = listeners.begin();
-    while (it != listeners.end()) {
+    for (const auto& data : snapshot) {
+        if (!IsListenerDispatchable(parentPortEventListeners_, listener, data)) {
+            continue;
+        }
         AsyncStackScope asyncStackScope(this);
-        WorkerListener* data = *it++;
         napi_value callbackObj = NapiHelper::GetReferenceValue(env, data->callback_);
         if (!NapiHelper::IsCallable(env, callbackObj)) {
             HILOG_WARN("worker:: workerPort.addEventListener %{public}s is not callable", type);
@@ -2847,10 +2909,7 @@ void Worker::ParentPortHandleEventListeners(napi_env env, napi_value recv, size_
         }
         napi_value callbackResult = nullptr;
         napi_call_function(env, recv, callbackObj, argc, argv, &callbackResult);
-        if (!data->NextIsAvailable()) {
-            listeners.remove(data);
-            CloseHelp::DeletePointer(data, false);
-        }
+        RemoveOnceListener(parentPortEventListeners_, listener, data);
         if (tryCatch && callbackResult == nullptr) {
             HandleException();
             return;

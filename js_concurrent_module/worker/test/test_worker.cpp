@@ -14,6 +14,7 @@
  */
 
 #include <condition_variable>
+#include <memory>
 #include <thread>
 #include <uv.h>
 #include <mutex>
@@ -798,7 +799,7 @@ public:
     {
         napi_value obj = NapiHelper::CreateObject(env);
         napi_ref callback = NapiHelper::CreateReference(env, obj, 1);
-        auto listener = new Worker::WorkerListener(env, callback, Worker::ListenerMode::PERMANENT);
+        auto listener = std::make_shared<Worker::WorkerListener>(env, callback, Worker::ListenerMode::PERMANENT);
         std::string funcName = "onmessage";
         worker->AddListenerInner(env, "onmessage", listener);
         worker->HandleEventListeners(env, nullptr, 0, nullptr, "onmessage");
@@ -810,7 +811,7 @@ public:
         napi_value funcValue = nullptr;
         napi_create_function(env, funcName.c_str(), NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
         napi_ref callback2 = NapiHelper::CreateReference(env, funcValue, 1);
-        auto listener2 = new Worker::WorkerListener(env, callback2, Worker::ListenerMode::ONCE);
+        auto listener2 = std::make_shared<Worker::WorkerListener>(env, callback2, Worker::ListenerMode::ONCE);
         worker->AddListenerInner(env, "onmessage", listener2);
         worker->HandleEventListeners(env, obj2, 0, nullptr, "onmessage");
         worker->eventListeners_.clear();
@@ -899,7 +900,7 @@ public:
         napi_value funcValue = nullptr;
         napi_create_function(env, funcName.c_str(), NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
         napi_ref callback = NapiHelper::CreateReference(env, funcValue, 1);
-        auto listener = new Worker::WorkerListener(env, callback, Worker::ListenerMode::PERMANENT);
+        auto listener = std::make_shared<Worker::WorkerListener>(env, callback, Worker::ListenerMode::PERMANENT);
         worker->AddListenerInner(env, "onmessage", listener);
         worker->RemoveListenerInner(env, "onmessage", nullptr);
 
@@ -950,12 +951,12 @@ public:
         napi_value funcValue = nullptr;
         napi_create_function(env, funcName.c_str(), NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
         napi_ref callback = NapiHelper::CreateReference(env, funcValue, 1);
-        auto listener = new Worker::WorkerListener(env, callback, Worker::ListenerMode::PERMANENT);
+        auto listener = std::make_shared<Worker::WorkerListener>(env, callback, Worker::ListenerMode::PERMANENT);
         worker->ParentPortAddListenerInner(env, "onmessage", listener);
         worker->ParentPortAddListenerInner(env, "onmessage", listener);
         napi_value obj = NapiHelper::CreateObject(env);
         napi_ref ref = NapiHelper::CreateReference(env, obj, 1);
-        auto listener2 = new Worker::WorkerListener(env, ref, Worker::ListenerMode::ONCE);
+        auto listener2 = std::make_shared<Worker::WorkerListener>(env, ref, Worker::ListenerMode::ONCE);
         worker->ParentPortAddListenerInner(env, "onmessage", listener2);
         worker->ParentPortRemoveAllListenerInner();
     }
@@ -969,7 +970,7 @@ public:
         napi_value funcValue = nullptr;
         napi_create_function(env, funcName.c_str(), NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
         napi_ref callback = NapiHelper::CreateReference(env, funcValue, 1);
-        auto listener = new Worker::WorkerListener(env, callback, Worker::ListenerMode::PERMANENT);
+        auto listener = std::make_shared<Worker::WorkerListener>(env, callback, Worker::ListenerMode::PERMANENT);
         worker->ParentPortAddListenerInner(env, "onmessage", listener);
 
         std::string errorFuncName = "onerror";
@@ -980,7 +981,7 @@ public:
         napi_create_function(env, errorFuncName.c_str(), NAPI_AUTO_LENGTH,
                              errorFunc, nullptr, &errorFuncValue);
         napi_ref callback2 = NapiHelper::CreateReference(env, errorFuncValue, 1);
-        auto listener2 = new Worker::WorkerListener(env, callback2, Worker::ListenerMode::PERMANENT);
+        auto listener2 = std::make_shared<Worker::WorkerListener>(env, callback2, Worker::ListenerMode::PERMANENT);
         worker->ParentPortAddListenerInner(env, "onerror", listener2);
         worker->ParentPortRemoveListenerInner(env, "OnMessageError", nullptr);
 
@@ -1007,7 +1008,7 @@ public:
         napi_value funcValue = nullptr;
         napi_create_function(env, funcName.c_str(), NAPI_AUTO_LENGTH, func, nullptr, &funcValue);
         napi_ref callback = NapiHelper::CreateReference(env, funcValue, 1);
-        auto listener = new Worker::WorkerListener(env, callback, Worker::ListenerMode::ONCE);
+        auto listener = std::make_shared<Worker::WorkerListener>(env, callback, Worker::ListenerMode::ONCE);
         worker->ParentPortAddListenerInner(env, "onmessage", listener);
         worker->ParentPortHandleEventListeners(env, recv, 0, nullptr, "onmessage", true);
 
@@ -1019,14 +1020,14 @@ public:
         napi_create_function(env, errorFuncName.c_str(), NAPI_AUTO_LENGTH,
                              errorFunc, nullptr, &errorFuncValue);
         napi_ref callback2 = NapiHelper::CreateReference(env, errorFuncValue, 1);
-        auto listener2 = new Worker::WorkerListener(env, callback2, Worker::ListenerMode::PERMANENT);
+        auto listener2 = std::make_shared<Worker::WorkerListener>(env, callback2, Worker::ListenerMode::PERMANENT);
         worker->ParentPortAddListenerInner(env, "onerror", listener2);
 
         std::string hostFuncName = "host";
         napi_value hostFuncValue = nullptr;
         napi_create_string_utf8(env, hostFuncName.c_str(), hostFuncName.length(), &hostFuncValue);
         napi_ref callback3 = NapiHelper::CreateReference(env, hostFuncValue, 1);
-        auto listener3 = new Worker::WorkerListener(env, callback3, Worker::ListenerMode::PERMANENT);
+        auto listener3 = std::make_shared<Worker::WorkerListener>(env, callback3, Worker::ListenerMode::PERMANENT);
         worker->ParentPortAddListenerInner(env, "onerror", listener3);
         worker->ParentPortHandleEventListeners(env, recv, 0, nullptr, "onerror", false);
     }
@@ -1222,6 +1223,97 @@ public:
         napi_env workerEnv = nullptr;
         napi_create_runtime(env, &workerEnv);
         worker->workerEnv_ = workerEnv;
+    }
+
+    static void AddEventListenerInner(Worker* worker, napi_env env, const char* type,
+                                      Worker::WorkerListenerPtr listener)
+    {
+        worker->AddListenerInner(env, type, listener);
+    }
+
+    static void RemoveListenerInner(Worker* worker, napi_env env, const char* type, napi_ref callback)
+    {
+        worker->RemoveListenerInner(env, type, callback);
+    }
+
+    static void RemoveAllListenerInner(Worker* worker)
+    {
+        worker->RemoveAllListenerInner();
+    }
+
+    static bool HandleEventListeners(Worker* worker, napi_env env, napi_value recv, size_t argc,
+                                     const napi_value* argv, const char* type)
+    {
+        return worker->HandleEventListeners(env, recv, argc, argv, type);
+    }
+
+    static size_t GetEventListenerCount(Worker* worker, const char* type)
+    {
+        std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+        auto iter = worker->eventListeners_.find(std::string(type));
+        if (iter == worker->eventListeners_.end()) {
+            return 0;
+        }
+        return iter->second.size();
+    }
+
+    static void ParentPortAddListenerInner(Worker* worker, napi_env env, const char* type,
+                                           Worker::WorkerListenerPtr listener)
+    {
+        worker->ParentPortAddListenerInner(env, type, listener);
+    }
+
+    static void ParentPortRemoveListenerInner(Worker* worker, napi_env env, const char* type, napi_ref callback)
+    {
+        worker->ParentPortRemoveListenerInner(env, type, callback);
+    }
+
+    static void ParentPortRemoveAllListenerInner(Worker* worker)
+    {
+        worker->ParentPortRemoveAllListenerInner();
+    }
+
+    static void ParentPortHandleEventListeners(Worker* worker, napi_env env, napi_value recv, size_t argc,
+                                               const napi_value* argv, const char* type)
+    {
+        worker->ParentPortHandleEventListeners(env, recv, argc, argv, type, false);
+    }
+
+    static size_t GetParentPortEventListenerCount(Worker* worker, const char* type)
+    {
+        std::lock_guard<std::recursive_mutex> lock(worker->liveStatusLock_);
+        auto iter = worker->parentPortEventListeners_.find(std::string(type));
+        if (iter == worker->parentPortEventListeners_.end()) {
+            return 0;
+        }
+        return iter->second.size();
+    }
+
+    static Worker::WorkerListenerPtr MakeListener(napi_env env, napi_ref callbackRef, Worker::ListenerMode mode)
+    {
+        return std::make_shared<Worker::WorkerListener>(env, callbackRef, mode);
+    }
+
+    static bool IsListenerDispatchable(Worker* worker, const Worker::ListenerContainer& container,
+                                       const std::string& type, const Worker::WorkerListenerPtr& data)
+    {
+        return worker->IsListenerDispatchable(container, type, data);
+    }
+
+    static void RemoveOnceListener(Worker* worker, Worker::ListenerContainer& container,
+                                   const std::string& type, const Worker::WorkerListenerPtr& data)
+    {
+        worker->RemoveOnceListener(container, type, data);
+    }
+
+    static Worker::ListenerContainer& GetEventListeners(Worker* worker)
+    {
+        return worker->eventListeners_;
+    }
+
+    static Worker::ListenerContainer& GetParentPortEventListeners(Worker* worker)
+    {
+        return worker->parentPortEventListeners_;
     }
 protected:
     static thread_local NativeEngine *engine_;
@@ -7371,3 +7463,477 @@ HWTEST_F(WorkersTest, WorkerDeserializeElseBranch001, testing::ext::TestSize.Lev
     napi_delete_serialization_data(env, data);
 }
 #endif
+
+struct ReentrantListenerContext {
+    Worker* worker {nullptr};
+    napi_env env {nullptr};
+    const char* type {nullptr};
+    napi_ref selfRef {nullptr};
+    bool parentPort {false};
+    int callCount {0};
+};
+
+static napi_value ReentrantRemoveSelfCallback(napi_env env, napi_callback_info info)
+{
+    ReentrantListenerContext* ctx = nullptr;
+    size_t argc = 0;
+    napi_get_cb_info(env, info, &argc, nullptr, nullptr, reinterpret_cast<void**>(&ctx));
+    if (ctx == nullptr) {
+        return nullptr;
+    }
+    ctx->callCount++;
+    if (ctx->parentPort) {
+        WorkersTest::ParentPortRemoveListenerInner(ctx->worker, ctx->env, ctx->type, ctx->selfRef);
+    } else {
+        WorkersTest::RemoveListenerInner(ctx->worker, ctx->env, ctx->type, ctx->selfRef);
+    }
+    return nullptr;
+}
+
+static napi_value ReentrantRemoveAllCallback(napi_env env, napi_callback_info info)
+{
+    ReentrantListenerContext* ctx = nullptr;
+    size_t argc = 0;
+    napi_get_cb_info(env, info, &argc, nullptr, nullptr, reinterpret_cast<void**>(&ctx));
+    if (ctx == nullptr) {
+        return nullptr;
+    }
+    ctx->callCount++;
+    if (ctx->parentPort) {
+        WorkersTest::ParentPortRemoveAllListenerInner(ctx->worker);
+    } else {
+        WorkersTest::RemoveAllListenerInner(ctx->worker);
+    }
+    return nullptr;
+}
+
+static napi_value ReentrantPeerCallback(napi_env env, napi_callback_info info)
+{
+    ReentrantListenerContext* ctx = nullptr;
+    size_t argc = 0;
+    napi_get_cb_info(env, info, &argc, nullptr, nullptr, reinterpret_cast<void**>(&ctx));
+    if (ctx != nullptr) {
+        ctx->callCount++;
+    }
+    return nullptr;
+}
+
+static Worker::WorkerListenerPtr CreateReentrantListener(napi_env env, napi_callback callback,
+                                                         void* data, napi_ref& callbackRef)
+{
+    napi_value funcValue = nullptr;
+    napi_create_function(env, "reentrantListener", NAPI_AUTO_LENGTH, callback, data, &funcValue);
+    callbackRef = NapiHelper::CreateReference(env, funcValue, 1);
+    return std::make_shared<Worker::WorkerListener>(env, callbackRef, Worker::ListenerMode::PERMANENT);
+}
+
+static Worker::WorkerListenerPtr CreateModeListener(napi_env env, napi_callback callback, void* data,
+                                                    Worker::ListenerMode mode, napi_ref& callbackRef)
+{
+    napi_value funcValue = nullptr;
+    napi_create_function(env, "modeListener", NAPI_AUTO_LENGTH, callback, data, &funcValue);
+    callbackRef = NapiHelper::CreateReference(env, funcValue, 1);
+    return std::make_shared<Worker::WorkerListener>(env, callbackRef, mode);
+}
+
+static Worker::WorkerListenerPtr CreateNonCallableListener(napi_env env, napi_ref& callbackRef)
+{
+    napi_value notCallable = nullptr;
+    napi_create_int32(env, 0, &notCallable);
+    callbackRef = NapiHelper::CreateReference(env, notCallable, 1);
+    return std::make_shared<Worker::WorkerListener>(env, callbackRef, Worker::ListenerMode::PERMANENT);
+}
+
+HWTEST_F(WorkersTest, EventListenerReentrantRemoveTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+
+    const char* type = "message";
+    ReentrantListenerContext selfCtx {worker, env, type, nullptr, false, 0};
+    ReentrantListenerContext peerCtx {worker, env, type, nullptr, false, 0};
+    napi_ref selfRef = nullptr;
+    napi_ref peerRef = nullptr;
+    WorkersTest::AddEventListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantRemoveSelfCallback, &selfCtx, selfRef));
+    selfCtx.selfRef = selfRef;
+    WorkersTest::AddEventListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantPeerCallback, &peerCtx, peerRef));
+    ASSERT_EQ(WorkersTest::GetEventListenerCount(worker, type), 2);
+
+    napi_value argv[1] = {nullptr};
+    napi_create_object(env, &argv[0]);
+    ASSERT_TRUE(WorkersTest::HandleEventListeners(worker, env, global, 1, argv, type));
+    EXPECT_EQ(selfCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 1);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 1);
+
+    ASSERT_TRUE(WorkersTest::HandleEventListeners(worker, env, global, 1, argv, type));
+    EXPECT_EQ(selfCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 2);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 1);
+
+    WorkersTest::RemoveAllListenerInner(worker);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 0);
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, EventListenerReentrantRemoveAllTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+
+    const char* type = "message";
+    ReentrantListenerContext removerCtx {worker, env, type, nullptr, false, 0};
+    ReentrantListenerContext peerCtx {worker, env, type, nullptr, false, 0};
+    napi_ref removerRef = nullptr;
+    napi_ref peerRef = nullptr;
+    WorkersTest::AddEventListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantRemoveAllCallback, &removerCtx, removerRef));
+    WorkersTest::AddEventListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantPeerCallback, &peerCtx, peerRef));
+    ASSERT_EQ(WorkersTest::GetEventListenerCount(worker, type), 2);
+
+    napi_value argv[1] = {nullptr};
+    napi_create_object(env, &argv[0]);
+    ASSERT_TRUE(WorkersTest::HandleEventListeners(worker, env, global, 1, argv, type));
+    EXPECT_EQ(removerCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 0);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 0);
+
+    EXPECT_FALSE(WorkersTest::HandleEventListeners(worker, env, global, 1, argv, type));
+    EXPECT_EQ(removerCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 0);
+
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, ParentPortEventListenerReentrantRemoveTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+
+    const char* type = "message";
+    ReentrantListenerContext selfCtx {worker, env, type, nullptr, true, 0};
+    ReentrantListenerContext peerCtx {worker, env, type, nullptr, true, 0};
+    napi_ref selfRef = nullptr;
+    napi_ref peerRef = nullptr;
+    WorkersTest::ParentPortAddListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantRemoveSelfCallback, &selfCtx, selfRef));
+    selfCtx.selfRef = selfRef;
+    WorkersTest::ParentPortAddListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantPeerCallback, &peerCtx, peerRef));
+    ASSERT_EQ(WorkersTest::GetParentPortEventListenerCount(worker, type), 2);
+
+    napi_value argv[1] = {nullptr};
+    napi_create_object(env, &argv[0]);
+    WorkersTest::ParentPortHandleEventListeners(worker, env, global, 1, argv, type);
+    EXPECT_EQ(selfCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 1);
+    EXPECT_EQ(WorkersTest::GetParentPortEventListenerCount(worker, type), 1);
+
+    WorkersTest::ParentPortHandleEventListeners(worker, env, global, 1, argv, type);
+    EXPECT_EQ(selfCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 2);
+    EXPECT_EQ(WorkersTest::GetParentPortEventListenerCount(worker, type), 1);
+
+    WorkersTest::ParentPortRemoveAllListenerInner(worker);
+    EXPECT_EQ(WorkersTest::GetParentPortEventListenerCount(worker, type), 0);
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, ParentPortEventListenerReentrantRemoveAllTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+
+    const char* type = "message";
+    ReentrantListenerContext removerCtx {worker, env, type, nullptr, true, 0};
+    ReentrantListenerContext peerCtx {worker, env, type, nullptr, true, 0};
+    napi_ref removerRef = nullptr;
+    napi_ref peerRef = nullptr;
+    WorkersTest::ParentPortAddListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantRemoveAllCallback, &removerCtx, removerRef));
+    WorkersTest::ParentPortAddListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantPeerCallback, &peerCtx, peerRef));
+    ASSERT_EQ(WorkersTest::GetParentPortEventListenerCount(worker, type), 2);
+
+    napi_value argv[1] = {nullptr};
+    napi_create_object(env, &argv[0]);
+    WorkersTest::ParentPortHandleEventListeners(worker, env, global, 1, argv, type);
+    EXPECT_EQ(removerCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 0);
+    EXPECT_EQ(WorkersTest::GetParentPortEventListenerCount(worker, type), 0);
+
+    WorkersTest::ParentPortHandleEventListeners(worker, env, global, 1, argv, type);
+    EXPECT_EQ(removerCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 0);
+
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, EventListenerOnceModeTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+
+    const char* type = "message";
+    ReentrantListenerContext onceCtx {worker, env, type, nullptr, false, 0};
+    ReentrantListenerContext peerCtx {worker, env, type, nullptr, false, 0};
+    napi_ref onceRef = nullptr;
+    napi_ref peerRef = nullptr;
+    WorkersTest::AddEventListenerInner(worker, env, type,
+        CreateModeListener(env, ReentrantPeerCallback, &onceCtx, Worker::ListenerMode::ONCE, onceRef));
+    WorkersTest::AddEventListenerInner(worker, env, type,
+        CreateModeListener(env, ReentrantPeerCallback, &peerCtx, Worker::ListenerMode::PERMANENT, peerRef));
+    ASSERT_EQ(WorkersTest::GetEventListenerCount(worker, type), 2);
+
+    napi_value argv[1] = {nullptr};
+    napi_create_object(env, &argv[0]);
+    ASSERT_TRUE(WorkersTest::HandleEventListeners(worker, env, global, 1, argv, type));
+    EXPECT_EQ(onceCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 1);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 1);
+
+    ASSERT_TRUE(WorkersTest::HandleEventListeners(worker, env, global, 1, argv, type));
+    EXPECT_EQ(onceCtx.callCount, 1);
+    EXPECT_EQ(peerCtx.callCount, 2);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 1);
+
+    WorkersTest::RemoveAllListenerInner(worker);
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, EventListenerNotCallableTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+
+    const char* type = "message";
+    ReentrantListenerContext peerCtx {worker, env, type, nullptr, false, 0};
+    napi_ref badRef = nullptr;
+    napi_ref peerRef = nullptr;
+    WorkersTest::AddEventListenerInner(worker, env, type, CreateNonCallableListener(env, badRef));
+    WorkersTest::AddEventListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantPeerCallback, &peerCtx, peerRef));
+    ASSERT_EQ(WorkersTest::GetEventListenerCount(worker, type), 2);
+
+    napi_value argv[1] = {nullptr};
+    napi_create_object(env, &argv[0]);
+    EXPECT_FALSE(WorkersTest::HandleEventListeners(worker, env, global, 1, argv, type));
+    EXPECT_EQ(peerCtx.callCount, 0);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 2);
+
+    WorkersTest::RemoveAllListenerInner(worker);
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, GlobalCallActiveThenTimeoutTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+
+    std::thread t([&env, &worker] {
+        napi_env workerEnv = nullptr;
+        napi_create_runtime(env, &workerEnv);
+        napi_value workerGlobal = nullptr;
+        napi_get_global(workerEnv, &workerGlobal);
+        napi_value argv[3] = {nullptr};
+        std::string instanceName = "host";
+        std::string methodName = "postMessage";
+        napi_create_string_utf8(workerEnv, instanceName.c_str(), instanceName.length(), &argv[0]);
+        napi_create_string_utf8(workerEnv, methodName.c_str(), methodName.length(), &argv[1]);
+        napi_create_int32(workerEnv, 100, &argv[2]); // 100: timeout ms, host never answers -> timeout branch
+        napi_value cb = nullptr;
+        napi_create_function(workerEnv, "GlobalCall", NAPI_AUTO_LENGTH, Worker::GlobalCall, worker, &cb);
+        WorkersTest::UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+        napi_value callResult = nullptr;
+        napi_call_function(workerEnv, workerGlobal, cb, sizeof(argv) / sizeof(argv[0]), argv, &callResult);
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(workerEnv, &exception);
+        ASSERT_TRUE(exception != nullptr); // ERR_GLOBAL_CALL_TIMEOUT
+        delete reinterpret_cast<NativeEngine*>(workerEnv);
+    });
+    t.join();
+
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, ListenerDispatchNullDataTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+
+    const std::string type = "message";
+    Worker::WorkerListenerPtr nullListener = nullptr;
+    // data == nullptr -> false
+    EXPECT_FALSE(WorkersTest::IsListenerDispatchable(worker, WorkersTest::GetEventListeners(worker),
+                                                     type, nullListener));
+    EXPECT_FALSE(WorkersTest::IsListenerDispatchable(worker, WorkersTest::GetParentPortEventListeners(worker),
+                                                     type, nullListener));
+
+    // valid listener present but queried with an absent type -> false (not-in-container path)
+    napi_ref callbackRef = nullptr;
+    Worker::WorkerListenerPtr listener = CreateReentrantListener(env, ReentrantPeerCallback, nullptr, callbackRef);
+    WorkersTest::AddEventListenerInner(worker, env, type.c_str(), listener);
+    EXPECT_TRUE(WorkersTest::IsListenerDispatchable(worker, WorkersTest::GetEventListeners(worker),
+                                                    type, listener));
+    const std::string absentType = "messageerror";
+    EXPECT_FALSE(WorkersTest::IsListenerDispatchable(worker, WorkersTest::GetEventListeners(worker),
+                                                     absentType, listener));
+
+    // RemoveOnceListener: no entry for the type -> early return, listener untouched
+    WorkersTest::RemoveOnceListener(worker, WorkersTest::GetEventListeners(worker), absentType, listener);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type.c_str()), 1);
+    // PERMANENT listener: NextIsAvailable() -> early return, listener stays
+    WorkersTest::RemoveOnceListener(worker, WorkersTest::GetEventListeners(worker), type, listener);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type.c_str()), 1);
+
+    WorkersTest::RemoveAllListenerInner(worker);
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, EventListenerFalseReturnTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+
+    const char* type = "message";
+    WorkersTest::AddEventListenerInner(worker, env, type, nullptr);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 0);
+
+    // register a non-callable listener, then dispatch -> allCallable == false
+    napi_ref badRef = nullptr;
+    WorkersTest::AddEventListenerInner(worker, env, type, CreateNonCallableListener(env, badRef));
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 1);
+
+    napi_value argv[1] = {nullptr};
+    napi_create_object(env, &argv[0]);
+    EXPECT_FALSE(WorkersTest::HandleEventListeners(worker, env, global, 1, argv, type));
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 1);
+
+    // callback == nullptr removes the whole list
+    WorkersTest::RemoveListenerInner(worker, env, type, nullptr);
+    EXPECT_EQ(WorkersTest::GetEventListenerCount(worker, type), 0);
+
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
+
+HWTEST_F(WorkersTest, ParentPortListenerNullAndRemoveAllTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value global;
+    napi_get_global(env, &global);
+    napi_value result = nullptr;
+    result = Worker_Constructor(env, global);
+    Worker* worker = nullptr;
+    napi_unwrap(env, result, reinterpret_cast<void**>(&worker));
+    ASSERT_NE(worker, nullptr);
+    UpdateWorkerState(worker, Worker::RunnerState::RUNNING);
+
+    const char* type = "message";
+    WorkersTest::ParentPortAddListenerInner(worker, env, type, nullptr);
+    EXPECT_EQ(WorkersTest::GetParentPortEventListenerCount(worker, type), 0);
+
+    // callback == nullptr removes the whole list
+    napi_ref callbackRef = nullptr;
+    WorkersTest::ParentPortAddListenerInner(worker, env, type,
+        CreateReentrantListener(env, ReentrantPeerCallback, nullptr, callbackRef));
+    EXPECT_EQ(WorkersTest::GetParentPortEventListenerCount(worker, type), 1);
+    WorkersTest::ParentPortRemoveListenerInner(worker, env, type, nullptr);
+    EXPECT_EQ(WorkersTest::GetParentPortEventListenerCount(worker, type), 0);
+
+    worker->EraseWorker();
+    ClearWorkerHandle(worker);
+    result = Worker_Terminate(env, global);
+    ASSERT_TRUE(result != nullptr);
+}
