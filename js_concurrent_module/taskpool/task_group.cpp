@@ -28,14 +28,18 @@ napi_value TaskGroup::TaskGroupConstructor(napi_env env, napi_callback_info cbin
     napi_value thisVar;
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
     if (argc > 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of taskGroup's params must be zero or one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: zero or one, Actual: " + std::to_string(argc) +
+            ". the number of taskGroup's params must be zero or one.").c_str());
         return nullptr;
     }
     napi_value name;
     if (argc == 1) {
         // check 1st param is taskGroupName
         if (!NapiHelper::IsString(env, args[0])) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup's first param must be string.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
+                "taskGroup's first param must be string.");
             return nullptr;
         }
         name = args[0];
@@ -84,7 +88,9 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
     if (argc < 1) {
         errMessage = "taskGroup:: the number of params must be at least one";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of addTask's params must be at least one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: at least 1, Actual: " + std::to_string(argc) +
+            ". the number of addTask's params must be at least one.").c_str());
         return nullptr;
     }
     napi_value* args = new napi_value[argc];
@@ -97,7 +103,8 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
     if (group == nullptr || group->groupState_ != ExecuteState::NOT_FOUND) {
         errMessage = "taskpool:: executed taskGroup cannot addTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return nullptr;
     }
     napi_valuetype type = napi_undefined;
@@ -106,7 +113,9 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
         Task* task = nullptr;
         napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
         if (task == nullptr) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of addTask's params must be task.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: task, Actual: object. "
+                "the type of addTask's params must be task.");
             return nullptr;
         }
         if (!task->CanForTaskGroup(env)) {
@@ -139,6 +148,7 @@ napi_value TaskGroup::AddTask(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+        "Parameter error. Param[0] type mismatch. Expected: object or function, Actual: mismatched type. "
         "the type of addTask's first param must be object or function.");
     return nullptr;
 }

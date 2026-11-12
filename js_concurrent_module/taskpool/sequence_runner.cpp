@@ -65,11 +65,14 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
             name = NapiHelper::GetString(env, args[0]);
             priority = NapiHelper::GetUint32Value(env, args[1]);
             if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value unvalied.");
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                    "Parameter error. Param[1] type mismatch. Expected: valid priority number, Actual: mismatched "
+                    "type. priority value unvalied.");
                 return nullptr;
             }
         } else {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
                 "the type of first param must be string and the type of second param must be number.");
             return nullptr;
         }
@@ -79,11 +82,15 @@ napi_value SequenceRunner::SeqRunnerConstructor(napi_env env, napi_callback_info
         } else if (NapiHelper::IsNumber(env, args[0])) {
             priority = NapiHelper::GetUint32Value(env, args[0]);
             if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "priority value unvalied.");
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                    "Parameter error. Param[0] type mismatch. Expected: valid priority number, Actual: mismatched "
+                    "type. priority value unvalied.");
                 return nullptr;
             }
         } else {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of first param must be string or number.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: string or number, Actual: mismatched type. "
+                "the type of first param must be string or number.");
             return nullptr;
         }
     }
@@ -116,13 +123,17 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     if (argc < 1) {
         errMessage = "seqRunner:: number of params at least one";
         HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of execute's param at least one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: at least 1, Actual: " + std::to_string(argc) + ". "
+                "the number of execute's param at least one.").c_str());
         return nullptr;
     }
     if (!NapiHelper::IsObject(env, args[0]) || !NapiHelper::HasNameProperty(env, args[0], TASKID_STR)) {
         errMessage = "seqRunner:: first param must be task.";
         HILOG_ERROR("taskpool:: %{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's first param must be task.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: task, Actual: mismatched type. "
+            "the type of execute's first param must be task.");
         return nullptr;
     }
     napi_value napiSeqRunnerId = NapiHelper::GetNameProperty(env, thisVar, SEQ_RUNNER_ID_STR);
@@ -134,7 +145,9 @@ napi_value SequenceRunner::Execute(napi_env env, napi_callback_info cbinfo)
     Task* task = nullptr;
     napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
     if (task == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's param must be task.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: task, Actual: object. "
+            "the type of execute's param must be task.");
         return nullptr;
     }
     if (!task->CanForSequenceRunner(env)) {

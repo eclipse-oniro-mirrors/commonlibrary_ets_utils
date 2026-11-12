@@ -361,7 +361,8 @@ namespace OHOS::Util {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         if (valuetype != napi_object) {
-            return ThrowError(env, "Parameter error. The type of getHash parameter must be object.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: object, Actual: mismatched type. The type of getHash parameter must be object.");
         }
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         int32_t value = engine->GetObjectHash(env, args[0]);
@@ -468,7 +469,8 @@ namespace OHOS::Util {
                 type = napi_int8_array;
             }
             if (type != napi_uint8_array) {
-                return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
+                return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                    "Expected: Uint8Array, Actual: mismatched type. The type of Parameter must be Uint8Array.");
             }
             valStr = textDecoder->DecodeToString(env, argv, iStream);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
@@ -480,13 +482,15 @@ namespace OHOS::Util {
                 type = napi_int8_array;
             }
             if (type != napi_uint8_array) {
-                return ThrowError(env, "Parameter error. The type of first Parameter must be Uint8Array.");
+                return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                    "Expected: Uint8Array, Actual: mismatched type. The type of first Parameter must be Uint8Array.");
             }
             napi_valuetype valueType;
             napi_typeof(env, argvArr[1], &valueType);
             if (valueType != napi_undefined && valueType != napi_null) {
                 if (valueType != napi_object) {
-                    return ThrowError(env, "Parameter error. The type of second Parameter must be object.");
+                    return ThrowError(env, "Parameter error. Param[1] type mismatch. "
+                        "Expected: object, Actual: mismatched type. The type of second Parameter must be object.");
                 }
                 const char *messageKeyStrStream = "stream";
                 napi_value resultStream = nullptr;
@@ -526,7 +530,8 @@ namespace OHOS::Util {
                 type = napi_int8_array;
             }
             if (type != napi_uint8_array) {
-                return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
+                return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                    "Expected: Uint8Array, Actual: mismatched type. The type of Parameter must be Uint8Array.");
             }
             valStr = textDecoder->Decode(env, argv, iStream);
         } else if (tempArgc == 2) { // 2: The number of parameters is 2.
@@ -540,13 +545,15 @@ namespace OHOS::Util {
             }
             // second para
             if (type != napi_uint8_array) {
-                return ThrowError(env, "Parameter error. The type of Parameter must be string.");
+                return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                    "Expected: string, Actual: mismatched type. The type of Parameter must be string.");
             }
             napi_valuetype valueType1;
             napi_typeof(env, argvArr[1], &valueType1);
             if (valueType1 != napi_undefined && valueType1 != napi_null) {
                 if (valueType1 != napi_object) {
-                    return ThrowError(env, "Parameter error. The type of Parameter must be object.");
+                    return ThrowError(env, "Parameter error. Param[1] type mismatch. "
+                        "Expected: object, Actual: mismatched type. The type of Parameter must be object.");
                 }
                 napi_value messageKeyStream = nullptr;
                 const char *messageKeyStrStream = "stream";
@@ -610,7 +617,8 @@ namespace OHOS::Util {
             napi_typeof(env, src, &valuetype);
             if (valuetype != napi_undefined && valuetype != napi_null) {
                 if (valuetype != napi_string) {
-                    return ThrowError(env, "Parameter error. The type of Parameter must be string.");
+                    return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                        "Expected: string, Actual: mismatched type. The type of Parameter must be string.");
                 }
                 size_t bufferSize = 0;
                 if (napi_get_value_string_utf8(env, src, nullptr, 0, &bufferSize) != napi_ok) {
@@ -692,7 +700,8 @@ namespace OHOS::Util {
             return result;
         }
         if (valuetype != napi_string) {
-            return ThrowError(env, "Parameter error. The type of Parameter must be string.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: string, Actual: mismatched type. The type of Parameter must be string.");
         }
 
         TextEncoder *object = nullptr;
@@ -751,10 +760,12 @@ namespace OHOS::Util {
             valuetype1 = napi_int8_array;
         }
         if (valuetype0 != napi_string) {
-            return ThrowError(env, "Parameter error. The type of Parameter must be string.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: string, Actual: mismatched type. The type of Parameter must be string.");
         }
         if (valuetype1 != napi_uint8_array) {
-            return ThrowError(env, "Parameter error. The type of Parameter must be Uint8Array.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: Uint8Array, Actual: mismatched type. The type of Parameter must be Uint8Array.");
         }
         TextEncoder *object = nullptr;
         NAPI_CALL(env, napi_unwrap(env, thisVar, (void**)&object));
@@ -1002,7 +1013,9 @@ namespace OHOS::Util {
         Type typeValue = static_cast<Type>(encode);
         if (typeValue < Type::TYPED_FIRST || typeValue > Type::TYPED_LAST) {
             return ThrowError(env,
-                              "Parameter error. The target encoding type option must be one of the Type enumerations.");
+                              "Parameter error. Param[1] type mismatch. "
+                                  "Expected: Type enumeration, Actual: mismatched type. "
+                                      "The target encoding type option must be one of the Type enumerations.");
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &base64TypeTag, (void**)&object));
@@ -1019,7 +1032,9 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_get_value_int32(env, args[1], &encode));
         Type typeValue = static_cast<Type>(encode);
         if (typeValue != Type::BASIC && typeValue != Type::BASIC_URL_SAFE) {
-            return ThrowError(env, "Parameter error. The target encoding type option must be BASIC or BASIC_URL_SAFE.");
+            return ThrowError(env, "Parameter error. Param[1] type mismatch. "
+                "Expected: BASIC or BASIC_URL_SAFE, Actual: mismatched type. "
+                    "The target encoding type option must be BASIC or BASIC_URL_SAFE.");
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &base64TypeTag, (void**)&object));
@@ -1066,7 +1081,8 @@ namespace OHOS::Util {
         Type typeValue = static_cast<Type>(encode);
         if (typeValue < Type::TYPED_FIRST || typeValue > Type::TYPED_LAST) {
             return ThrowError(env,
-                "Parameter error. The target encoding type option must be one of the Type enumerations.");
+                "Parameter error. Param[1] type mismatch. Expected: Type enumeration, Actual: mismatched type. "
+                    "The target encoding type option must be one of the Type enumerations.");
         }
         Base64 *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &base64TypeTag, (void**)&object));
@@ -1651,7 +1667,9 @@ namespace OHOS::Util {
                 }
                 if (!CheckEncodingFormat(buffer)) {
                     napi_throw_error(env, "401",
-                        "Parameter error. Wrong encoding format, the current encoding format is not support.");
+                        "Parameter error. Param[0] type mismatch. Expected: string with supported encoding format, "
+                        "Actual: unsupported encoding format. "
+                        "Wrong encoding format, the current encoding format is not support.");
                     return nullptr;
                 }
                 enconding = buffer;
@@ -1774,7 +1792,8 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         if (valuetype != napi_boolean) {
             return ThrowError(env,
-                "Parameter error. SetMultithreadingDetectionEnabled: input parameter type must be boolean.");
+                "Parameter error. Param[0] type mismatch. Expected: boolean, Actual: mismatched type. "
+                    "SetMultithreadingDetectionEnabled: input parameter type must be boolean.");
         }
 
         bool enabled = false;
@@ -1792,7 +1811,8 @@ namespace OHOS::Util {
             if (optionsType != napi_undefined && optionsType != napi_null) {
                 if (optionsType != napi_object) {
                     return ThrowError(env,
-                        "Parameter error. SetMultithreadingDetectionEnabled: input parameter type must be options.");
+                        "Parameter error. Param[1] type mismatch. Expected: object, Actual: mismatched type. "
+                            "SetMultithreadingDetectionEnabled: input parameter type must be options.");
                 }
                 abort = GetBooleanProperty(env, args[1], "abort", abort);
                 frequency = GetInt64Property(env, args[1], "frequency", frequency);
@@ -1837,7 +1857,9 @@ namespace OHOS::Util {
         size_t count = 0;
         napi_status status = napi_get_global_handle_count(env, &count);
         if (status != napi_ok) {
-            return ThrowError(env, "Parameter error. GetGlobalHandleCount: failed to get the global handle count.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: valid context, Actual: mismatched state. "
+                    "GetGlobalHandleCount: failed to get the global handle count.");
         }
         napi_value result = nullptr;
         NAPI_CALL(env, napi_create_double(env, static_cast<double>(count), &result));

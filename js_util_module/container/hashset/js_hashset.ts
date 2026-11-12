@@ -90,7 +90,7 @@ if (flag || fastHashSet === undefined) {
     forEach(callbackfn: (value?: T, key?: T, set?: HashSet<T>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', HashSet, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       let tagetArray: Array<HashSet<T>> = [];
       tagetArray = this.keyValueArray;
       for (let i: number = 0; i < tagetArray.length; i++) {

@@ -59,11 +59,15 @@ bool AsyncRunnerManager::CheckGlobalRunnerParams(napi_env env, BaseRunner *runne
     AsyncRunnerConfig* asyncRunnerConfig = static_cast<AsyncRunnerConfig*>(config);
     AsyncRunner* asyncRunner = static_cast<AsyncRunner*>(runner);
     if (asyncRunnerConfig->runningCapacity_ != asyncRunner->runningCapacity_) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "AsyncRunner runningCapacity can not changed.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: number, Actual: mismatched type. "
+            "AsyncRunner runningCapacity can not changed.");
         return false;
     }
     if (asyncRunnerConfig->waitingCapacity_ != asyncRunner->waitingCapacity_) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "AsyncRunner waitingCapacity can not changed.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[2] type mismatch. Expected: number, Actual: mismatched type. "
+            "AsyncRunner waitingCapacity can not changed.");
         return false;
     }
     return true;

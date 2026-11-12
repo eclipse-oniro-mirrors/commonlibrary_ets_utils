@@ -194,6 +194,7 @@ std::string Console::GetTimerOrCounterName(napi_env env, napi_callback_info info
         napi_status status = napi_coerce_to_string(env, argv[0], &buffer);
         if (status != napi_ok) {
             Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
                 "the type of Timer or Counter name must be string.");
             return "";
         }
@@ -202,6 +203,7 @@ std::string Console::GetTimerOrCounterName(napi_env env, napi_callback_info info
     std::string name = Helper::NapiHelper::GetPrintString(env, argv[0]);
     if (name.empty()) {
         Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                        "Parameter error. Param[0] is required, cannot be null or undefined. "
                                         "Timer or Counter name must be not null.");
         return "";
     }
@@ -252,7 +254,8 @@ napi_value Console::Dir(napi_env env, napi_callback_info info)
     napi_value transValue = nullptr;
     napi_call_function(env, jsonValue, stringifyValue, 1, &argv[0], &transValue);
     if (transValue == nullptr) {
-        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "Dir content must not be null.");
+        Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR, "Parameter error. "
+            "Param[0] is required, cannot be null or undefined. Dir content must not be null.");
         return Helper::NapiHelper::GetUndefinedValue(env);
     }
     std::string content = Helper::NapiHelper::GetPrintString(env, transValue);
@@ -311,6 +314,8 @@ std::string Console::RenderHead(napi_env env, napi_value head, std::vector<size_
         napi_status status = napi_coerce_to_string(env, element, &string);
         if (status != napi_ok) {
             Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                            "Parameter error. Param[0] type mismatch. "
+                                                "Expected: convertible-to-string, Actual: mismatched type. "
                                             "Table elements can't convert to string.");
             return "";
         }
@@ -333,6 +338,8 @@ std::string Console::GetStringAndStringWidth(napi_env env, napi_value element, s
     napi_status status = napi_coerce_to_string(env, element, &string);
     if (status != napi_ok) {
         Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
+                                        "Parameter error. Param[0] type mismatch. "
+                                            "Expected: convertible-to-string, Actual: mismatched type. "
                                         "GetStringAndStringWidth: can't convert to string.");
         return "";
     }
@@ -465,7 +472,8 @@ napi_value GetValueArray(napi_env env, napi_value map, const size_t& length, nap
         char* innerKey = Helper::NapiHelper::GetChars(env, keyNumber);
         if (innerKey == nullptr) {
             Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
-                                            "property key must not be null.");
+                                            "Parameter error. Param[0].(key) is required, cannot be null or undefined. "
+                                                "property key must not be null.");
             return Helper::NapiHelper::GetUndefinedValue(env);
         }
         napi_value valueNumber = nullptr;
@@ -513,7 +521,8 @@ void ProcessNestedObject(napi_env env, napi_value item, napi_value& map, std::ma
         char* innerKey = Helper::NapiHelper::GetChars(env, keyNumber);
         if (innerKey == nullptr) {
             Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
-                                            "property key must not be null.");
+                                            "Parameter error. Param[0].(key) is required, cannot be null or undefined. "
+                                                "property key must not be null.");
             return;
         }
         napi_value innerItem = nullptr;
@@ -564,7 +573,8 @@ napi_value Console::ProcessTabularData(napi_env env, napi_value tabularData)
         char* key = Helper::NapiHelper::GetChars(env, keyItem);
         if (key == nullptr) {
             Helper::ErrorHelper::ThrowError(env, Helper::ErrorHelper::TYPE_ERROR,
-                                            "property key must not be null.");
+                                            "Parameter error. Param[0].(key) is required, cannot be null or undefined. "
+                                                "property key must not be null.");
             return Helper::NapiHelper::GetUndefinedValue(env);
         }
         napi_value item = nullptr;

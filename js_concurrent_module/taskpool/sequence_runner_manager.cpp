@@ -65,7 +65,9 @@ bool SequenceRunnerManager::CheckGlobalRunnerParams(napi_env env, BaseRunner* ru
     SequenceRunnerConfig* sequenceRunnerConfig = static_cast<SequenceRunnerConfig*>(config);
     SequenceRunner* seqRunner = static_cast<SequenceRunner*>(runner);
     if (sequenceRunnerConfig->priority_ != seqRunner->priority_) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "seqRunner:: The priority can not be changed.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: number, Actual: mismatched type. "
+            "seqRunner:: The priority can not be changed.");
         return false;
     }
     return true;

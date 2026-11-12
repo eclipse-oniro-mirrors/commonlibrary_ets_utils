@@ -60,10 +60,12 @@ class ConvertXML {
 
   convertToJSObject(strXml: string, options?: Object): ReceiveObject {
     if (typeof strXml !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${strXml} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof strXml}. ` +
+          `The type of ${strXml} must be string`);
     }
     if (options && !(typeof options === 'undefined' || options === null) && typeof options !== 'object') {
-      throw new BusinessError(`Parameter error.The type of ${options} must be object`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. Expected: object, Actual: ${typeof options}. ` +
+          `The type of ${options} must be object`);
     }
     strXml = dealXml(strXml);
     let converted: ReceiveObject;
@@ -81,10 +83,12 @@ class ConvertXML {
 
   fastConvertToJSObject(strXml: string, options?: Object): NativeConvertXml {
     if (typeof strXml !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${strXml} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof strXml}. ` +
+          `The type of ${strXml} must be string`);
     }
     if (options && typeof options !== 'object') {
-      throw new BusinessError(`Parameter error.The type of ${options} must be object`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. Expected: object, Actual: ${typeof options}. ` +
+          `The type of ${options} must be object`);
     }
     if (arguments.length === 1) {
       return this.convertxmlclass.fastConvertToJSObject(strXml);
@@ -94,10 +98,12 @@ class ConvertXML {
 
   largeConvertToJSObject(strXml: string, options?: Object): Object {
     if (typeof strXml !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${strXml} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof strXml}. ` +
+          `The type of ${strXml} must be string`);
     }
     if (options && typeof options !== 'object') {
-      throw new BusinessError(`Parameter error.The type of ${options} must be object`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. Expected: object, Actual: ${typeof options}. ` +
+          `The type of ${options} must be object`);
     }
     if (arguments.length === 1) {
       return this.convertxmlclass.largeConvertToJSObject(strXml);

@@ -540,7 +540,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype1;
         NAPI_CALL(env, napi_typeof(env, argv[1], &valuetype1));
         if (valuetype0 != napi_number || valuetype1 != napi_number) {
-            return ThrowError(env, "Parameter error. The type of signal or pid must be number.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: number, Actual: mismatched type. The type of signal or pid must be number.");
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -553,7 +554,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_number) {
-            return ThrowError(env, "Parameter error. The type of code must be number.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: number, Actual: mismatched type. The type of code must be number.");
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -569,7 +571,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_number) {
-            return ThrowError(env, "Parameter error. The type of name must be number.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: number, Actual: mismatched type. The type of name must be number.");
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -583,7 +586,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_number) {
-            return ThrowError(env, "Parameter error. The type of code must be number.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: number, Actual: mismatched type. The type of code must be number.");
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -597,7 +601,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_string) {
-            return ThrowError(env, "Parameter error. The type of code must be string.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: string, Actual: mismatched type. The type of code must be string.");
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -611,7 +616,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_number) {
-            return ThrowError(env, "Parameter error. The type of code must be number.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: number, Actual: mismatched type. The type of code must be number.");
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));
@@ -625,7 +631,8 @@ namespace OHOS::JsSysModule::Process {
         napi_valuetype valuetype;
         NAPI_CALL(env, napi_typeof(env, args, &valuetype));
         if (valuetype != napi_string) {
-            return ThrowError(env, "Parameter error. The type of name must be string.");
+            return ThrowError(env, "Parameter error. Param[0] type mismatch. "
+                "Expected: string, Actual: mismatched type. The type of name must be string.");
         }
         ProcessManager *object = nullptr;
         NAPI_CALL(env, napi_unwrap_s(env, thisVar, &processTypeTag, (void**)&object));

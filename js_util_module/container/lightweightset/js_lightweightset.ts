@@ -71,7 +71,7 @@ if (flag || fastLightWeightSet === undefined) {
     }
     addAll(set: LightWeightSet<T>): boolean {
       errorUtil.checkBindError('addAll', LightWeightSet, this);
-      errorUtil.checkTypeError('set', 'LightWeightSet', set);
+      errorUtil.checkTypeError('set', 'LightWeightSet', set, 0);
       if (!(set instanceof LightWeightSet)) {
         throw new TypeError('Incoming object is not JSAPILightWeightSet');
       }
@@ -87,7 +87,7 @@ if (flag || fastLightWeightSet === undefined) {
     }
     hasAll(set: LightWeightSet<T>): boolean {
       errorUtil.checkBindError('hasAll', LightWeightSet, this);
-      errorUtil.checkTypeError('set', 'LightWeightSet', set);
+      errorUtil.checkTypeError('set', 'LightWeightSet', set, 0);
       if (set.memberNumber > this.memberNumber) {
         return false;
       }
@@ -115,7 +115,7 @@ if (flag || fastLightWeightSet === undefined) {
     }
     increaseCapacityTo(minimumCapacity: number): void {
       errorUtil.checkBindError('increaseCapacityTo', LightWeightSet, this);
-      errorUtil.checkTypeError('minimumCapacity', 'Integer', minimumCapacity);
+      errorUtil.checkTypeError('minimumCapacity', 'Integer', minimumCapacity, 0);
       errorUtil.checkRangeError('minimumCapacity', minimumCapacity, this.capacity,
         undefined, '!=min');
       super.ensureCapacity(minimumCapacity);
@@ -134,7 +134,7 @@ if (flag || fastLightWeightSet === undefined) {
     }
     removeAt(index: number): boolean {
       errorUtil.checkBindError('removeAt', LightWeightSet, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       if (index > this.memberNumber--) {
         return false;
       }
@@ -157,7 +157,7 @@ if (flag || fastLightWeightSet === undefined) {
     forEach(callbackfn: (value?: T, key?: T, set?: LightWeightSet<T>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', LightWeightSet, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       for (let i: number = 0; i < this.memberNumber; i++) {
         callbackfn.call(thisArg, this.members.keys[i], this.members.keys[i], this);
       }
@@ -189,7 +189,7 @@ if (flag || fastLightWeightSet === undefined) {
     }
     getValueAt(index: number): T {
       errorUtil.checkBindError('getValueAt', LightWeightSet, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       return this.members.keys[index];
     }
     values(): IterableIterator<T> {

@@ -20,7 +20,7 @@ interface errorUtil{
   checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void;
   checkNewTargetIsNullError(className: string, isNull: boolean): void;
   checkBindError(methodName: string, className: Function, self: unknown): void;
-  checkTypeError(paramName: string, type: string, receivedValue: unknown): void;
+  checkTypeError(paramName: string, type: string, receivedValue: unknown, index: number): void;
 }
 let flag: boolean = false;
 let fastQueue: Object = undefined;
@@ -131,7 +131,7 @@ if (flag || fastQueue === undefined) {
     forEach(callbackfn: (value: T, index?: number, queue?: Queue<T>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', Queue, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       let k: number = 0;
       let i: number = this.front;
       if (this.isEmpty()) {

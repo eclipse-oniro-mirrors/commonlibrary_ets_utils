@@ -20,7 +20,7 @@ interface errorUtil{
   checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void;
   checkNewTargetIsNullError(className: string, isNull: boolean): void;
   checkBindError(methodName: string, className: Function, self: unknown): void;
-  checkTypeError(paramName: string, type: string, receivedValue: unknown): void;
+  checkTypeError(paramName: string, type: string, receivedValue: unknown, index: number): void;
   checkIsEmptyError(isEmpty: boolean): void;
 }
 let flag: boolean = false;
@@ -148,7 +148,7 @@ if (flag || fastLinkedList === undefined) {
     }
     get(index: number): T {
       errorUtil.checkBindError('get', LinkedList, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       if (index >= 0 && index < this.elementNum) {
         let current: NodeObj<T> = this.head;
         for (let i: number = 0; i < index && current !== undefined; i++) {
@@ -242,7 +242,7 @@ if (flag || fastLinkedList === undefined) {
     }
     removeByIndex(index: number): T {
       errorUtil.checkBindError('removeByIndex', LinkedList, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.length - 1);
       if (index >= 0 && index < this.elementNum) {
         let current: NodeObj<T> = this.head;
@@ -326,7 +326,7 @@ if (flag || fastLinkedList === undefined) {
     }
     insert(index: number, element: T): void {
       errorUtil.checkBindError('insert', LinkedList, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.length);
       if (index >= 0 && index <= this.elementNum) {
         let newNode: NodeObj<T> = new NodeObj(element);
@@ -357,7 +357,7 @@ if (flag || fastLinkedList === undefined) {
     }
     set(index: number, element: T): T {
       errorUtil.checkBindError('set', LinkedList, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.length - 1);
       let current: NodeObj<T> = undefined;
       current = this.getNode(index);
@@ -397,7 +397,7 @@ if (flag || fastLinkedList === undefined) {
     forEach(callbackfn: (value: T, index?: number, linkedList?: LinkedList<T>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', LinkedList, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       let index: number = 0;
       if (this.head !== undefined) {
         let current: NodeObj<T> = this.head;

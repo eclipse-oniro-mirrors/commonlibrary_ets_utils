@@ -56,7 +56,8 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
     if (argc < 1) {
         errMessage = "taskpool:: create task need more than one param";
         HILOG_DEBUG("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: at least 1, Actual: " + std::to_string(argc) + ". " + errMessage).c_str());
         return nullptr;
     }
     napi_value* args = new napi_value[argc];
@@ -80,6 +81,7 @@ napi_value Task::TaskConstructor(napi_env env, napi_callback_info cbinfo)
         errMessage = "taskpool:: the first or second param of task must be function";
         HILOG_DEBUG("%{public}s", errMessage.c_str());
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: function, Actual: mismatched type. "
             "the type of the first or second param of task must be function.");
         return nullptr;
     }
@@ -278,7 +280,8 @@ napi_value Task::GetTaskInfoPromise(napi_env env, napi_value task, TaskType task
     if (promise == nullptr) { // LOCV_EXCL_BR_LINE
         std::string err = "create promise failed, maybe has exception.";
         HILOG_ERROR("taskpool:: %{public}s", err.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, err.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + err).c_str());
         return nullptr;
     }
     return promise;
@@ -324,7 +327,8 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     }
     if (argc > 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of setTransferList parma must be less than 2.");
+            ("Parameter error. Incorrect parameter count. Expected: zero or one, Actual: " + std::to_string(argc) +
+             ". the number of setTransferList parma must be less than 2.").c_str());
         return nullptr;
     }
     Task* task = nullptr;
@@ -344,6 +348,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
     }
     if (!NapiHelper::IsArray(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: array, Actual: mismatched type. "
             "the type of setTransferList first param must be array.");
         return nullptr;
     }
@@ -359,6 +364,7 @@ napi_value Task::SetTransferList(napi_env env, napi_callback_info cbinfo)
         napi_value transferVal = NapiHelper::GetElement(env, args[0], i);
         if (!NapiHelper::IsArrayBuffer(env, transferVal)) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: array of arraybuffer, Actual: mismatched type. "
                 "the type of the element in array must be arraybuffer.");
             return nullptr;
         }
@@ -380,11 +386,14 @@ napi_value Task::SetCloneList(napi_env env, napi_callback_info cbinfo)
         return nullptr;
     }
     if (argc != 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of setCloneList parma must be 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: 1, Actual: " + std::to_string(argc) + ". the number of setCloneList parma must be 1.").c_str());
         return nullptr;
     }
     if (!NapiHelper::IsArray(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of setCloneList first param must be array.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: array, Actual: mismatched type. "
+            "the type of setCloneList first param must be array.");
         return nullptr;
     }
     Task* task = nullptr;
@@ -403,12 +412,15 @@ napi_value Task::SetCloneList(napi_env env, napi_callback_info cbinfo)
     for (size_t i = 0; i < arrayLength; i++) {
         napi_value cloneVal = NapiHelper::GetElement(env, args[0], i);
         if (NapiHelper::IsBitVector(env, cloneVal)) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "BitVector not support setCloneList.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: array of arraybuffer or sendable, "
+                "Actual: mismatched type. BitVector not support setCloneList.");
             return nullptr;
         }
         if (!NapiHelper::IsArrayBuffer(env, cloneVal) && !NapiHelper::IsSendable(env, cloneVal)) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                "the type of setCloneList elements in array must be arraybuffer or sendable.");
+                "Parameter error. Param[0] type mismatch. Expected: array of arraybuffer or sendable, "
+                "Actual: mismatched type. the type of setCloneList elements in array must be arraybuffer or sendable.");
             return nullptr;
         }
     }
@@ -444,8 +456,9 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc >= 2) { // 2: the number of parmas
         HILOG_ERROR("taskpool:: the number of OnReceiveData parma must be less than 2");
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of OnReceiveData parma must be less than 2.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: zero or one, Actual: " + std::to_string(argc) +
+            ". the number of OnReceiveData parma must be less than 2.").c_str());
         return nullptr;
     }
 
@@ -466,6 +479,7 @@ napi_value Task::OnReceiveData(napi_env env, napi_callback_info cbinfo)
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnReceiveData's parameter should be function");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: function, Actual: mismatched type. "
             "the type of onReceiveData's parameter must be function.");
         return nullptr;
     }
@@ -511,7 +525,9 @@ napi_value Task::SendData(napi_env env, napi_callback_info cbinfo)
     Task* task = static_cast<Task*>(data);
     if (!TaskManager::GetInstance().IsValidTask(task)) { // LOCV_EXCL_BR_LINE
         HILOG_ERROR("taskpool:: SendData is not called because task is invalid");
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "sendData: task is invalid");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: task, Actual: mismatched type. "
+            "sendData: task is invalid");
         return nullptr;
     }
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
@@ -551,7 +567,8 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
     if (argc == 0) {
         std::string errMessage = "taskpool:: addDependency has no params";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "addDependency has no params.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: at least 1, Actual: " + std::to_string(argc) + ". addDependency has no params.").c_str());
         return nullptr;
     }
 
@@ -576,7 +593,9 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             errMessage = "taskpool:: addDependency param is not task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the addDependency param must be task.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[" + std::to_string(i) +
+                "] type mismatch. Expected: task, Actual: mismatched type. "
+                "the type of the addDependency param must be task.").c_str());
             return nullptr;
         } else {
             Task* dependentTask = nullptr;
@@ -598,7 +617,8 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
             if (dependentTask->IsCommonTask() || dependentTask->IsSeqRunnerTask()) {
                 errMessage = "taskpool:: seqRunnerTask or executedTask cannot be relied on";
                 HILOG_ERROR("%{public}s", errMessage.c_str());
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[" + std::to_string(i) +
+                    "] type mismatch. Expected: task, Actual: mismatched type. " + errMessage).c_str());
                 return nullptr;
             }
             if (dependentTask->IsAsyncRunnerTask()) {
@@ -609,13 +629,15 @@ napi_value Task::AddDependency(napi_env env, napi_callback_info cbinfo)
             if (dependentTask->IsGroupCommonTask()) {
                 errMessage = "taskpool:: groupTask cannot be relied on";
                 HILOG_ERROR("%{public}s", errMessage.c_str());
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[" + std::to_string(i) +
+                    "] type mismatch. Expected: task, Actual: mismatched type. " + errMessage).c_str());
                 return nullptr;
             }
             if (dependentTask->IsTimeoutTask()) {
                 errMessage = "taskpool:: the timeout task cannot be relied on.";
                 HILOG_ERROR("%{public}s", errMessage.c_str());
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[" + std::to_string(i) +
+                    "] type mismatch. Expected: task, Actual: mismatched type. " + errMessage).c_str());
                 return nullptr;
             }
             idSet.emplace(dependentTask->taskId_);
@@ -637,7 +659,8 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
     if (argc == 0) {
         std::string errMessage = "taskpool:: removeDependency has no params";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "removeDependency has no params.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: at least 1, Actual: " + std::to_string(argc) + ". removeDependency has no params.").c_str());
         return nullptr;
     }
     napi_status status = napi_ok;
@@ -649,7 +672,8 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
     napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
     if (task == nullptr) {
         HILOG_ERROR("taskpool:: the task is nullptr");
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the task is nullptr");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: task, Actual: mismatched type. the task is nullptr");
         return nullptr;
     }
     if (!task->HasDependency()) {
@@ -676,14 +700,17 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         if (!NapiHelper::HasNameProperty(env, args[i], TASKID_STR)) {
             std::string errMessage = "taskpool:: removeDependency param is not task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of removeDependency param must be task.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[" + std::to_string(i) +
+                "] type mismatch. Expected: task, Actual: mismatched type. "
+                "the type of removeDependency param must be task.").c_str());
             return nullptr;
         }
         Task* dependentTask = nullptr;
         napi_unwrap(env, args[i], reinterpret_cast<void**>(&dependentTask));
         if (dependentTask == nullptr) {
             HILOG_ERROR("taskpool:: the dependent task is nullptr");
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,  "the dependent task is nullptr");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[" + std::to_string(i) +
+                "] type mismatch. Expected: task, Actual: object. the dependent task is nullptr").c_str());
             return nullptr;
         }
         if (!dependentTask->HasDependency()) {
@@ -698,7 +725,8 @@ napi_value Task::RemoveDependency(napi_env env, napi_callback_info cbinfo)
         if (dependentTask->IsCommonTask()) {
             std::string errMessage = "taskpool:: cannot removeDependency on a dependent and executed task";
             HILOG_ERROR("%{public}s", errMessage.c_str());
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[" + std::to_string(i) +
+                "] type mismatch. Expected: task, Actual: mismatched type. " + errMessage).c_str());
             return nullptr;
         }
         if (dependentTask->IsAsyncRunnerTask()) {
@@ -805,7 +833,9 @@ napi_value Task::OnEnqueued(napi_env env, napi_callback_info cbinfo)
     NAPI_CALL(env, napi_typeof(env, args[0], &type));
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnEnqueued's parameter should be function");
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of OnEnqueued's parameter must be function.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: function, Actual: mismatched type. "
+            "the type of OnEnqueued's parameter must be function.");
         return nullptr;
     }
 
@@ -844,6 +874,7 @@ napi_value Task::OnStartExecution(napi_env env, napi_callback_info cbinfo)
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnStartExecution's parameter should be function");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: function, Actual: mismatched type. "
             "the type of OnStartExecution's parameter must be function.");
         return nullptr;
     }
@@ -884,6 +915,7 @@ napi_value Task::OnExecutionFailed(napi_env env, napi_callback_info cbinfo)
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnExecutionFailed's parameter should be function");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: function, Actual: mismatched type. "
             "the type of OnExecutionFailed's parameter must be function.");
         return nullptr;
     }
@@ -923,6 +955,7 @@ napi_value Task::OnExecutionSucceeded(napi_env env, napi_callback_info cbinfo)
     if (type != napi_function) {
         HILOG_ERROR("taskpool:: OnExecutionSucceeded's parameter should be function");
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: function, Actual: mismatched type. "
             "the type of OnExecutionSucceeded's parameter must be function");
         return nullptr;
     }
@@ -1268,13 +1301,15 @@ bool Task::CanForSequenceRunner(napi_env env)
     if (IsCommonTask() || IsSeqRunnerTask()) {
         errMessage = "taskpool:: SequenceRunner cannot execute seqRunnerTask or executedTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsGroupCommonTask()) {
         errMessage = "taskpool:: SequenceRunner cannot execute groupTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsAsyncRunnerTask()) {
@@ -1298,7 +1333,8 @@ bool Task::CanForTaskGroup(napi_env env)
     if (HasDependency()) {
         errMessage = "taskpool:: dependent task not allowed.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsPeriodicTask()) {
@@ -1310,19 +1346,22 @@ bool Task::CanForTaskGroup(napi_env env)
     if (IsCommonTask() || IsSeqRunnerTask()) {
         errMessage = "taskpool:: taskGroup cannot add seqRunnerTask or executedTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsGroupCommonTask()) {
         errMessage = "taskpool:: taskGroup cannot add groupTask";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsLongTask()) {
         errMessage = "taskpool:: The interface does not support the long task";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsAsyncRunnerTask()) {
@@ -1347,25 +1386,29 @@ bool Task::CanExecute(napi_env env, uint32_t timeout)
     if (IsGroupCommonTask()) {
         errMessage = "taskpool:: groupTask cannot execute outside";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsSeqRunnerTask()) {
         errMessage = "taskpool:: seqRunnerTask cannot execute outside";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsCommonTask() && HasDependency()) {
         errMessage = "taskpool:: executedTask with dependency cannot execute again";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsExecuted() && IsLongTask()) {
         errMessage = "taskpool:: The long task can only be executed once";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsPeriodicTask()) {
@@ -1398,25 +1441,29 @@ bool Task::CanExecuteDelayed(napi_env env)
     if (IsGroupCommonTask()) {
         errMessage = "taskpool:: groupTask cannot executeDelayed outside";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[1] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsSeqRunnerTask()) {
         errMessage = "taskpool:: seqRunnerTask cannot executeDelayed outside";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[1] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsCommonTask() && HasDependency()) {
         errMessage = "taskpool:: executedTask with dependency cannot executeDelayed again";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[1] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsExecuted() && IsLongTask()) {
         errMessage = "taskpool:: Multiple executions of longTask are not supported in the executeDelayed";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[1] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (IsPeriodicTask()) {
@@ -1453,6 +1500,7 @@ bool Task::CanExecutePeriodically(napi_env env)
     }
     if (HasDependency()) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: task, Actual: mismatched type. "
             "taskpool:: the task with dependency cannot executePeriodically");
         return false;
     }
@@ -2037,7 +2085,8 @@ std::tuple<napi_value, napi_value, napi_value, napi_value> Task::GetSerializePar
     if (func == nullptr || args == nullptr) {
         std::string errMessage = "taskpool:: task value is error";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return {nullptr, nullptr, nullptr, nullptr};
     }
     napi_value transferList = NapiHelper::GetUndefinedValue(env);
@@ -2199,7 +2248,8 @@ bool Task::CheckAddDependency(napi_env env, Task* task)
     if (task->IsCommonTask() || task->IsSeqRunnerTask()) {
         errMessage = "taskpool:: seqRunnerTask or executedTask cannot addDependency";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (task->IsAsyncRunnerTask()) {
@@ -2210,13 +2260,15 @@ bool Task::CheckAddDependency(napi_env env, Task* task)
     if (task->IsGroupCommonTask()) {
         errMessage = "taskpool:: groupTask cannot addDependency";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     if (task->IsTimeoutTask()) {
         errMessage = "taskpool:: the timeout task cannot addDependency.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     return true;
@@ -2237,7 +2289,8 @@ bool Task::CanExecuteTimeout(napi_env env, uint32_t timeout)
     if (HasDependency()) {
         errMessage = "taskpool:: the timeout task with dependency cannot execute.";
         HILOG_ERROR("%{public}s", errMessage.c_str());
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMessage.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + errMessage).c_str());
         return false;
     }
     return true;

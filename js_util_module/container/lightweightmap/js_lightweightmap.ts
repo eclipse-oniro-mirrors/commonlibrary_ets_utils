@@ -63,7 +63,7 @@ if (flag || fastLightWeightMap === undefined) {
     }
     hasAll(map: LightWeightMap<K, V>): boolean {
       errorUtil.checkBindError('hasAll', LightWeightMap, this);
-      errorUtil.checkTypeError('map', 'LightWeightMap', map);
+      errorUtil.checkTypeError('map', 'LightWeightMap', map, 0);
       if (!(map instanceof LightWeightMap)) {
         throw new TypeError('map is not JSAPILightWeightMap');
       }
@@ -85,7 +85,7 @@ if (flag || fastLightWeightMap === undefined) {
     }
     increaseCapacityTo(minimumCapacity: number): void {
       errorUtil.checkBindError('increaseCapacityTo', LightWeightMap, this);
-      errorUtil.checkTypeError('minimumCapacity', 'Integer', minimumCapacity);
+      errorUtil.checkTypeError('minimumCapacity', 'Integer', minimumCapacity, 0);
       super.ensureCapacity(minimumCapacity);
     }
     entries(): IterableIterator<[K, V]> {
@@ -125,7 +125,7 @@ if (flag || fastLightWeightMap === undefined) {
     }
     getKeyAt(index: number): K {
       errorUtil.checkBindError('getKeyAt', LightWeightMap, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.length - 1);
       return this.members.keys[index];
     }
@@ -148,7 +148,7 @@ if (flag || fastLightWeightMap === undefined) {
     }
     setAll(map: LightWeightMap<K, V>): void {
       errorUtil.checkBindError('setAll', LightWeightMap, this);
-      errorUtil.checkTypeError('map', 'LightWeightMap', map);
+      errorUtil.checkTypeError('map', 'LightWeightMap', map, 0);
       if (this.memberNumber === 0) {
         this.members.hashs = map.members.hashs.slice();
         this.members.keys = map.members.keys.slice();
@@ -171,7 +171,7 @@ if (flag || fastLightWeightMap === undefined) {
     }
     removeAt(index: number): boolean {
       errorUtil.checkBindError('removeAt', LightWeightMap, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       if (index > this.memberNumber--) {
         return false;
       }
@@ -193,7 +193,7 @@ if (flag || fastLightWeightMap === undefined) {
     }
     setValueAt(index: number, newValue: V): boolean {
       errorUtil.checkBindError('setValueAt', LightWeightMap, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.length - 1);
       if (index > this.memberNumber || this.members.values[index] === undefined) {
         return false;
@@ -204,7 +204,7 @@ if (flag || fastLightWeightMap === undefined) {
     forEach(callbackfn: (value?: V, key?: K, map?: LightWeightMap<K, V>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', LightWeightMap, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       for (let i: number = 0; i < this.memberNumber; i++) {
         callbackfn.call(thisArg, this.members.values[i], this.members.keys[i], this);
       }
@@ -223,7 +223,7 @@ if (flag || fastLightWeightMap === undefined) {
     }
     getValueAt(index: number): V {
       errorUtil.checkBindError('getValueAt', LightWeightMap, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.length - 1);
       return this.members.values[index];
     }

@@ -57,7 +57,7 @@ if (flag || fastTreeMap === undefined) {
     constructor(comparator?: (firstValue: K, secondValue: K) => boolean) {
       errorUtil.checkNewTargetIsNullError('TreeMap', !new.target);
       if (comparator) {
-        errorUtil.checkTypeError('comparator', 'callable', comparator);
+        errorUtil.checkTypeError('comparator', 'callable', comparator, 0);
       }
       this.constitute = new treeAbility.TreeClass(comparator);
       return new Proxy(this, new HandlerTreeMap());
@@ -100,7 +100,7 @@ if (flag || fastTreeMap === undefined) {
     }
     setAll(map: TreeMap<K, V>): void {
       errorUtil.checkBindError('setAll', TreeMap, this);
-      errorUtil.checkTypeError('map', 'TreeMap', map);
+      errorUtil.checkTypeError('map', 'TreeMap', map, 0);
       this.constitute.setAll(map.constitute);
     }
     set(key: K, value: V): Object {
@@ -196,7 +196,7 @@ if (flag || fastTreeMap === undefined) {
     forEach(callbackfn: (value?: V, key?: K, map?: TreeMap<K, V>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', TreeMap, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       for (let i: number = 0; i < this.constitute.memberNumber; i++) {
         callbackfn.call(thisArg, this.constitute.keyValueArray[i].value as V, this.constitute.keyValueArray[i].key);
       }

@@ -55,12 +55,26 @@ export interface JSON {
 
 function parse(text: string, reviver?: TransformsFunc, options?: ParseOptions): Object | null {
   if (typeof text !== 'string') {
-    let error = new BusinessError(`Parameter error. The type of ${text} must be string`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: string, Actual: ${typeof text}. ` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `The type of ${text} must be string`);
     throw error;
   }
   if (reviver) {
     if (typeof reviver !== 'function') {
-      let error = new BusinessError(`Parameter error. The type of ${reviver} must be a method`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: function, Actual: ${typeof reviver}. The type of ${reviver} must be a method`);
       throw error;
     }
   }
@@ -122,21 +136,26 @@ function isCirculateReference(value: Object, seenObjects: Set<Object> = new Set(
 
 function stringify(value: Object, replacer?: ReplacerType, space?: string | number): string {
   if (isCirculateReference(value)) {
-    let error = new BusinessError(`Parameter error. The object circular Reference`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: object without circular reference, Actual: object with circular reference. ` +
+            `The object circular Reference`);
     throw error;
   }
   if (replacer) {
     if (!isParameterType(replacer)) {
-      let error = new BusinessError(`Parameter error. The type of ${replacer} must be a method or array`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: function or array, Actual: ${typeof replacer}. The type of ${replacer} must be a method or array`);
       throw error;
     }
     if (space) {
       if (!isSpaceType(space)) {
-        let error = new BusinessError(`Parameter error. The type of ${space} must be a string or number`);
+        let error = new BusinessError(`Parameter error. Param[2] type mismatch. ` +
+            `Expected: string or number, Actual: ${typeof space}. The type of ${space} must be a string or number`);
         throw error;
       }
     } else if (space === null) {
-      let error = new BusinessError(`Parameter error. The type of ${space} must be a string or number`);
+      let error = new BusinessError(`Parameter error. Param[2] type mismatch. ` +
+          `Expected: string or number, Actual: ${typeof space}. The type of ${space} must be a string or number`);
       throw error;
     }
   }
@@ -159,15 +178,30 @@ function stringify(value: Object, replacer?: ReplacerType, space?: string | numb
 
 function has(value: object, key: string): boolean {
   if (typeof value !== 'object' || typeof value === 'undefined' || value === null) {
-    let error = new BusinessError(`Parameter error. The type of ${value} must be object`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: object, Actual: ${typeof value}. ` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `The type of ${value} must be object`);
     throw error;
   }
   if (value instanceof Array) {
-    let error = new BusinessError(`Parameter error. The type of ${value} must be json object`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. Expected: json object, Actual: array. ` +
+        `The type of ${value} must be json object`);
     throw error;
   }
   if (!(typeof key === 'string' && key.length)) {
-    let error = new BusinessError(`Parameter error. The type of ${key} must be string and not empty`);
+    let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+        `Expected: non-empty string, Actual: ${typeof key}. The type of ${key} must be string and not empty`);
     throw error;
   }
   return Object.prototype.hasOwnProperty.call(value, key);
@@ -175,15 +209,30 @@ function has(value: object, key: string): boolean {
 
 function remove(value: object, key: string): void {
   if (typeof value !== 'object' || typeof value === 'undefined' || value === null) {
-    let error = new BusinessError(`Parameter error. The type of ${value} must be object`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: object, Actual: ${typeof value}. ` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `` +
+        `The type of ${value} must be object`);
     throw error;
   }
   if (value instanceof Array) {
-    let error = new BusinessError(`Parameter error. The type of ${value} must be json object`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. Expected: json object, Actual: array. ` +
+        `The type of ${value} must be json object`);
     throw error;
   }
   if (!(typeof key === 'string' && key.length)) {
-    let error = new BusinessError(`Parameter error. The type of ${key} must be string and not empty`);
+    let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+        `Expected: non-empty string, Actual: ${typeof key}. The type of ${key} must be string and not empty`);
     throw error;
   }
   if (Object.prototype.hasOwnProperty.call(value, key)) {
@@ -196,15 +245,19 @@ const runtimeParseSendableV2 = runtimeJsonAtModuleInit.parseSendableV2;
 
 function parseSendable(text: string, reviver?: SendableTransformer, options?: ParseOptions): ISendable | null {
   if (typeof text !== 'string') {
-    let error = new BusinessError(`Parameter error. The type of first param must be string.`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: string, Actual: ${typeof text}. The type of first param must be string.`);
     throw error;
   }
   if (reviver !== undefined) {
-    let error = new BusinessError(`Parameter error. Reviver only supports undefined currently.`);
+    let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+        `Expected: undefined, Actual: ${typeof reviver}. Reviver only supports undefined currently.`);
     throw error;
   }
   if (typeof runtimeParseSendableV2 !== 'function') {
-    let error = new BusinessError('ParseSendable is not supported.');
+    let error = new BusinessError(
+        'Parameter error. Param[0] type mismatch. Expected: supported, Actual: unsupported. ' +
+        'ParseSendable is not supported.');
     throw error;
   }
 

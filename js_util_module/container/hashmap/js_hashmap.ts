@@ -79,7 +79,7 @@ if (flag || fastHashMap === undefined) {
     }
     setAll(map: HashMap<K, V>): void {
       errorUtil.checkBindError('setAll', HashMap, this);
-      errorUtil.checkTypeError('map', 'HashMap', map);
+      errorUtil.checkTypeError('map', 'HashMap', map, 0);
       let memebers: Array<HashMap<K, V>> = [];
       memebers = map.keyValueArray;
       for (let i: number = 0; i < memebers.length; i++) {
@@ -140,7 +140,7 @@ if (flag || fastHashMap === undefined) {
     forEach(callbackfn: (value?: V, key?: K, map?: HashMap<K, V>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', HashMap, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       let tagetArray: Array<HashMap<K, V>> = [];
       tagetArray = this.keyValueArray;
       for (let i: number = 0; i < tagetArray.length; i++) {

@@ -126,7 +126,9 @@ class Base64Helper {
 
   encode(src: Uint8Array, options: Type = Type.BASIC): Promise<Uint8Array> {
     if (!Object.values(Type).includes(options) || options === Type.MIME || options === Type.MIME_URL_SAFE) {
-      let error = new BusinessError(`Parameter error. The type of ${options} must be BASIC or BASIC_URL_SAFE`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: BASIC or BASIC_URL_SAFE, Actual: ${options}. ` +
+              `The type of ${options} must be BASIC or BASIC_URL_SAFE`);
       throw error;
     }
     return this.base64.encode(src, options);
@@ -134,7 +136,9 @@ class Base64Helper {
 
   encodeToString(src: Uint8Array, options: Type = Type.BASIC): Promise<string> {
     if (!Object.values(Type).includes(options)) {
-      let error = new BusinessError(`Parameter error. The type of ${options} must be one of the type enumerations`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: one of the type enumerations, Actual: ${options}. ` +
+              `The type of ${options} must be one of the type enumerations`);
       throw error;
     }
     let base64Result: Promise<string> = this.base64.encodeToString(src, options);
@@ -148,7 +152,9 @@ class Base64Helper {
 
   decode(src: Uint8Array | string, options: Type = Type.BASIC): Promise<Uint8Array> {
     if (!Object.values(Type).includes(options)) {
-      let error = new BusinessError(`Parameter error. The type of ${options} must be one of the type enumerations`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: one of the type enumerations, Actual: ${options}. ` +
+              `The type of ${options} must be one of the type enumerations`);
       throw error;
     }
     if (typeof src === 'string') {
@@ -504,7 +510,9 @@ function printf(formatString: Array<string | number | Function>, ...valueString:
 
 function format(formatString: Array<string | number | Function>, ...valueString: Array<Object>): string {
   if (!(formatString instanceof Array) && (typeof formatString !== 'string')) {
-    let error = new BusinessError(`Parameter error. The type of ${formatString} must be string or array`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: string or array, Actual: ${typeof formatString}. ` +
+            `The type of ${formatString} must be string or array`);
     throw error;
   }
   let valueLength: number = valueString.length;
@@ -512,7 +520,8 @@ function format(formatString: Array<string | number | Function>, ...valueString:
     for (let val of valueString) {
       if (typeof val !== 'object' && typeof val !== 'number' &&
         typeof val !== 'function' && typeof val !== 'string') {
-        let error = new BusinessError('Parameter error. The type of last parameters must be object');
+        let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+            `Expected: object, Actual: ${typeof val}. The type of last parameters must be object`);
         throw error;
       }
     }
@@ -561,7 +570,8 @@ function getErrorString(errnum: number): string {
 
 function errnoToString(errnum: number): string {
   if (typeof errnum !== 'number') {
-    let error = new BusinessError(`Parameter error. The type of ${errnum} must be number`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: number, Actual: ${typeof errnum}. The type of ${errnum} must be number`);
     throw error;
   }
   let errorString: string = helpUtil.geterrorstring(errnum);
@@ -573,7 +583,8 @@ function randomUUID(entropyCache?: boolean): string {
     entropyCache = true;
   }
   if (typeof entropyCache !== 'boolean') {
-    let error = new BusinessError(`Parameter error. The type of ${entropyCache} must be boolean`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: boolean, Actual: ${typeof entropyCache}. The type of ${entropyCache} must be boolean`);
     throw error;
   }
   let uuidString: string = helpUtil.randomUUID(entropyCache);
@@ -585,7 +596,8 @@ function randomBinaryUUID(entropyCache?: boolean): Uint8Array {
     entropyCache = true;
   }
   if (typeof entropyCache !== 'boolean') {
-    let error = new BusinessError(`Parameter error. The type of ${entropyCache} must be boolean`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: boolean, Actual: ${typeof entropyCache}. The type of ${entropyCache} must be boolean`);
     throw error;
   }
   let uuidArray: Uint8Array = helpUtil.randomBinaryUUID(entropyCache);
@@ -636,7 +648,8 @@ function getOwnPropertyDescriptors(obj: Function): PropertyDescriptorMap {
 
 function callbackWrapper(original: Function): Function {
   if (typeof original !== 'function') {
-    let error = new BusinessError(`Parameter error. The type of ${original} must be function`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: function, Actual: ${typeof original}. The type of ${original} must be function`);
     throw error;
   }
   if (original.constructor.name !== 'AsyncFunction') {
@@ -673,7 +686,8 @@ function promiseWrapper(func: Function): Object {
 
 function promisify(func: Function): Function {
   if (typeof func !== 'function') {
-    let error = new BusinessError(`Parameter error. The type of ${func} must be function`);
+    let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+        `Expected: function, Actual: ${typeof func}. The type of ${func} must be function`);
     throw error;
   }
   return function (...args: Array<Object>) {
@@ -726,15 +740,30 @@ class TextDecoder {
       return new TextDecoder();
     } else if (arguments.length === 1) {
       if (typeof encoding !== 'string' && encoding !== undefined && encoding !== null) {
-        throw new BusinessError(`Parameter error. The type of ${encoding} must be string`);
+        throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+            `Expected: string, Actual: ${typeof encoding}. The type of ${encoding} must be string`);
       }
       return new TextDecoder(encoding);
     } else {
       if (typeof encoding !== 'string' && encoding !== undefined && encoding !== null) {
-        throw new BusinessError(`Parameter error. The type of ${encoding} must be string`);
+        throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+            `Expected: string, Actual: ${typeof encoding}. The type of ${encoding} must be string`);
       }
       if (typeof options !== 'object' && options !== undefined && options !== null) {
-        throw new BusinessError(`Parameter error. The type of ${options} must be object`);
+        throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+            `Expected: object, Actual: ${typeof options}. ` +
+            `` +
+            `` +
+            `` +
+            `` +
+            `` +
+            `` +
+            `` +
+            `` +
+            `` +
+            `` +
+            `` +
+            `The type of ${options} must be object`);
       }
       return new TextDecoder(encoding, options);
     }
@@ -742,7 +771,8 @@ class TextDecoder {
 
   public decodeToString(input: Uint8Array, options?: { stream?: boolean }): string {
     if (input === null) {
-      throw new BusinessError(`Parameter error. The type of Parameter must be Uint8Array.`);
+      throw new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The type of Parameter must be Uint8Array.`);
     }
     if (arguments.length === 0 || input === undefined || input.length === 0) {
       return '';
@@ -1005,7 +1035,8 @@ class LRUCache {
   public constructor(capacity?: number) {
     if (capacity !== undefined && capacity !== null) {
       if (capacity <= 0 || capacity % 1 !== 0 || capacity > this.maxNumber) {
-        let error = new BusinessError(`Parameter error. The type of ${capacity} must be small integer`);
+        let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+            `Expected: small integer, Actual: ${capacity}. The type of ${capacity} must be small integer`);
         throw error;
       }
       this.maxSize = capacity;
@@ -1029,7 +1060,8 @@ class LRUCache {
 
   protected createDefault(key: Object): Object {
     if (typeof (key as Object) === 'undefined') {
-      let error = new BusinessError(`Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The type of ${key} must be Object`);
       throw error;
     }
     return undefined;
@@ -1037,11 +1069,13 @@ class LRUCache {
 
   public updateCapacity(newCapacity: number): void {
     if (typeof newCapacity !== 'number') {
-      let error = new BusinessError(`Parameter error. The type of ${newCapacity} must be number`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: number, Actual: ${typeof newCapacity}. The type of ${newCapacity} must be number`);
       throw error;
     }
     if (newCapacity <= 0 || newCapacity % 1 !== 0 || newCapacity > this.maxNumber) {
-      let error = new BusinessError(`Parameter error. The type of ${newCapacity} must be small integer`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: small integer, Actual: ${newCapacity}. The type of ${newCapacity} must be small integer`);
       throw error;
     } else if (this.cache.size > newCapacity) {
       this.changeCapacity(newCapacity);
@@ -1052,7 +1086,8 @@ class LRUCache {
 
   public get(key: Object): Object {
     if (typeof (key as Object) === 'undefined' || key === null) {
-      let error = new BusinessError(`Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The type of ${key} must be Object`);
       throw error;
     }
     let value: Object;
@@ -1082,15 +1117,18 @@ class LRUCache {
 
   public put(key: Object, value: Object): Object {
     if (typeof (key as Object) === 'undefined') {
-      let error = new BusinessError(`Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The type of ${key} must be Object`);
       throw error;
     }
     if (typeof (value as Object) === 'undefined') {
-      let error = new BusinessError(`Parameter error. The type of ${value} must be Object`);
+      let error = new BusinessError(`Parameter error. Param[1] is required, cannot be null or undefined. ` +
+          `The type of ${value} must be Object`);
       throw error;
     }
     if (key === null || value === null) {
-      let error = new BusinessError(`Parameter error. The type of key and value must be Object`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. Expected: Object, Actual: ${key}. ` +
+          `The type of key and value must be Object`);
       throw error;
     }
     let former: Object = undefined;
@@ -1112,7 +1150,8 @@ class LRUCache {
 
   public remove(key: Object): Object {
     if (typeof (key as Object) === 'undefined' || key === null) {
-      let error = new BusinessError(`Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The type of ${key} must be Object`);
       throw error;
     }
     if (this.cache.has(key)) {
@@ -1130,7 +1169,8 @@ class LRUCache {
 
   public contains(key: Object): boolean {
     if (typeof (key as Object) === 'undefined') {
-      let error = new BusinessError(`Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The type of ${key} must be Object`);
       throw error;
     }
     let flag: boolean = false;
@@ -1263,11 +1303,37 @@ class RationalNumber {
 
   static parseRationalNumber(num: number, den: number): RationalNumber {
     if (typeof num !== 'number') {
-      let error = new BusinessError(`Parameter error. The type of ${num} must be number`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: number, Actual: ${typeof num}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${num} must be number`);
       throw error;
     }
     if (typeof den !== 'number') {
-      let error = new BusinessError(`Parameter error. The type of ${den} must be number`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: number, Actual: ${typeof den}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${den} must be number`);
       throw error;
     }
     if (!Number.isInteger(num) || !Number.isInteger(den)) {
@@ -1303,13 +1369,27 @@ class RationalNumber {
 
   static createRationalFromString(str: string): RationalNumber {
     if (typeof str !== 'string' || str === null) {
-      let error = new BusinessError(`Parameter error. The type of ${str} must be string`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string, Actual: ${typeof str}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${str} must be string`);
       throw error;
     }
     let colon: number = str.indexOf(':');
     let semicolon: number = str.indexOf('/');
     if ((colon < 0 && semicolon < 0) || (colon > 0 && semicolon > 0)) {
-      let error = new BusinessError(`Parameter error. The type of ${str} must be effective string`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: effective string, Actual: ${str}. The type of ${str} must be effective string`);
       throw error;
     }
     let index: number = (colon > 0) ? colon : semicolon;
@@ -1323,7 +1403,8 @@ class RationalNumber {
       }
       return RationalNumber.parseRationalNumber(num1, num2);
     } else {
-      let error = new BusinessError(`Parameter error. The type of ${str} must be character string`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: character string, Actual: ${str}. The type of ${str} must be character string`);
       throw error;
     }
   }
@@ -1353,7 +1434,8 @@ class RationalNumber {
 
   public compare(other: RationalNumber): number {
     if (!(other instanceof RationalNumber)) {
-      let error = new BusinessError(`Parameter error. The type of ${other} must be RationalNumber`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: RationalNumber, Actual: ${typeof other}. The type of ${other} must be RationalNumber`);
       throw error;
     }
     if (this.mnum === other.mnum && this.mden === other.mden) {
@@ -1431,15 +1513,18 @@ class RationalNumber {
 
   static getCommonFactor(firNum: number, SecNum: number): number {
     if (typeof firNum !== 'number') {
-      let error = new BusinessError(`Parameter error. The type of ${firNum} must be number`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: number, Actual: ${typeof firNum}. The type of ${firNum} must be number`);
       throw error;
     }
     if (typeof SecNum !== 'number') {
-      let error = new BusinessError(`Parameter error. The type of ${SecNum} must be number`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: number, Actual: ${typeof SecNum}. The type of ${SecNum} must be number`);
       throw error;
     }
     if (firNum === 0 || SecNum === 0) {
-      let error = new BusinessError(`Parameter error. The Parameter cannot be zero`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: non-zero number, Actual: ${firNum}. The Parameter cannot be zero`);
       throw error;
     }
     if (!Number.isInteger(firNum) || !Number.isInteger(SecNum) ) {
@@ -1648,11 +1733,13 @@ class ScopeHelper {
   private readonly _upperLimit: ScopeType;
   public constructor(readonly lowerObj: ScopeType, readonly upperObj: ScopeType) {
     if (typeof lowerObj !== 'object') {
-      let error = new BusinessError(`Parameter error. The type of ${lowerObj} must be object`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: object, Actual: ${typeof lowerObj}. The type of ${lowerObj} must be object`);
       throw error;
     }
     if (typeof upperObj !== 'object') {
-      let error = new BusinessError(`Parameter error. The type of ${upperObj} must be object`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: object, Actual: ${typeof upperObj}. The type of ${upperObj} must be object`);
       throw error;
     }
 
@@ -1683,7 +1770,8 @@ class ScopeHelper {
   public contains(x: ScopeHelper | ScopeType): boolean {
     this.checkNull(x, 'value must not be null');
     if (typeof x !== 'object') {
-      let error = new BusinessError(`Parameter error. The type of ${x} must be object or ScopeHelper`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: object or ScopeHelper, Actual: ${typeof x}. The type of ${x} must be object or ScopeHelper`);
       throw error;
     }
     let resLower: boolean;
@@ -1701,7 +1789,8 @@ class ScopeHelper {
   public clamp(value: ScopeType): ScopeType {
     this.checkNull(value, 'value must not be null');
     if (typeof value !== 'object') {
-      let error = new BusinessError(`Parameter error. The type of ${value} must be object`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: object, Actual: ${typeof value}. The type of ${value} must be object`);
       throw error;
     }
 
@@ -1718,7 +1807,8 @@ class ScopeHelper {
   public intersect(lowerObj: ScopeType, upperObj: ScopeType): ScopeHelper;
   public intersect(x: ScopeHelper, y?: ScopeType): ScopeHelper {
     if (typeof x !== 'object') {
-      let error = new BusinessError(`Parameter error. The type of ${x} must be ScopeHelper or ScopeType`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: ScopeHelper or ScopeType, Actual: ${typeof x}. The type of ${x} must be ScopeHelper or ScopeType`);
       throw error;
     }
     let reLower: boolean;
@@ -1729,7 +1819,8 @@ class ScopeHelper {
       this.checkNull(x, 'lower limit must not be null');
       this.checkNull(y, 'upper limit must not be null');
       if (typeof y !== 'object') {
-        let error = new BusinessError(`Parameter error. The type of ${y} must be ScopeType`);
+        let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+            `Expected: ScopeType, Actual: ${typeof y}. The type of ${y} must be ScopeType`);
         throw error;
       }
       reLower = this._lowerLimit.compareTo(x);
@@ -1762,7 +1853,8 @@ class ScopeHelper {
   public expand(lowerObj: ScopeType, upperObj: ScopeType): ScopeHelper;
   public expand(x: ScopeType, y?: ScopeType): ScopeHelper {
     if (typeof x !== 'object') {
-      let error = new BusinessError(`Parameter error. The type of ${x} must be ScopeHelper or ScopeType`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: ScopeHelper or ScopeType, Actual: ${typeof x}. The type of ${x} must be ScopeHelper or ScopeType`);
       throw error;
     }
     let reLower: boolean;
@@ -1789,7 +1881,8 @@ class ScopeHelper {
 
     } else {
       if (typeof y !== 'object') {
-        let error = new BusinessError(`Parameter error. The type of ${y} must be ScopeType`);
+        let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+            `Expected: ScopeType, Actual: ${typeof y}. The type of ${y} must be ScopeType`);
         throw error;
       }
 
@@ -1822,7 +1915,9 @@ class ScopeHelper {
 class Aspect {
   private static checkMethodType(func: Function, methodName: string): boolean {
     if (typeof func !== 'function') {
-      let error = new BusinessError(`Parameter error. The type of ${methodName} must be a method of targetClass`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: a method of targetClass, Actual: ${methodName}. ` +
+              `The type of ${methodName} must be a method of targetClass`);
       throw error;
     }
     return func.constructor.name === 'AsyncFunction';
@@ -1830,15 +1925,18 @@ class Aspect {
 
   private static checkParameters(targetClass: Object, methodName: string, isStatic: boolean): void {
     if (typeof (targetClass as Object) === 'undefined') {
-      let error = new BusinessError(`Parameter error. The type of ${targetClass} must be Object`);
+      let error = new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The type of ${targetClass} must be Object`);
       throw error;
     }
     if (typeof methodName !== 'string') {
-      let error = new BusinessError(`Parameter error. The type of ${methodName} must be string`);
+      let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: string, Actual: ${typeof methodName}. The type of ${methodName} must be string`);
       throw error;
     }
     if (typeof isStatic !== 'boolean') {
-      let error = new BusinessError(`Parameter error. The type of ${isStatic} must be boolean`);
+      let error = new BusinessError(`Parameter error. Param[2] type mismatch. ` +
+          `Expected: boolean, Actual: ${typeof isStatic}. The type of ${isStatic} must be boolean`);
       throw error;
     }
   }
@@ -1846,7 +1944,8 @@ class Aspect {
   static addBefore(targetClass: Object, methodName: string, isStatic: boolean, before: Function): void {
     Aspect.checkParameters(targetClass, methodName, isStatic);
     if (typeof before !== 'function') {
-      let error = new BusinessError(`Parameter error. The type of ${before} must be function`);
+      let error = new BusinessError(`Parameter error. Param[3] type mismatch. ` +
+          `Expected: function, Actual: ${typeof before}. The type of ${before} must be function`);
       throw error;
     }
     let obj = isStatic ? targetClass : Reflect.get(targetClass, 'prototype');
@@ -1874,7 +1973,8 @@ class Aspect {
   static addAfter(targetClass: Object, methodName: string, isStatic: boolean, after: Function): void {
     Aspect.checkParameters(targetClass, methodName, isStatic);
     if (typeof after !== 'function') {
-      let error = new BusinessError(`Parameter error. The type of ${after} should be function.`);
+      let error = new BusinessError(`Parameter error. Param[3] type mismatch. ` +
+          `Expected: function, Actual: ${typeof after}. The type of ${after} should be function.`);
       throw error;
     }
     let obj = isStatic ? targetClass : Reflect.get(targetClass, 'prototype');
@@ -1902,7 +2002,8 @@ class Aspect {
   static replace(targetClass: Object, methodName: string, isStatic: boolean, instead: Function) : void {
     Aspect.checkParameters(targetClass, methodName, isStatic);
     if (typeof instead !== 'function') {
-      let error = new BusinessError(`Parameter error. The type of ${instead} should be function.`);
+      let error = new BusinessError(`Parameter error. Param[3] type mismatch. ` +
+          `Expected: function, Actual: ${typeof instead}. The type of ${instead} should be function.`);
       throw error;
     }
     let obj = isStatic ? targetClass : Reflect.get(targetClass, 'prototype');

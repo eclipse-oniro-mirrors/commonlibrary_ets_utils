@@ -76,6 +76,7 @@ const UINT64_MAX = 2n ** 64n - 1n;
 class ErrorMessage {
   public errorNumber: number = 0;
   public argument: string = '';
+  public paramIndex: number = -1;
   public types: string[] = [];
   public receivedObj: unknown = '';
   public rangeLeft: string | bigint | number = 0;
@@ -84,9 +85,10 @@ class ErrorMessage {
   public typeErrorCat: TypeErrorCategories = TypeErrorCategories.COMMON;
   public rangeErrorCat: RangeErrorCategories = RangeErrorCategories.WHOLE;
 
-  constructor(errNo: number, argument?: string) {
+  constructor(errNo: number, argument?: string, paramIndex?: number) {
     this.errorNumber = errNo;
     this.argument = argument === undefined ? '' : argument;
+    this.paramIndex = paramIndex === undefined ? -1 : paramIndex;
   }
 
   public setTypeInfo(types: string[], receivedObj: unknown): ErrorMessage {
@@ -142,7 +144,9 @@ class ErrorMessage {
 
   private getArgumentStr(flag: boolean): string {
     if (flag) {
-      return 'Parameter error. The type of "' + this.argument + '" must be ';
+      return 'Parameter error. Param[' + this.paramIndex + '] type mismatch. Expected: ' +
+        this.getErrorTypeStrings(this.types) + ', Actual: ' + getTypeName(this.receivedObj) +
+        '. The type of "' + this.argument + '" must be ';
     } else {
       return 'The type of "' + this.argument + '" must be ';
     }
@@ -375,7 +379,7 @@ class FastBuffer extends FastBufferInner {
     if (sourceEnd === null) {
       sourceEnd = this.length;
     }
-    typeErrorCheck(target, ['FastBuffer', 'Uint8Array'], 'target');
+    typeErrorCheck(target, ['FastBuffer', 'Uint8Array'], 'target', 0);
     return super.compare(target, targetStart, targetEnd, sourceStart, sourceEnd);
   }
 
@@ -404,7 +408,7 @@ class FastBuffer extends FastBufferInner {
 
   writeBigInt64BE(value: bigint, offset: number = 0): number {
     if (typeof value !== 'bigint') {
-      throw typeError(value, 'value', ['bigint']);
+      throw typeError(value, 'value', ['bigint'], 0);
     }
     rangeErrorCheck(value, 'value', -INT64_MAX, INT64_MAX);
     return super.writeBigInt64BE(value, offset);
@@ -412,7 +416,7 @@ class FastBuffer extends FastBufferInner {
 
   writeBigInt64LE(value: bigint, offset: number = 0): number {
     if (typeof value !== 'bigint') {
-      throw typeError(value, 'value', ['bigint']);
+      throw typeError(value, 'value', ['bigint'], 0);
     }
     rangeErrorCheck(value, 'value', -INT64_MAX, INT64_MAX);
     return super.writeBigInt64LE(value, offset);
@@ -420,7 +424,7 @@ class FastBuffer extends FastBufferInner {
   
   writeBigUInt64BE(value: bigint, offset: number = 0): number {
     if (typeof value !== 'bigint') {
-      throw typeError(value, 'value', ['bigint']);
+      throw typeError(value, 'value', ['bigint'], 0);
     }
     rangeErrorCheck(value, 'value', 0, UINT64_MAX);
     return super.writeBigUInt64BE(value, offset);
@@ -428,7 +432,7 @@ class FastBuffer extends FastBufferInner {
 
   writeBigUInt64LE(value: bigint, offset: number = 0): number {
     if (typeof value !== 'bigint') {
-      throw typeError(value, 'value', ['bigint']);
+      throw typeError(value, 'value', ['bigint'], 0);
     }
     rangeErrorCheck(value, 'value', 0, UINT64_MAX);
     return super.writeBigUInt64LE(value, offset);
@@ -530,12 +534,13 @@ function from(value: FastBuffer | Uint8Array | ArrayBuffer | SharedArrayBuffer |
       }
     }
   }
-  throw typeError(value, 'value', ['FastBuffer', 'ArrayBuffer', 'Array', 'Array-like', 'string', 'object']);
+  throw typeError(value, 'value', ['FastBuffer', 'ArrayBuffer', 'Array', 'Array-like', 'string', 'object'], 0);
 }
 
 function alloc(size: number, fill?: string | FastBuffer | number, encoding?: string): FastBuffer {
   if (size < 0 || size > UINT32MAX) {
-    let msg = 'Parameter error. The type of "size" must be ' + 'number' +
+    let msg = 'Parameter error. Param[0] type mismatch. Expected: number, Actual: ' + typeof size +
+      '. The type of "size" must be ' + 'number' +
       ' and the value cannot be negative. Received value is: ' + Number(size).toString();
     throw new BusinessError(msg, errorMap.typeError);
   }
@@ -556,7 +561,8 @@ function alloc(size: number, fill?: string | FastBuffer | number, encoding?: str
 
 function allocUninitialized(size: number): FastBuffer {
   if (size < 0 || size > UINT32MAX) {
-    let msg = 'Parameter error. The type of "size" must be ' + 'number' +
+    let msg = 'Parameter error. Param[0] type mismatch. Expected: number, Actual: ' + typeof size +
+      '. The type of "size" must be ' + 'number' +
       ' and the value cannot be negative. Received value is: ' + Number(size).toString();
     throw new BusinessError(msg, errorMap.typeError);
   }
@@ -569,8 +575,8 @@ function bufferSizeError(size: string): BusinessError {
   return new BusinessError(msg, errorMap.bufferSizeError);
 }
 
-function typeError(param: unknown, paramName: string, excludedTypes: string[]): BusinessError {
-  let msg = new ErrorMessage(errorMap.typeError, paramName).setTypeInfo(excludedTypes, param).getString();
+function typeError(param: unknown, paramName: string, excludedTypes: string[], index: number): BusinessError {
+  let msg = new ErrorMessage(errorMap.typeError, paramName, index).setTypeInfo(excludedTypes, param).getString();
   return new BusinessError(msg, errorMap.typeError);
 }
 
@@ -608,7 +614,8 @@ function alignPool(): void {
 
 function allocUninitializedFromPool(size: number): FastBuffer {
   if (size < 0 || size > UINT32MAX) {
-    let msg = 'Parameter error. The type of "size" must be ' + 'number' +
+    let msg = 'Parameter error. Param[0] type mismatch. Expected: number, Actual: ' + typeof size +
+      '. The type of "size" must be ' + 'number' +
       ' and the value cannot be negative. Received value is: ' + Number(size).toString();
     throw new BusinessError(msg, errorMap.typeError);
   }
@@ -702,7 +709,7 @@ function byteLength(string: string | BackingType, encoding: string = 'utf8'): nu
           string instanceof ArrayBuffer || string instanceof SharedArrayBuffer) {
           return string.byteLength;
         }
-        throw typeError(string, 'string', ['string', 'FastBuffer', 'ArrayBuffer']);
+        throw typeError(string, 'string', ['string', 'FastBuffer', 'ArrayBuffer'], 0);
     }
 }
 
@@ -723,20 +730,20 @@ function isEncoding(enc: string): boolean {
 }
 
 function transcode(source: FastBuffer | Uint8Array, fromEnc: string, toEnc: string): FastBuffer {
-  typeErrorCheck(source, ['FastBuffer', 'Uint8Array'], 'source');
-  typeErrorCheck(fromEnc, ['string'], 'fromEnc');
-  typeErrorCheck(toEnc, ['string'], 'toEnc');
+  typeErrorCheck(source, ['FastBuffer', 'Uint8Array'], 'source', 0);
+  typeErrorCheck(fromEnc, ['string'], 'fromEnc', 1);
+  typeErrorCheck(toEnc, ['string'], 'toEnc', 2);
   let from = source.toString(fromEnc);
   return fromString(from, toEnc);
 }
 
 function compare(buf1: FastBuffer | Uint8Array, buf2: FastBuffer | Uint8Array): 1 | 0 | -1 {
   if (!(buf1 instanceof FastBuffer) && !(buf1 instanceof Uint8Array)) {
-    throw new BusinessError(new ErrorMessage(errorMap.typeError, 'buf1').setTypeInfo(['FastBuffer', 'Uint8Array'],
+    throw new BusinessError(new ErrorMessage(errorMap.typeError, 'buf1', 0).setTypeInfo(['FastBuffer', 'Uint8Array'],
       getTypeName(buf1)).getString(), errorMap.typeError);
   }
   if (!(buf2 instanceof FastBuffer) && !(buf2 instanceof Uint8Array)) {
-    throw new BusinessError(new ErrorMessage(errorMap.typeError, 'buf2').setTypeInfo(['FastBuffer', 'Uint8Array'],
+    throw new BusinessError(new ErrorMessage(errorMap.typeError, 'buf2', 1).setTypeInfo(['FastBuffer', 'Uint8Array'],
       getTypeName(buf2)).getString(), errorMap.typeError);
   }
 
@@ -749,17 +756,17 @@ function compare(buf1: FastBuffer | Uint8Array, buf2: FastBuffer | Uint8Array): 
   }
 }
 
-function typeErrorCheck(param: unknown, types: string[], paramName: string): void {
+function typeErrorCheck(param: unknown, types: string[], paramName: string, index: number): void {
   let typeName = getTypeName(param);
   if (!types.includes(typeName)) {
-    throw typeError(param, paramName, types);
+    throw typeError(param, paramName, types, index);
   }
 }
 
 function concat(list: FastBuffer[] | Uint8Array[], totalLength?: number): FastBuffer {
-  typeErrorCheck(list, ['Array'], 'list');
+  typeErrorCheck(list, ['Array'], 'list', 0);
   if (!(typeof totalLength === 'number' || typeof totalLength === 'undefined' || 'null')) {
-    throw typeError(totalLength, 'totalLength', ['number']);
+    throw typeError(totalLength, 'totalLength', ['number'], 1);
   }
   if (list.length === 0) {
     return new FastBuffer(0);

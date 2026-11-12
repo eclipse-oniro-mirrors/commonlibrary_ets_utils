@@ -171,7 +171,9 @@ napi_value AsyncLockManager::Constructor(napi_env env, napi_callback_info cbinfo
         napi_valuetype type;
         NAPI_CALL(env, napi_typeof(env, args[0], &type));
         if (type != napi_string) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Request:: param must be string");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
+                "Request:: param must be string");
             return nullptr;
         }
 
@@ -302,11 +304,13 @@ napi_value AsyncLockManager::LockAsync(napi_env env, napi_callback_info cbinfo)
     LockMode mode = LOCK_MODE_EXCLUSIVE;
     LockOptions options;
     if (argc > 1 && !GetLockMode(env, argv[1], mode)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid lock mode.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: number, Actual: mismatched type. Invalid lock mode.");
         return nullptr;
     }
     if (argc > 2U && !GetLockOptions(env, argv[2U], options)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid options.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[2] type mismatch. Expected: object, Actual: mismatched type. Invalid options.");
         return nullptr;
     }
     napi_ref callback;
@@ -318,7 +322,9 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc != 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid number of arguments");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " + std::to_string(argc) +
+             ". Invalid number of arguments").c_str());
         return nullptr;
     }
 
@@ -332,7 +338,9 @@ napi_value AsyncLockManager::Query(napi_env env, napi_callback_info cbinfo)
     napi_valuetype type;
     napi_typeof(env, arg, &type);
     if (type != napi_string) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid argument type");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
+            "Invalid argument type");
         return undefined;
     }
 
@@ -355,7 +363,9 @@ napi_value AsyncLockManager::QueryAll(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc != 0) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Invalid number of arguments");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            ("Parameter error. Incorrect parameter count. Expected: 0, Actual: " + std::to_string(argc) +
+             ". Invalid number of arguments").c_str());
         return nullptr;
     }
 
@@ -372,17 +382,23 @@ napi_value AsyncLockManager::CreateLockState(napi_env env, AsyncLock *asyncLock)
     napi_get_undefined(env, &undefined);
     napi_value result;
     if (napi_create_object(env, &result) != napi_ok) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Cannot create an object");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: object, Actual: mismatched type. "
+                "Cannot create an object");
         return undefined;
     }
     napi_value held;
     napi_value pending;
     if (napi_create_array(env, &held) != napi_ok) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Cannot create an object");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: object, Actual: mismatched type. "
+                "Cannot create an object");
         return undefined;
     }
     if (napi_create_array(env, &pending) != napi_ok) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Cannot create an object");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: object, Actual: mismatched type. "
+                "Cannot create an object");
         return undefined;
     }
     napi_property_descriptor properties[] = {
@@ -392,7 +408,9 @@ napi_value AsyncLockManager::CreateLockState(napi_env env, AsyncLock *asyncLock)
     NAPI_CALL(env, napi_define_properties(env, result, sizeof(properties) / sizeof(properties[0]), properties));
 
     if (asyncLock->FillLockState(env, held, pending) != napi_ok) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Cannot create an object");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: object, Actual: mismatched type. "
+                "Cannot create an object");
         return undefined;
     }
 

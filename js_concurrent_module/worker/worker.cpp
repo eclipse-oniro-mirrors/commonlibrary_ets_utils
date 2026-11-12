@@ -296,13 +296,17 @@ napi_value Worker::Constructor(napi_env env, napi_callback_info cbinfo, bool lim
     // check argv count
     if (argc < 1) {
         HILOG_ERROR("worker:: the number of create worker param must be more than 1 with new");
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of parameters must be more than 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " + std::to_string(argc) +
+             ". the number of parameters must be more than 1.").c_str());
         return nullptr;
     }
     // check 1st param is string
     if (!NapiHelper::IsString(env, args[0])) {
         HILOG_ERROR("worker:: the type of Worker 1st param must be string");
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of the first param must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
+            "the type of the first param must be string.");
         return nullptr;
     }
     WorkerParams* workerParams = nullptr;
@@ -499,7 +503,9 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
             workerParams->workerPriority_ = Worker::GetPriorityArg(env, argsValue);
             if (workerParams->workerPriority_ == WorkerPriority::INVALID) {
                 CloseHelp::DeletePointer(workerParams, false);
-                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the priority value is invalid");
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR,
+                    "Parameter error. Param[1].(priority) type mismatch. Expected: number, Actual: mismatched type. "
+                    "the priority value is invalid");
                 return nullptr;
             }
         }
@@ -507,7 +513,9 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
         if (NapiHelper::IsNotUndefined(env, nameValue)) {
             if (!NapiHelper::IsString(env, nameValue)) {
                 CloseHelp::DeletePointer(workerParams, false);
-                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of name must be string.");
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR,
+                    "Parameter error. Param[1].(name) type mismatch. Expected: string, Actual: mismatched type. "
+                    "the type of name must be string.");
                 return nullptr;
             }
             char* nameStr = NapiHelper::GetChars(env, nameValue);
@@ -523,7 +531,9 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
         if (NapiHelper::IsNotUndefined(env, typeValue)) {
             if (!NapiHelper::IsString(env, typeValue)) {
                 CloseHelp::DeletePointer(workerParams, false);
-                WorkerThrowError(env, ErrorHelper::TYPE_ERROR, "the type of type's value must be string.");
+                WorkerThrowError(env, ErrorHelper::TYPE_ERROR,
+                    "Parameter error. Param[1].(type) type mismatch. Expected: string, Actual: mismatched type. "
+                    "the type of type's value must be string.");
                 return nullptr;
             }
             char* typeStr = NapiHelper::GetChars(env, typeValue);
@@ -539,6 +549,7 @@ Worker::WorkerParams* Worker::CheckWorkerArgs(napi_env env, napi_value argsValue
                 CloseHelp::DeletePointer(workerParams, false);
                 CloseHelp::DeletePointer(typeStr, true);
                 ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                    "Parameter error. Param[1].(type) type mismatch. Expected: classic, Actual: mismatched type. "
                     "the type must be classic, unsupport others now.");
                 return nullptr;
             }
@@ -563,13 +574,17 @@ napi_value Worker::ParseTransferListArg(napi_env env, napi_value secondArg, bool
         napi_value transferProp;
         napi_status status = napi_get_named_property(env, secondArg, "transfer", &transferProp);
         if (status != napi_ok) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Failed to access transfer property");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[1].(transfer) type mismatch. Expected: array, Actual: mismatched type. "
+                "Failed to access transfer property");
             return nullptr;
         }
 
         if (NapiHelper::IsNotUndefined(env, transferProp)) {
             if (!NapiHelper::IsArray(env, transferProp)) {
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMsg.c_str());
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                    ("Parameter error. Param[1].(transfer) type mismatch. Expected: array, Actual: mismatched type. " +
+                     errMsg).c_str());
                 return nullptr;
             }
             transferList = transferProp;
@@ -578,7 +593,8 @@ napi_value Worker::ParseTransferListArg(napi_env env, napi_value secondArg, bool
         return transferList;
     }
 
-    ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, errMsg.c_str());
+    ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+        ("Parameter error. Param[1] type mismatch. Expected: array, Actual: mismatched type. " + errMsg).c_str());
     return nullptr;
 }
 
@@ -617,7 +633,9 @@ napi_value Worker::CommonPostMessage(napi_env env, napi_callback_info cbinfo, bo
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Worker messageObject must be not null with postMessage");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " + std::to_string(argc) +
+             ". Worker messageObject must be not null with postMessage").c_str());
         return nullptr;
     }
     napi_value* argv = new napi_value[argc];
@@ -727,7 +745,8 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc != NUM_WORKER_ARGS) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of registerGlobalCallObject's parameters must be 2.");
+            ("Parameter error. Incorrect parameter count. Expected: 2, Actual: " + std::to_string(argc) +
+             ". the number of registerGlobalCallObject's parameters must be 2.").c_str());
         return nullptr;
     }
     // check 1st param is string
@@ -738,6 +757,7 @@ napi_value Worker::RegisterGlobalCallObject(napi_env env, napi_callback_info cbi
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
             "the type of registerGlobalCallObject's instanceName must be string.");
         return nullptr;
     }
@@ -760,7 +780,8 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc > 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of unregisterGlobalCallObject's parameters must be 1 or 0.");
+            ("Parameter error. Incorrect parameter count. Expected: 0 or 1, Actual: " + std::to_string(argc) +
+             ". the number of unregisterGlobalCallObject's parameters must be 1 or 0.").c_str());
         return nullptr;
     }
     napi_value thisVar = nullptr;
@@ -783,6 +804,7 @@ napi_value Worker::UnregisterGlobalCallObject(napi_env env, napi_callback_info c
     // check 1st param is string
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
             "the type of unregisterGlobalCallObject's instanceName must be string.");
         return nullptr;
     }
@@ -812,7 +834,9 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < NUM_WORKER_ARGS) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of listener parameters is not less than 2.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            ("Parameter error. Incorrect parameter count. Expected: 2, Actual: " + std::to_string(argc) +
+             ". the number of listener parameters is not less than 2.").c_str());
         return nullptr;
     }
     // check 1st param is string
@@ -822,11 +846,14 @@ napi_value Worker::AddListener(napi_env env, napi_callback_info cbinfo, Listener
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (!NapiHelper::IsString(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of listener first param must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
+            "the type of listener first param must be string.");
         return nullptr;
     }
     if (!NapiHelper::IsCallable(env, args[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: callable, Actual: mismatched type. "
             "the type of listener the second param must be callable.");
         return nullptr;
     }
@@ -859,7 +886,9 @@ napi_value Worker::RemoveListener(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of parameters is not less than 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " + std::to_string(argc) +
+             ". the number of parameters is not less than 1.").c_str());
         return nullptr;
     }
     // check 1st param is string
@@ -870,6 +899,7 @@ napi_value Worker::RemoveListener(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
             "the type of removelistener the first param must be string.");
         return nullptr;
     }
@@ -884,13 +914,16 @@ napi_value Worker::RemoveListener(napi_env env, napi_callback_info cbinfo)
 
     if (argc > 1 && !NapiHelper::IsCallable(env, args[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: callable, Actual: mismatched type. "
             "the type of removelistener the second param must be callable.");
         return nullptr;
     }
 
     char* typeStr = NapiHelper::GetChars(env, args[0]);
     if (typeStr == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of remove listener type must be not null");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
+            "the type of remove listener type must be not null");
         return nullptr;
     }
 
@@ -923,13 +956,15 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, &data);
     if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of dispatchEvent's parameters must be more than 1.");
+            ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " + std::to_string(argc) +
+             ". the number of dispatchEvent's parameters must be more than 1.").c_str());
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
     // check 1st param is event
     if (!NapiHelper::IsObject(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: object, Actual: mismatched type. "
             "the type of DispatchEvent first param must be event object.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
@@ -944,7 +979,9 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
 
     napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
     if (!NapiHelper::IsString(env, typeValue)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of dispatchEvent's event type must be string.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0].(type) type mismatch. Expected: string, Actual: mismatched type. "
+            "the type of dispatchEvent's event type must be string.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
@@ -953,7 +990,9 @@ napi_value Worker::DispatchEvent(napi_env env, napi_callback_info cbinfo)
 
     char* typeStr = NapiHelper::GetChars(env, typeValue);
     if (typeStr == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "dispatchEvent event type must be not null");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0].(type) type mismatch. Expected: string, Actual: mismatched type. "
+            "dispatchEvent event type must be not null");
         return NapiHelper::CreateBooleanValue(env, false);
     }
     if (strcmp(typeStr, "error") == 0) {
@@ -1025,7 +1064,9 @@ napi_value Worker::CommonPostMessageToHost(napi_env env, napi_callback_info cbin
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of parameters must be more than 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " + std::to_string(argc) +
+             ". the number of parameters must be more than 1.").c_str());
         return nullptr;
     }
     napi_value* argv = new napi_value[argc];
@@ -1104,7 +1145,8 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < NUM_GLOBAL_CALL_ARGS) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of callGlobalCallObjectMethod's parameters must be equal or more than 3.");
+            ("Parameter error. Incorrect parameter count. Expected: 3, Actual: " + std::to_string(argc) +
+             ". the number of callGlobalCallObjectMethod's parameters must be equal or more than 3.").c_str());
         return nullptr;
     }
     napi_value* args = new napi_value[argc];
@@ -1126,16 +1168,19 @@ napi_value Worker::GlobalCall(napi_env env, napi_callback_info cbinfo)
 
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
             "the type of callGlobalCallObjectMethod's instanceName must be string.");
         return nullptr;
     }
     if (!NapiHelper::IsString(env, args[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: string, Actual: mismatched type. "
             "the type of callGlobalCallObjectMethod's methodName must be string.");
         return nullptr;
     }
     if (!NapiHelper::IsNumber(env, args[2])) { // 2: the index of argument "timeout"
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[2] type mismatch. Expected: number, Actual: mismatched type. "
             "the type of callGlobalCallObjectMethod's timeout must be number.");
         return nullptr;
     }
@@ -1307,7 +1352,8 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < NUM_WORKER_ARGS) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "worker listener param count must be more than WORKPARAMNUM.");
+            ("Parameter error. Incorrect parameter count. Expected: 2, Actual: " + std::to_string(argc) +
+             ". worker listener param count must be more than WORKPARAMNUM.").c_str());
         return nullptr;
     }
 
@@ -1318,12 +1364,14 @@ napi_value Worker::ParentPortAddEventListener(napi_env env, napi_callback_info c
 
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
             "the type of worker listener first param must be string.");
         return nullptr;
     }
 
     if (!NapiHelper::IsCallable(env, args[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: callable, Actual: mismatched type. "
             "the type of worker listener second param must be callable.");
         return nullptr;
     }
@@ -1356,12 +1404,15 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
     Worker* worker = nullptr;
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, reinterpret_cast<void**>(&worker));
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "DispatchEvent param count must be more than 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " + std::to_string(argc) +
+             ". DispatchEvent param count must be more than 1.").c_str());
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
     if (!NapiHelper::IsObject(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: Event, Actual: mismatched type. "
             "the type of worker DispatchEvent first param must be Event.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
@@ -1369,6 +1420,7 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
     napi_value typeValue = NapiHelper::GetNameProperty(env, args[0], "type");
     if (!NapiHelper::IsString(env, typeValue)) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0].(type) type mismatch. Expected: string, Actual: mismatched type. "
             "the type of dispatchEvent's worker event must be string.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
@@ -1381,7 +1433,9 @@ napi_value Worker::ParentPortDispatchEvent(napi_env env, napi_callback_info cbin
 
     char* typeStr = NapiHelper::GetChars(env, typeValue);
     if (typeStr == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "dispatchEvent: worker listener type must be not null.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0].(type) type mismatch. Expected: string, Actual: mismatched type. "
+            "dispatchEvent: worker listener type must be not null.");
         return NapiHelper::CreateBooleanValue(env, false);
     }
 
@@ -1407,7 +1461,8 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of removeEventListener's parameters must be more than 2.");
+            ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " + std::to_string(argc) +
+             ". the number of removeEventListener's parameters must be more than 2.").c_str());
         return nullptr;
     }
 
@@ -1418,12 +1473,14 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
 
     if (!NapiHelper::IsString(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
             "the type of removeEventListener's 1st param must be string.");
         return nullptr;
     }
 
     if (argc > 1 && !NapiHelper::IsCallable(env, args[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: callable, Actual: mismatched type. "
             "the type of removeEventListener's second param must be callable.");
         return nullptr;
     }
@@ -1442,6 +1499,7 @@ napi_value Worker::ParentPortRemoveEventListener(napi_env env, napi_callback_inf
     char* typeStr = NapiHelper::GetChars(env, args[0]);
     if (typeStr == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
             "removeEventListener's worker listener type must be not null.");
         return nullptr;
     }
@@ -3205,7 +3263,8 @@ napi_value Worker::PostMessageAtFrontToHost(napi_env env, napi_callback_info cbi
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < NUM_WORKER_ARGS) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of postMessageAtFront parameters must be more than one.");
+            ("Parameter error. Incorrect parameter count. Expected: 2, Actual: " + std::to_string(argc) +
+             ". the number of postMessageAtFront parameters must be more than one.").c_str());
         return NapiHelper::GetUndefinedValue(env);
     }
     napi_value* argv = new napi_value[argc];
@@ -3226,6 +3285,7 @@ napi_value Worker::PostMessageAtFrontToHost(napi_env env, napi_callback_info cbi
 
     if (!NapiHelper::IsNumber(env, argv[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: number, Actual: mismatched type. "
             "the type of postMessageAtFront second param priority must be number.");
         return NapiHelper::GetUndefinedValue(env);
     }
@@ -3233,6 +3293,7 @@ napi_value Worker::PostMessageAtFrontToHost(napi_env env, napi_callback_info cbi
     if (priority < static_cast<uint32_t>(WorkerEventPriority::IMMEDIATE) ||
         priority >= static_cast<uint32_t>(WorkerEventPriority::NUMBER)) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: number, Actual: mismatched type. "
             "priority only supports HIGH, MEDIUM LOW, IDLE.");
         return NapiHelper::GetUndefinedValue(env);
     }

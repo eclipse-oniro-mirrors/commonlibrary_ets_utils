@@ -180,7 +180,8 @@ class Readable {
         this.readableEncodingInner = DEFAULT_ENCODING;
       }
       if (ENCODING_SET.indexOf(this.readableEncodingInner.toLowerCase()) === -1) {
-        let error = new BusinessError('Parameter error. Incorrect parameter types.', 401);
+        let error = new BusinessError(`Parameter error. Param[0].(encoding) type mismatch. ` +
+            `Expected: string, Actual: ${typeof options?.encoding}. Incorrect parameter types.`, 401);
         throw error;
       }
       this.stringDecoder = new StringDecoder(this.readableEncodingInner);
@@ -327,7 +328,8 @@ class Readable {
    */
   read(size?: number): string | null {
     if (size && typeof size !== 'number') {
-      this.throwError(new BusinessError(`Parameter error. The type of ${size} must be object`, 401));
+      this.throwError(new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: number, Actual: ${typeof size}. The type of ${size} must be object`, 401));
       return null;
     }
     if (this.doRead === null && this.readableInner) {
@@ -447,7 +449,8 @@ class Readable {
       }
       return true;
     } else {
-      const err: BusinessError = new BusinessError(`Parameter error. The type of ${encoding} must be string.`);
+      const err: BusinessError = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string, Actual: ${typeof encoding}. The type of ${encoding} must be string.`);
       this.throwError(err);
       return false;
     }
@@ -581,11 +584,13 @@ class Readable {
    */
   off(event: string, callback?: Function): void {
     if (!event) {
-      this.throwError(new BusinessError(`Parameter error. The value of ${event} is null`, 401));
+      this.throwError(new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The value of ${event} is null`, 401));
       return;
     }
     if (event && typeof event !== 'string') {
-      this.throwError(new BusinessError(`Parameter error. The type of ${event} must be string`, 401));
+      this.throwError(new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string, Actual: ${typeof event}. The type of ${event} must be string`, 401));
       return;
     }
     if (callback) {
@@ -684,7 +689,8 @@ class Readable {
       return false;
     } else {
       this.readableInner = false;
-      this.erroredInner = new BusinessError('ERR_INVALID_ARG_TYPE');
+      this.erroredInner = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string or Uint8Array, Actual: ${typeof chunk}. ERR_INVALID_ARG_TYPE`);
       this.listener?.emit(ReadableEvent.ERROR, this.erroredInner);
       return false;
     }
@@ -894,10 +900,13 @@ class Writable {
       this.setDefaultEncoding(encoding);
     }
     if (chunk === null) {
-      throw new BusinessError(`Parameter error. The type of ${chunk} must be string or UintArray`, 401);
+      throw new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The type of ${chunk} must be string or UintArray`, 401);
     }
     if (typeof chunk !== 'string' && !(chunk instanceof Uint8Array)) {
-      throw new BusinessError(`Parameter error. The type of ${chunk} must be string or UintArray`, 401);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string or Uint8Array, Actual: ${typeof chunk}. ` +
+              `The type of ${chunk} must be string or UintArray`, 401);
     }
     if (this.ending && !this.writing) {
       setTimeout((): void => {
@@ -1171,7 +1180,8 @@ class Writable {
       }
       return true;
     } else {
-      const err: BusinessError = new BusinessError(`Unknown encoding: ${encoding}`);
+      const err: BusinessError = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string, Actual: ${typeof encoding}. Unknown encoding: ${encoding}`);
       this.throwError(err);
       return false;
     }
@@ -1237,7 +1247,8 @@ class Writable {
    */
   off(event: string, callback?: Function): void {
     if (!event) {
-      this.throwError(new BusinessError(`Parameter error. The value of event is null `, 401));
+      this.throwError(new BusinessError(`Parameter error. Param[0] is required, cannot be null or undefined. ` +
+          `The value of event is null `, 401));
       return;
     }
     if (callback) {
@@ -1562,7 +1573,9 @@ class Transform extends Duplex {
    * @since 12
    */
   doTransform(chunk: string, encoding: string, callback: Function): void {
-    throw new BusinessError('The doTransform() method is not implemented');
+    throw new BusinessError(
+        'Parameter error. Param[0] type mismatch. Expected: implemented doTransform, Actual: not implemented. ' +
+      'The doTransform() method is not implemented');
   }
 
   /**

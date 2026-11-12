@@ -48,7 +48,8 @@ class SendableLruCache {
     'use sendable';
     if (capacity !== undefined && capacity !== null) {
       if (capacity <= 0 || capacity % 1 !== 0 || capacity > this.maxNumber) {
-        let error = new BusinessError(typeErrorCode, `Parameter error. The type of ${capacity} must be small integer`);
+        let error = new BusinessError(typeErrorCode, `Parameter error. Param[0] type mismatch. ` +
+            `Expected: small integer, Actual: ${typeof capacity}. The type of ${capacity} must be small integer`);
         throw error;
       }
       this.maxSize = capacity;
@@ -70,7 +71,8 @@ class SendableLruCache {
 
   protected createDefault(key: Object): Object | undefined {
     if (typeof (key as Object) === 'undefined') {
-      let error = new BusinessError(typeErrorCode, `Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(typeErrorCode, `Parameter error. ` +
+          `Param[0] is required, cannot be null or undefined. The type of ${key} must be Object`);
       throw error;
     }
     return undefined;
@@ -78,11 +80,13 @@ class SendableLruCache {
 
   public updateCapacity(newCapacity: number): void {
     if (typeof newCapacity !== 'number') {
-      let error = new BusinessError(typeErrorCode, `Parameter error. The type of ${newCapacity} must be number`);
+      let error = new BusinessError(typeErrorCode, `Parameter error. Param[0] type mismatch. ` +
+          `Expected: number, Actual: ${typeof newCapacity}. The type of ${newCapacity} must be number`);
       throw error;
     }
     if (newCapacity <= 0 || newCapacity % 1 !== 0 || newCapacity > this.maxNumber) {
-      let error = new BusinessError(typeErrorCode, `Parameter error. The type of ${newCapacity} must be small integer`);
+      let error = new BusinessError(typeErrorCode, `Parameter error. Param[0] type mismatch. ` +
+          `Expected: small integer, Actual: ${typeof newCapacity}. The type of ${newCapacity} must be small integer`);
       throw error;
     }
     if (this.cache.size > newCapacity) {
@@ -94,7 +98,8 @@ class SendableLruCache {
 
   public get(key: Object): Object | undefined {
     if (typeof (key as Object) === 'undefined' || key === null) {
-      let error = new BusinessError(typeErrorCode, `Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(typeErrorCode, `Parameter error. ` +
+          `Param[0] is required, cannot be null or undefined. The type of ${key} must be Object`);
       throw error;
     }
     let value: Object;
@@ -123,15 +128,18 @@ class SendableLruCache {
 
   public put(key: Object, value: Object): Object | undefined {
     if (typeof (key as Object) === 'undefined') {
-      let error = new BusinessError(typeErrorCode, `Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(typeErrorCode, `Parameter error. ` +
+          `Param[0] is required, cannot be null or undefined. The type of ${key} must be Object`);
       throw error;
     }
     if (typeof (value as Object) === 'undefined') {
-      let error = new BusinessError(typeErrorCode, `Parameter error. The type of ${value} must be Object`);
+      let error = new BusinessError(typeErrorCode, `Parameter error. ` +
+          `Param[1] is required, cannot be null or undefined. The type of ${value} must be Object`);
       throw error;
     }
     if (key === null || value === null) {
-      let error = new BusinessError(typeErrorCode, `Parameter error. The type of key and value must be Object`);
+      let error = new BusinessError(typeErrorCode, `Parameter error. ` +
+          `Param[0] is required, cannot be null or undefined. The type of key and value must be Object`);
       throw error;
     }
     let former: Object | undefined = undefined;
@@ -153,7 +161,8 @@ class SendableLruCache {
 
   public remove(key: Object): Object | undefined {
     if (typeof (key as Object) === 'undefined' || key === null) {
-      let error = new BusinessError(typeErrorCode, `Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(typeErrorCode, `Parameter error. ` +
+          `Param[0] is required, cannot be null or undefined. The type of ${key} must be Object`);
       throw error;
     }
     let former: Object = undefined;
@@ -172,7 +181,8 @@ class SendableLruCache {
 
   public contains(key: Object): boolean {
     if (typeof (key as Object) === 'undefined') {
-      let error = new BusinessError(typeErrorCode, `Parameter error. The type of ${key} must be Object`);
+      let error = new BusinessError(typeErrorCode, `Parameter error. ` +
+          `Param[0] is required, cannot be null or undefined. The type of ${key} must be Object`);
       throw error;
     }
     let flag: boolean = false;
