@@ -21,10 +21,10 @@
 #include "commonlibrary/ets_utils/js_util_module/util/js_stringdecoder.h"
 #include "commonlibrary/ets_utils/js_util_module/util/native_module_util.h"
 
-#include "jni_helper.h"
 #include "securec.h"
 #include "tools/log.h"
-#include "tools/ets_error.h"
+
+#include "jni_helper.h"
 
 extern const char _binary_util_js_js_start[];
 extern const char _binary_util_js_js_end[];
@@ -66,7 +66,6 @@ namespace OHOS::Util {
         0x957ca7faf113d259   // upper
     };
 
-    using namespace OHOS::Tools;
     using namespace Commonlibrary::Platform;
     static bool IsValidValue(napi_env env, napi_value value)
     {
@@ -1805,6 +1804,21 @@ namespace OHOS::Util {
         return result;
     }
 
+    static napi_value EnableLocalHandleDetection(napi_env env, [[maybe_unused]] napi_callback_info info)
+    {
+        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
+        bool ret = engine->EnableLocalHandleDetection();
+        if (!ret) {
+            HILOG_WARN("enable LocalHandleDetection failed");
+        } else {
+            HILOG_DEBUG("enable LocalHandleDetection successfully");
+        }
+
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        return result;
+    }
+
     static napi_value SetTrackGlobalRef(napi_env env, napi_callback_info info)
     {
         size_t requireArgc = 1;
@@ -1812,7 +1826,7 @@ namespace OHOS::Util {
         napi_value args[1] = {nullptr};
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
         if (argc < requireArgc) {
-            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+            ThrowError(env,
                 "Parameter error. SetTrackGlobalRef: input parameter count must be > 0.");
             return nullptr;
         }
@@ -1820,7 +1834,7 @@ namespace OHOS::Util {
         napi_valuetype valuetype = napi_undefined;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         if (valuetype != napi_boolean) {
-            ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+            ThrowError(env,
                 "Parameter error. SetTrackGlobalRef: input parameter type must be boolean.");
             return nullptr;
         }
@@ -1955,21 +1969,6 @@ namespace OHOS::Util {
         return promise;
     }
 
-    static napi_value EnableLocalHandleDetection(napi_env env, [[maybe_unused]] napi_callback_info info)
-    {
-        NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
-        bool ret = engine->EnableLocalHandleDetection();
-        if (!ret) {
-            HILOG_WARN("enable LocalHandleDetection failed");
-        } else {
-            HILOG_DEBUG("enable LocalHandleDetection successfully");
-        }
-
-        napi_value result = nullptr;
-        napi_get_undefined(env, &result);
-        return result;
-    }
-
     static napi_value EnableHandleMemoryOptimization(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
@@ -1993,7 +1992,7 @@ namespace OHOS::Util {
             NAPI_CALL_BASE(env, napi_typeof(env, value, &type), -1.0);
             if (type != napi_number) {
                 std::string errorMsg = std::string(propName) + " must be a number.";
-                ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, errorMsg.c_str());
+                ThrowError(env, errorMsg.c_str());
                 return -1.0;
             }
             NAPI_CALL_BASE(env, napi_get_value_double(env, value, &threshold), -1.0);
@@ -2017,19 +2016,19 @@ namespace OHOS::Util {
         napi_value args[2] = {nullptr};
         NAPI_CALL(env, napi_get_cb_info(env, info, &actualArgc, args, nullptr, nullptr));
         if (actualArgc < expectedArgc) {
-            return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Expected 2 parameters.");
+            return ThrowError(env, "Expected 2 parameters.");
         }
 
         napi_valuetype valuetype0;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype0));
         if (valuetype0 != napi_function) {
-            return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "First parameter must be a function.");
+            return ThrowError(env, "First parameter must be a function.");
         }
 
         napi_valuetype valuetype1;
         NAPI_CALL(env, napi_typeof(env, args[1], &valuetype1));
         if (valuetype1 != napi_object) {
-            return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE, "Second parameter must be an object.");
+            return ThrowError(env, "Second parameter must be an object.");
         }
 
         double localHeapThreshold = GetThresholdProperty(env, args[1], "localHeapThreshold");
@@ -2191,19 +2190,16 @@ namespace OHOS::Util {
             napi_valuetype valuetype;
             NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
             if (valuetype != napi_number) {
-                return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
-                    "Parameter error. hintGC: input parameter must be of type UrgencyLevel.");
+                return ThrowError(env, "Parameter error. hintGC: input parameter must be of type UrgencyLevel.");
             }
             NAPI_CALL(env, napi_get_value_int32(env, args[0], &urgencyLevel));
             if (urgencyLevel < 0 || urgencyLevel > 2) { // 2: max urgency level
-                return ErrorHelper::ThrowError(env, TYPE_ERROR_CODE,
+                return ThrowError(env,
                     "Parameter error. hintGC: urgencyLevel must be UrgencyLevel.LOW(0), MEDIUM(1) or HIGH(2).");
             }
         }
-
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);
         engine->HintGC(static_cast<UrgencyLevel>(urgencyLevel));
-
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
         return result;
@@ -2215,8 +2211,8 @@ namespace OHOS::Util {
         napi_create_object(env, &ArkTSVMInterface);
         napi_property_descriptor ArkTSVMDesc[] = {
             DECLARE_NAPI_FUNCTION("setMultithreadingDetectionEnabled", SetMultithreadingDetectionEnabled),
-            DECLARE_NAPI_FUNCTION("getAllVMHeapMemoryInfo", GetAllVMHeapMemoryInfo),
             DECLARE_NAPI_FUNCTION("enableLocalHandleDetection", EnableLocalHandleDetection),
+            DECLARE_NAPI_FUNCTION("getAllVMHeapMemoryInfo", GetAllVMHeapMemoryInfo),
             DECLARE_NAPI_FUNCTION("onVMHeapMemoryPressure", OnVMHeapMemoryPressure),
             DECLARE_NAPI_FUNCTION("offVMHeapMemoryPressure", OffVMHeapMemoryPressure),
             DECLARE_NAPI_FUNCTION("setTrackGlobalRef", SetTrackGlobalRef),

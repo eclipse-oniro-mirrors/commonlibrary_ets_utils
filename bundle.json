@@ -50,7 +50,6 @@
         "deps": {
             "components": [
                 "ability_runtime",
-                "ace_engine",
                 "bounds_checking_function",
                 "napi",
                 "hilog",
@@ -67,7 +66,6 @@
                 "icu",
                 "openssl",
                 "libxml2",
-                "typescript",
                 "runtime_core",
                 "ets_frontend",
                 "libuv",
