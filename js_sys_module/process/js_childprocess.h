@@ -16,6 +16,9 @@
 #ifndef PROCESS_JS_CHILDPROCESS_H
 #define PROCESS_JS_CHILDPROCESS_H
 
+#include <atomic>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <sys/types.h>
 
@@ -27,7 +30,8 @@ namespace OHOS::JsSysModule::Process {
         napi_deferred deferred {nullptr};
         napi_value promise {nullptr};
         std::string stdData {};
-        bool *isNeedRun {nullptr};
+        std::mutex dataMutex {};
+        std::shared_ptr<std::atomic<bool>> isNeedRun;
         int64_t maxBuffSize {};
         int fd {};
         int pid {};
@@ -35,7 +39,7 @@ namespace OHOS::JsSysModule::Process {
 
     struct OptionsInfo {
         napi_async_work worker {nullptr};
-        bool *isNeedRun {nullptr};
+        std::shared_ptr<std::atomic<bool>> isNeedRun;
         int32_t timeout {};
         int32_t killSignal {};
         int64_t maxBuffer {};
@@ -151,8 +155,9 @@ namespace OHOS::JsSysModule::Process {
         int stdOutFd_[2] {};
         int stdErrFd_[2] {};
         int ppid_ {};
+        pid_t pid_ {};
 
-        bool isNeedRun_ {true};
+        std::shared_ptr<std::atomic<bool>> isNeedRun_ = std::make_shared<std::atomic<bool>>(true);
         bool killed_ {};
         bool isWait_ {true};
     };

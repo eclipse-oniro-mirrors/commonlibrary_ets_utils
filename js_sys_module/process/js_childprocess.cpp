@@ -117,11 +117,12 @@ namespace OHOS::JsSysModule::Process {
                 return;
             }
             optionsInfo_->pid = pid;
+            pid_ = pid;
             ppid_ = getpid();
             CreateWorker(env);
             napi_value resourceName = nullptr;
             napi_create_string_utf8(env, "TimeoutListener", strlen("TimeoutListener"), &resourceName);
-            napi_create_async_work(
+            napi_status createStatus = napi_create_async_work(
                 env, nullptr, resourceName, TimeoutListener,
                 [](napi_env env, napi_status status, void* data) {
                     OptionsInfo* optionsInfo = reinterpret_cast<OptionsInfo*>(data);
@@ -130,7 +131,25 @@ namespace OHOS::JsSysModule::Process {
                     optionsInfo = nullptr;
                 },
                 reinterpret_cast<void*>(optionsInfo_), &optionsInfo_->worker);
-            napi_queue_async_work_with_qos(env, optionsInfo_->worker, napi_qos_user_initiated);
+            napi_status queueStatus = napi_generic_failure;
+            if (createStatus == napi_ok) {
+                queueStatus = napi_queue_async_work_with_qos(env, optionsInfo_->worker, napi_qos_user_initiated);
+            }
+            if (createStatus == napi_ok && queueStatus == napi_ok) {
+                // Ownership of optionsInfo_ is transferred to the timeout async work
+                // here: its complete callback deletes it. Keep using the local pid_
+                // copy afterwards; dereferencing optionsInfo_ past this point would
+                // be a use-after-free once the timeout work has completed.
+                optionsInfo_ = nullptr;
+            } else {
+                // The work never ran, so its complete callback will not free the data.
+                // Drop the work and keep ownership on optionsInfo_ so the destructor release it.
+                HILOG_ERROR("ChildProcess:: timeout work create/queue failed");
+                if (optionsInfo_->worker != nullptr) {
+                    napi_delete_async_work(env, optionsInfo_->worker);
+                    optionsInfo_->worker = nullptr;
+                }
+            }
         #ifndef CROSS_PLATFORM
             fdsan_close_with_tag(stdErrFd_[1], LOG_DOMAIN);
             fdsan_close_with_tag(stdOutFd_[1], LOG_DOMAIN);
@@ -148,16 +167,16 @@ namespace OHOS::JsSysModule::Process {
         if (isWait_) {
             int32_t status;
             isWait_ = false;
-            if (optionsInfo_ == nullptr) {
+            if (pid_ <= 0) {
                 napi_value res = nullptr;
                 napi_get_undefined(env, &res);
-                HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
+                HILOG_ERROR("ChildProcess:: wait without a valid child pid");
                 return res;
             }
-            waitpid(optionsInfo_->pid, &status, 0);
+            waitpid(pid_, &status, 0);
             exitCode_ = status;
         }
-        isNeedRun_ = false;
+        isNeedRun_->store(false, std::memory_order_release);
         napi_value result = nullptr;
         napi_value promise = nullptr;
         napi_deferred deferred = nullptr;
@@ -179,16 +198,24 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_create_promise(env, &stdOutInfo_->deferred, &stdOutInfo_->promise));
         void* data = nullptr;
         napi_value arrayBuffer = nullptr;
-        size_t bufferSize = stdOutInfo_->stdData.size() + 1;
+        std::string stdOutSnapshot;
+        {
+            std::lock_guard<std::mutex> lock(stdOutInfo_->dataMutex);
+            stdOutSnapshot = stdOutInfo_->stdData;
+        }
+        size_t bufferSize = stdOutSnapshot.size() + 1;
         NAPI_CALL(env, napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer));
-        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdOutInfo_->stdData.c_str()),
-            stdOutInfo_->stdData.size()) != EOK) {
+        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdOutSnapshot.c_str()),
+            stdOutSnapshot.size()) != EOK) {
             HILOG_ERROR("ChildProcess:: getOutput memcpy_s failed");
             NAPI_CALL(env, napi_delete_async_work(env, stdOutInfo_->worker));
             napi_value res = nullptr;
             NAPI_CALL(env, napi_get_undefined(env, &res));
             return res;
         }
+        // bufferSize is stdData.size() + 1: keep the trailing NUL terminator that
+        // callers expect from the previous implementation.
+        reinterpret_cast<uint8_t*>(data)[stdOutSnapshot.size()] = 0;
 
         napi_value result = nullptr;
         NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result));
@@ -207,16 +234,24 @@ namespace OHOS::JsSysModule::Process {
         NAPI_CALL(env, napi_create_promise(env, &stdErrInfo_->deferred, &stdErrInfo_->promise));
         void* data = nullptr;
         napi_value arrayBuffer = nullptr;
-        size_t bufferSize = stdErrInfo_->stdData.size() + 1;
+        std::string stdErrSnapshot;
+        {
+            std::lock_guard<std::mutex> lock(stdErrInfo_->dataMutex);
+            stdErrSnapshot = stdErrInfo_->stdData;
+        }
+        size_t bufferSize = stdErrSnapshot.size() + 1;
         NAPI_CALL(env, napi_create_arraybuffer(env, bufferSize, &data, &arrayBuffer));
-        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdErrInfo_->stdData.c_str()),
-            stdErrInfo_->stdData.size()) != EOK) {
+        if (memcpy_s(data, bufferSize, reinterpret_cast<const void*>(stdErrSnapshot.c_str()),
+            stdErrSnapshot.size()) != EOK) {
             HILOG_ERROR("ChildProcess:: getErrOutput memcpy_s failed");
             NAPI_CALL(env, napi_delete_async_work(env, stdErrInfo_->worker));
             napi_value res = nullptr;
             NAPI_CALL(env, napi_get_undefined(env, &res));
             return res;
         }
+        // bufferSize is stdData.size() + 1: keep the trailing NUL terminator that
+        // callers expect from the previous implementation.
+        reinterpret_cast<uint8_t*>(data)[stdErrSnapshot.size()] = 0;
 
         napi_value result = nullptr;
         NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, bufferSize, arrayBuffer, 0, &result));
@@ -235,13 +270,13 @@ namespace OHOS::JsSysModule::Process {
     napi_value ChildProcess::Getpid(napi_env env) const
     {
         napi_value result = nullptr;
-        if (optionsInfo_ == nullptr) {
+        if (pid_ <= 0) {
             napi_value res = nullptr;
             NAPI_CALL(env, napi_get_undefined(env, &res));
-            HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
+            HILOG_ERROR("ChildProcess:: Getpid without a valid child pid");
             return res;
         }
-        NAPI_CALL(env, napi_create_int32(env, optionsInfo_->pid, &result));
+        NAPI_CALL(env, napi_create_int32(env, pid_, &result));
 
         return result;
     }
@@ -271,7 +306,7 @@ namespace OHOS::JsSysModule::Process {
             HILOG_ERROR("ChildProcess:: memory allocation failed, stdOutInfo_ is nullptr");
             return;
         }
-        stdOutInfo_->isNeedRun = &isNeedRun_;
+        stdOutInfo_->isNeedRun = isNeedRun_;
         stdOutInfo_->fd = stdOutFd_[0];
         if (optionsInfo_ == nullptr) {
             HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
@@ -290,7 +325,7 @@ namespace OHOS::JsSysModule::Process {
             HILOG_ERROR("ChildProcess:: memory allocation failed, stdErrInfo_ is nullptr");
             return;
         }
-        stdErrInfo_->isNeedRun = &isNeedRun_;
+        stdErrInfo_->isNeedRun = isNeedRun_;
         stdErrInfo_->fd = stdErrFd_[0];
         stdErrInfo_->pid = optionsInfo_->pid;
         stdErrInfo_->maxBuffSize = optionsInfo_->maxBuffer;
@@ -307,14 +342,23 @@ namespace OHOS::JsSysModule::Process {
         if (stdOutInfo->isNeedRun == nullptr) {
             return;
         }
-        while (*(stdOutInfo->isNeedRun)) {
+        while (stdOutInfo->isNeedRun->load(std::memory_order_acquire)) {
             auto readSize = read(stdOutInfo->fd, childStdout, sizeof(childStdout) - 1);
-            if (readSize >= 0) {
-                stdOutInfo->stdData += childStdout;
+            bool overflow = false;
+            {
+                std::lock_guard<std::mutex> lock(stdOutInfo->dataMutex);
+                if (readSize >= 0) {
+                    // Append exactly the bytes read: child output may contain NUL
+                    // bytes, which the +=(const char*) overload would truncate at.
+                    stdOutInfo->stdData.append(childStdout, static_cast<size_t>(readSize));
+                }
+                overflow = stdOutInfo->stdData.size() > static_cast<size_t>(stdOutInfo->maxBuffSize) &&
+                           stdOutInfo->isNeedRun->load(std::memory_order_acquire);
             }
-            if (stdOutInfo->stdData.size() > static_cast<size_t>(stdOutInfo->maxBuffSize) && *(stdOutInfo->isNeedRun)) {
+            if (overflow) {
                 if (!kill(stdOutInfo->pid, SIGKILL)) {
-                    *(stdOutInfo->isNeedRun) = false;
+                    stdOutInfo->isNeedRun->store(false, std::memory_order_release);
+                    std::lock_guard<std::mutex> lock(stdOutInfo->dataMutex);
                     stdOutInfo->stdData = stdOutInfo->stdData.substr(0, stdOutInfo->maxBuffSize);
                 } else {
                     HILOG_ERROR("ChildProcess:: stdOut maxBuff kill signal failed");
@@ -342,14 +386,23 @@ namespace OHOS::JsSysModule::Process {
         if (stdErrInfo->isNeedRun == nullptr) {
             return;
         }
-        while (*(stdErrInfo->isNeedRun)) {
+        while (stdErrInfo->isNeedRun->load(std::memory_order_acquire)) {
             auto readSize = read(stdErrInfo->fd, childStderr, sizeof(childStderr) - 1);
-            if (readSize >= 0) {
-                stdErrInfo->stdData += childStderr;
+            bool overflow = false;
+            {
+                std::lock_guard<std::mutex> lock(stdErrInfo->dataMutex);
+                if (readSize >= 0) {
+                    // Append exactly the bytes read: child output may contain NUL
+                    // bytes, which the +=(const char*) overload would truncate at.
+                    stdErrInfo->stdData.append(childStderr, static_cast<size_t>(readSize));
+                }
+                overflow = stdErrInfo->stdData.size() > static_cast<size_t>(stdErrInfo->maxBuffSize) &&
+                           stdErrInfo->isNeedRun->load(std::memory_order_acquire);
             }
-            if (stdErrInfo->stdData.size() > static_cast<size_t>(stdErrInfo->maxBuffSize) && *(stdErrInfo->isNeedRun)) {
+            if (overflow) {
                 if (!kill(stdErrInfo->pid, SIGKILL)) {
-                    *(stdErrInfo->isNeedRun) = false;
+                    stdErrInfo->isNeedRun->store(false, std::memory_order_release);
+                    std::lock_guard<std::mutex> lock(stdErrInfo->dataMutex);
                     stdErrInfo->stdData = stdErrInfo->stdData.substr(0, stdErrInfo->maxBuffSize);
                 } else {
                     HILOG_ERROR("ChildProcess:: stdErr maxBuff kill signal failed");
@@ -394,15 +447,17 @@ namespace OHOS::JsSysModule::Process {
 
     void ChildProcess::Kill(napi_env env, const napi_value signo)
     {
-        int signal = GetValidSignal(env, signo);
-        std::vector<int32_t> signalType = {SIGINT, SIGQUIT, SIGKILL, SIGTERM};
-        if (optionsInfo_ == nullptr) {
-            HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
+        if (pid_ <= 0) {
+            HILOG_ERROR("ChildProcess:: kill without a valid child pid");
             return;
         }
-        if (!kill(optionsInfo_->pid, signal)) {
+        int signal = GetValidSignal(env, signo);
+        std::vector<int32_t> signalType = {SIGINT, SIGQUIT, SIGKILL, SIGTERM};
+        if (!kill(pid_, signal)) {
             auto res = std::find(signalType.begin(), signalType.end(), static_cast<int32_t>(signal));
-            (res != signalType.end()) ? isNeedRun_ = false : 0;
+            if (res != signalType.end()) {
+                isNeedRun_->store(false, std::memory_order_release);
+            }
             killed_ = true;
         } else {
             HILOG_ERROR("ChildProcess:: kill signal failed");
@@ -412,16 +467,16 @@ namespace OHOS::JsSysModule::Process {
     void ChildProcess::Close()
     {
         int32_t status = 0;
-        if (optionsInfo_ == nullptr) {
-            HILOG_ERROR("ChildProcess:: optionsInfo_ is nullptr");
+        if (pid_ <= 0) {
+            HILOG_ERROR("ChildProcess:: close without a valid child pid");
             return;
         }
-        if (isWait_ && !(waitpid(optionsInfo_->pid, &status, WNOHANG)) && isNeedRun_) {
-            if (!kill(optionsInfo_->pid, SIGKILL)) {
-                waitpid(optionsInfo_->pid, &status, 0);
+        if (isWait_ && !(waitpid(pid_, &status, WNOHANG)) && isNeedRun_->load(std::memory_order_acquire)) {
+            if (!kill(pid_, SIGKILL)) {
+                waitpid(pid_, &status, 0);
                 isWait_ = false;
                 exitCode_ = status;
-                isNeedRun_ = false;
+                isNeedRun_->store(false, std::memory_order_release);
             } else {
                 HILOG_ERROR("ChildProcess:: close kill SIGKILL signal failed");
             }
@@ -433,15 +488,18 @@ namespace OHOS::JsSysModule::Process {
         std::vector<int32_t> signalType = {SIGINT, SIGQUIT, SIGKILL, SIGTERM};
         auto temp = reinterpret_cast<OptionsInfo*>(data);
         int32_t timeout = temp->timeout * TIME_EXCHANGE;
-        if (timeout > 0) {
-            usleep(static_cast<size_t>(timeout));
-            if (*(temp->isNeedRun)) {
-                if (!kill(temp->pid, temp->killSignal)) {
-                    auto res = std::find(signalType.begin(), signalType.end(), temp->killSignal);
-                    (res != signalType.end()) ? *(temp->isNeedRun) = false : 0;
-                } else {
-                    HILOG_ERROR("ChildProcess:: timeout kill signal failed");
+        if (timeout <= 0) {
+            return;
+        }
+        usleep(static_cast<size_t>(timeout));
+        if (temp->isNeedRun->load(std::memory_order_acquire)) {
+            if (!kill(temp->pid, temp->killSignal)) {
+                auto res = std::find(signalType.begin(), signalType.end(), temp->killSignal);
+                if (res != signalType.end()) {
+                    temp->isNeedRun->store(false, std::memory_order_release);
                 }
+            } else {
+                HILOG_ERROR("ChildProcess:: timeout kill signal failed");
             }
         }
     }
@@ -479,7 +537,7 @@ namespace OHOS::JsSysModule::Process {
                     break;
             }
         }
-        optionsInfo_->isNeedRun = &isNeedRun_;
+        optionsInfo_->isNeedRun = isNeedRun_;
     }
 
     std::string ChildProcess::RequireStrValue(napi_env env, const napi_value strValue)
@@ -512,10 +570,16 @@ namespace OHOS::JsSysModule::Process {
         close(stdOutFd_[0]);
         close(stdErrFd_[0]);
     #endif
-        if (isWait_) {
+        if (isWait_ && pid_ > 0) {
             int32_t status = 0;
-            waitpid(optionsInfo_->pid, &status, 0);
+            waitpid(pid_, &status, 0);
         }
-        isNeedRun_ = false;
+        isNeedRun_->store(false, std::memory_order_release);
+        // optionsInfo_ is non-null only when Spawn failed before creating the
+        // timeout async work (pipe/fork failure); in that case no one else owns
+        // it and the destructor must free it. On the normal path Spawn already
+        // transferred the ownership to the timeout work and nulled the member.
+        delete optionsInfo_;
+        optionsInfo_ = nullptr;
     }
 } // namespace OHOS::JsSysModule::Process

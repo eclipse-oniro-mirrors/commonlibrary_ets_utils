@@ -13,7 +13,15 @@
  * limitations under the License.
  */
 
-#include <ctime>
+#include <csignal>
+#include <cstdint>
+#include <cstdlib>
+#include <dirent.h>
+#include <dlfcn.h>
+#include <fcntl.h>
+#include <sys/resource.h>
+#include <unistd.h>
+#include <vector>
 #include "test.h"
 
 #include "napi/native_api.h"
@@ -46,6 +54,206 @@ OHOS::JsSysModule::Process::ChildProcess* RunCommand(napi_env env, napi_value co
     return objectInfo;
 }
 static std::string testStr = "";
+
+static int g_injectCreateAsyncWorkOrdinal = 0;
+static int g_injectQueueWorkQosOrdinal = 0;
+static int g_injectCreateArraybufferFail = 0;
+static int g_injectMemcallFail = 0;
+static int g_trackWorkHandles = 0;
+static std::vector<void*> g_pendingWorkHandles;
+static pid_t g_injectKillFailPid = 0;
+static std::vector<int> g_fillFds;
+static rlim_t g_originalNoFileLimit = 0;
+
+template<typename T>
+T RealSymbol(const char* name)
+{
+    void* sym = dlsym(RTLD_NEXT, name);
+    if (sym == nullptr) {
+        return nullptr;
+    }
+    return reinterpret_cast<T>(sym);
+}
+
+extern "C" napi_status napi_create_async_work(napi_env env, napi_value asyncResource,
+    napi_value asyncResourceName, napi_async_execute_callback execute,
+    napi_async_complete_callback complete, void* data, napi_async_work* result)
+{
+    if (g_injectCreateAsyncWorkOrdinal > 0) {
+        g_injectCreateAsyncWorkOrdinal--;
+        if (g_injectCreateAsyncWorkOrdinal == 0) {
+            return napi_generic_failure;
+        }
+    }
+    using Fn = napi_status (*)(napi_env, napi_value, napi_value, napi_async_execute_callback,
+        napi_async_complete_callback, void*, napi_async_work*);
+    Fn real = RealSymbol<Fn>("napi_create_async_work");
+    if (real == nullptr) {
+        return napi_generic_failure;
+    }
+    napi_status status = real(env, asyncResource, asyncResourceName, execute, complete, data, result);
+    if (g_trackWorkHandles != 0 && status == napi_ok && result != nullptr && *result != nullptr) {
+        g_pendingWorkHandles.push_back(*result);
+    }
+    return status;
+}
+
+extern "C" napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_work work, napi_qos_t qos)
+{
+    if (g_injectQueueWorkQosOrdinal > 0) {
+        g_injectQueueWorkQosOrdinal--;
+        if (g_injectQueueWorkQosOrdinal == 0) {
+            return napi_generic_failure;
+        }
+    }
+    using Fn = napi_status (*)(napi_env, napi_async_work, napi_qos_t);
+    Fn real = RealSymbol<Fn>("napi_queue_async_work_with_qos");
+    if (real == nullptr) {
+        return napi_generic_failure;
+    }
+    return real(env, work, qos);
+}
+
+extern "C" napi_status napi_delete_async_work(napi_env env, napi_async_work work)
+{
+    for (auto it = g_pendingWorkHandles.begin(); it != g_pendingWorkHandles.end(); ++it) {
+        if (*it == reinterpret_cast<void*>(work)) {
+            g_pendingWorkHandles.erase(it);
+            return napi_ok;
+        }
+    }
+    using Fn = napi_status (*)(napi_env, napi_async_work);
+    Fn real = RealSymbol<Fn>("napi_delete_async_work");
+    if (real == nullptr) {
+        return napi_generic_failure;
+    }
+    return real(env, work);
+}
+
+extern "C" napi_status napi_create_arraybuffer(napi_env env, size_t byteLength, void** data,
+                                               napi_value* result)
+{
+    if (g_injectCreateArraybufferFail != 0) {
+        g_injectCreateArraybufferFail = 0;
+        return napi_generic_failure;
+    }
+    using Fn = napi_status (*)(napi_env, size_t, void**, napi_value*);
+    Fn real = RealSymbol<Fn>("napi_create_arraybuffer");
+    if (real == nullptr) {
+        return napi_generic_failure;
+    }
+    return real(env, byteLength, data, result);
+}
+
+extern "C" errno_t memcpy_s(void* dest, size_t destMax, const void* src, size_t count)
+{
+    if (g_injectMemcallFail != 0) {
+        g_injectMemcallFail = 0;
+        return EINVAL;
+    }
+    using Fn = errno_t (*)(void*, size_t, const void*, size_t);
+    Fn real = RealSymbol<Fn>("memcpy_s");
+    if (real == nullptr) {
+        return EINVAL;
+    }
+    return real(dest, destMax, src, count);
+}
+
+extern "C" int Kill(pid_t pid, int sig) __asm__ ("kill");
+extern "C" int Kill(pid_t pid, int sig)
+{
+    if (g_injectKillFailPid != 0 && pid == g_injectKillFailPid && sig == SIGKILL) {
+        g_injectKillFailPid = 0;
+        errno = EINVAL;
+        return -1;
+    }
+    using Fn = int (*)(pid_t, int);
+    Fn real = RealSymbol<Fn>("kill");
+    if (real == nullptr) {
+        errno = EINVAL;
+        return -1;
+    }
+    return real(pid, sig);
+}
+
+int HighestOpenFd()
+{
+    DIR* dir = opendir("/proc/self/fd");
+    if (dir == nullptr) {
+        return -1;
+    }
+    int highest = -1;
+    struct dirent* entry = nullptr;
+    while ((entry = readdir(dir)) != nullptr) {
+        char* end = nullptr;
+        long fd = strtol(entry->d_name, &end, 10); // 10: decimal
+        if (end == nullptr || *end != '\0' || fd < 0) {
+            continue;
+        }
+        if (fd > static_cast<long>(highest)) {
+            highest = static_cast<int>(fd);
+        }
+    }
+    (void)closedir(dir);
+    return highest;
+}
+
+bool ExhaustFdTable(size_t freeSlots)
+{
+    int highest = HighestOpenFd();
+    if (highest < 0) {
+        return false;
+    }
+    struct rlimit limit;
+    if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
+        return false;
+    }
+    if (limit.rlim_cur <= static_cast<rlim_t>(highest) + freeSlots + 1) {
+        return false;
+    }
+    g_originalNoFileLimit = limit.rlim_cur;
+    struct rlimit lowered = limit;
+    lowered.rlim_cur = static_cast<rlim_t>(highest) + freeSlots + 1;
+    if (setrlimit(RLIMIT_NOFILE, &lowered) != 0) {
+        return false;
+    }
+    int devNull = open("/dev/null", O_RDONLY);
+    if (devNull >= 0) {
+        g_fillFds.push_back(devNull);
+        size_t maxFds = static_cast<size_t>(lowered.rlim_cur);
+        for (size_t i = 0; i < maxFds; i++) {
+            int fd = dup(devNull);
+            if (fd < 0) {
+                break;
+            }
+            g_fillFds.push_back(fd);
+        }
+    }
+
+    for (size_t i = 0; i < freeSlots && !g_fillFds.empty(); i++) {
+        close(g_fillFds.back());
+        g_fillFds.pop_back();
+    }
+    return true;
+}
+
+void RestoreFdTable()
+{
+    for (int fd : g_fillFds) {
+        close(fd);
+    }
+    g_fillFds.clear();
+    if (g_originalNoFileLimit == 0) {
+        return;
+    }
+    struct rlimit limit;
+    if (getrlimit(RLIMIT_NOFILE, &limit) == 0) {
+        limit.rlim_cur = g_originalNoFileLimit;
+        (void)setrlimit(RLIMIT_NOFILE, &limit);
+    }
+    g_originalNoFileLimit = 0;
+}
+
 napi_value Method(napi_env env, napi_callback_info info)
 {
     napi_value thisVar = nullptr;
@@ -965,4 +1173,556 @@ HWTEST_F(NativeEngineTest, ProcessManagerKillTest002, testing::ext::TestSize.Lev
     bool res = false;
     napi_get_value_bool(env, result, &res);
     ASSERT_FALSE(res);
+}
+
+static void MakeChildOptions(napi_env env, int32_t timeout, int32_t killSignal, int64_t maxBuffer,
+    napi_value &options)
+{
+    options = nullptr;
+    napi_create_object(env, &options);
+    if (timeout >= 0) {
+        napi_value value = nullptr;
+        napi_create_int32(env, timeout, &value);
+        napi_set_named_property(env, options, "timeout", value);
+    }
+    if (killSignal != 0) {
+        napi_value value = nullptr;
+        napi_create_int32(env, killSignal, &value);
+        napi_set_named_property(env, options, "killSignal", value);
+    }
+    if (maxBuffer >= 0) {
+        napi_value value = nullptr;
+        napi_create_int64(env, maxBuffer, &value);
+        napi_set_named_property(env, options, "maxBuffer", value);
+    }
+}
+
+static napi_value MakeCmd(napi_env env, const std::string &command)
+{
+    napi_value value = nullptr;
+    napi_create_string_utf8(env, command.c_str(), command.length(), &value);
+    return value;
+}
+
+static int32_t ChildPidToInt(napi_env env, napi_value pidValue)
+{
+    int32_t pid = -1;
+    napi_get_value_int32(env, pidValue, &pid);
+    return pid;
+}
+
+static bool ChildBoolValue(napi_env env, napi_value value)
+{
+    bool result = false;
+    napi_get_value_bool(env, value, &result);
+    return result;
+}
+
+static int32_t ChildInt32Value(napi_env env, napi_value value)
+{
+    int32_t result = -1;
+    napi_get_value_int32(env, value, &result);
+    return result;
+}
+
+/**
+ * @tc.name: ProcessChildPidGuardTest001
+ * @tc.desc: Without Spawn every pid_ guard branch is taken: Getpid/Wait return undefined,
+ *           Kill does not set killed_ and Close does nothing.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildPidGuardTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = new OHOS::JsSysModule::Process::ChildProcess();
+    napi_value signal = nullptr;
+    napi_create_int32(env, SIGTERM, &signal);
+
+    napi_value pid = childprocess->Getpid(env);
+    ASSERT_CHECK_VALUE_TYPE(env, pid, napi_undefined);
+    napi_value waitResult = childprocess->Wait(env);
+    ASSERT_CHECK_VALUE_TYPE(env, waitResult, napi_undefined);
+    childprocess->Kill(env, signal);
+    ASSERT_FALSE(ChildBoolValue(env, childprocess->GetKilled(env)));
+    childprocess->Close();
+}
+
+/**
+ * @tc.name: ProcessChildPidTest001
+ * @tc.desc: Spawn copies the child pid into pid_ and Getpid reports it.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildPidTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "echo branchpid"),
+        nullptr);
+    napi_value pid = childprocess->Getpid(env);
+    ASSERT_CHECK_VALUE_TYPE(env, pid, napi_number);
+    ASSERT_GT(ChildPidToInt(env, pid), 0);
+    childprocess->Wait(env);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildWaitTest001
+ * @tc.desc: Wait resolves the promise and records exit code 0 for a finished command.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildWaitTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "echo hello"),
+        nullptr);
+    napi_value result = childprocess->Wait(env);
+    bool isPromise = false;
+    napi_is_promise(env, result, &isPromise);
+    ASSERT_TRUE(isPromise);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), 0);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildWaitTest002
+ * @tc.desc: A second Wait skips waitpid (isWait_ is already false) and keeps the exit code.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildWaitTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "echo hello"),
+        nullptr);
+    childprocess->Wait(env);
+    napi_value again = childprocess->Wait(env);
+    bool isPromise = false;
+    napi_is_promise(env, again, &isPromise);
+    ASSERT_TRUE(isPromise);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), 0);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildKillTest001
+ * @tc.desc: Kill with a terminating signal stops the child and marks killed_.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildKillTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "sleep 5"), nullptr);
+    napi_value signal = nullptr;
+    napi_create_int32(env, SIGTERM, &signal);
+    childprocess->Kill(env, signal);
+    ASSERT_TRUE(ChildBoolValue(env, childprocess->GetKilled(env)));
+    childprocess->Wait(env);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), SIGTERM);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildKillTest002
+ * @tc.desc: Kill with a non-terminating signal reports killed_ but leaves a trapping child
+ *           alive and keeps the reader flag set.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildKillTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env,
+        "trap '' USR1; sleep 5"), nullptr);
+    usleep(200000); // 200000: 200 ms: give the trap time to be installed
+    napi_value signal = nullptr;
+    napi_create_int32(env, SIGUSR1, &signal);
+    childprocess->Kill(env, signal);
+    ASSERT_TRUE(ChildBoolValue(env, childprocess->GetKilled(env)));
+    int32_t pid = ChildPidToInt(env, childprocess->Getpid(env));
+    ASSERT_GT(pid, 0);
+    ASSERT_EQ(kill(pid, 0), 0);
+    childprocess->Close();
+    childprocess->Wait(env);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), SIGKILL);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildKillTest003
+ * @tc.desc: Kill on an already reaped child fails and does not set killed_.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildKillTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "echo hi"), nullptr);
+    childprocess->Wait(env);
+    usleep(100000); // 100000: 100 ms
+    napi_value signal = nullptr;
+    napi_create_int32(env, SIGTERM, &signal);
+    childprocess->Kill(env, signal);
+    ASSERT_FALSE(ChildBoolValue(env, childprocess->GetKilled(env)));
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildCloseTest001
+ * @tc.desc: Close kills a running child with SIGKILL, records the exit code and a follow-up
+ *           Wait skips waitpid because isWait_ became false.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildCloseTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "sleep 5"), nullptr);
+    childprocess->Close();
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), SIGKILL);
+    ASSERT_FALSE(ChildBoolValue(env, childprocess->GetKilled(env)));
+    napi_value result = childprocess->Wait(env);
+    bool isPromise = false;
+    napi_is_promise(env, result, &isPromise);
+    ASSERT_TRUE(isPromise);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), SIGKILL);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildCloseTest002
+ * @tc.desc: Close on an already exited child skips the kill (WNOHANG reaps it first) and the
+ *           destructor does not block on the reaped pid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildCloseTest002, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "echo hi"), nullptr);
+    usleep(300000); // 300000: 300 ms: let the child exit
+    childprocess->Close();
+    napi_value result = childprocess->Wait(env);
+    bool isPromise = false;
+    napi_is_promise(env, result, &isPromise);
+    ASSERT_TRUE(isPromise);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildTimeoutTest001
+ * @tc.desc: timeout <= 0 makes the timeout listener return immediately: the child keeps
+ *           running.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildTimeoutTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value options = nullptr;
+    MakeChildOptions(env, 0, 0, -1, options);
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "sleep 5"), options);
+    usleep(500000); // 500000: 500 ms
+    int32_t pid = ChildPidToInt(env, childprocess->Getpid(env));
+    ASSERT_EQ(kill(pid, 0), 0);
+    childprocess->Close();
+    childprocess->Wait(env);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), SIGKILL);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildTimeoutTest003
+ * @tc.desc: A non-terminating timeout signal leaves a trapping child alive (the reader flag
+ *           is not cleared).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildTimeoutTest003, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value options = nullptr;
+    MakeChildOptions(env, 300, SIGUSR1, -1, options); // 300: 300 ms
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env,
+        "trap '' USR1; sleep 5"), options);
+    usleep(800000); // 800000: 800 ms > 300 ms timeout
+    int32_t pid = ChildPidToInt(env, childprocess->Getpid(env));
+    ASSERT_EQ(kill(pid, 0), 0);
+    childprocess->Close();
+    childprocess->Wait(env);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), SIGKILL);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildTimeoutTest004
+ * @tc.desc: The timeout kill fails on a reaped child and only logs (Close reaped the child
+ *           while the reader flag is still set).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildTimeoutTest004, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value options = nullptr;
+    MakeChildOptions(env, 500, SIGTERM, -1, options); // 500: 500 ms
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "echo hi"), options);
+    usleep(300000); // 300000: 300 ms
+    childprocess->Close();
+    usleep(400000); // 400000: 400 ms
+    napi_value result = childprocess->Wait(env);
+    bool isPromise = false;
+    napi_is_promise(env, result, &isPromise);
+    ASSERT_TRUE(isPromise);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildStdioTest001
+ * @tc.desc: Stderr output goes through the dataMutex snapshot path of GetErrorOutput.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildStdioTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "echo brancherr >&2"),
+        nullptr);
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    bool isPromise = false;
+    napi_is_promise(env, errorOutput, &isPromise);
+    ASSERT_TRUE(isPromise);
+    childprocess->Wait(env);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), 0);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildMaxBufferTest001
+ * @tc.desc: Stdout beyond maxBuffer overflows the reader thread: the child is killed with
+ *           SIGKILL and the snapshot returns the truncated data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildMaxBufferTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value options = nullptr;
+    MakeChildOptions(env, -1, 0, 1024, options); // timeout absent, maxBuffer 1024
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env,
+        "dd if=/dev/zero bs=1024 count=4096"), options);
+    childprocess->Wait(env);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), SIGKILL);
+    napi_value output = childprocess->GetOutput(env);
+    bool isPromise = false;
+    napi_is_promise(env, output, &isPromise);
+    ASSERT_TRUE(isPromise);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildOutputNulTest001
+ * @tc.desc: NUL bytes in the child output are appended by the exact read size (binary-safe
+ *           append branch).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildOutputNulTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env,
+        "dd if=/dev/zero bs=1 count=8 2>/dev/null"), nullptr);
+    napi_value output = childprocess->GetOutput(env);
+    bool isPromise = false;
+    napi_is_promise(env, output, &isPromise);
+    ASSERT_TRUE(isPromise);
+    childprocess->Wait(env);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), 0);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildTimeoutWorkCreateFailTest001
+ * @tc.desc: Spawn creates the two reader works first, then fails the
+ *           timeout work creation, so the else branch runs and optionsInfo_ keeps ownership.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildTimeoutWorkCreateFailTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value options = nullptr;
+    MakeChildOptions(env, 500, SIGTERM, -1, options); // 500: 500ms
+    OHOS::JsSysModule::Process::ChildProcess* childprocess =
+        new OHOS::JsSysModule::Process::ChildProcess();
+    childprocess->InitOptionsInfo(env, options);
+    g_trackWorkHandles = 1;
+    g_injectCreateAsyncWorkOrdinal = 3; // 3: two reader works succeed, the timeout work fails
+    childprocess->Spawn(env, MakeCmd(env, "sleep 2"));
+    int32_t pid = ChildPidToInt(env, childprocess->Getpid(env));
+    childprocess->Wait(env);
+    ASSERT_GT(pid, 0);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildGetOutputMemFailTest001
+ * @tc.desc: Memcpy_s fails inside GetOutput, the error branch returns undefined after deleting the async work.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildGetOutputMemFailTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env,
+        "echo branchfail"), nullptr);
+    usleep(300000); // 300000: 300 ms
+    g_trackWorkHandles = 1;
+    g_injectMemcallFail = 1;
+    napi_value failedOutput = childprocess->GetOutput(env);
+    ASSERT_CHECK_VALUE_TYPE(env, failedOutput, napi_undefined);
+    childprocess->Wait(env);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildGetErrorOutputMemFailTest001
+ * @tc.desc: Memcpy_s fails inside GetErrorOutput, the error branch returns undefined after deleting the async work.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildGetErrorOutputMemFailTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env,
+        "echo branchfail >&2"), nullptr);
+    usleep(300000); // 300000: 300 ms
+    g_trackWorkHandles = 1;
+    g_injectMemcallFail = 1;
+    napi_value failedError = childprocess->GetErrorOutput(env);
+    ASSERT_CHECK_VALUE_TYPE(env, failedError, napi_undefined);
+    childprocess->Wait(env);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildGetOutputArraybufferFailTest001
+ * @tc.desc: The NAPI_CALL macro returns nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildGetOutputArraybufferFailTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env,
+        "echo branchab"), nullptr);
+    usleep(300000); // 300000: 300 ms
+    g_injectCreateArraybufferFail = 1;
+    napi_value output = childprocess->GetOutput(env);
+    ASSERT_TRUE(output == nullptr);
+    childprocess->Wait(env);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildGetErrorOutputArraybufferFailTest001
+ * @tc.desc: The NAPI_CALL macro returns nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildGetErrorOutputArraybufferFailTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env,
+        "echo branchaberr >&2"), nullptr);
+    usleep(300000); // 300000: 300 ms
+    g_injectCreateArraybufferFail = 1;
+    napi_value errorOutput = childprocess->GetErrorOutput(env);
+    ASSERT_TRUE(errorOutput == nullptr);
+    childprocess->Wait(env);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildTimeoutWorkQueueFailTest001
+ * @tc.desc: The timeout work was created (worker != nullptr), the queue call fails, so
+ *           the else branch deletes the work and optionsInfo_ keeps ownership.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildTimeoutWorkQueueFailTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value options = nullptr;
+    MakeChildOptions(env, 500, SIGTERM, -1, options); // 500: 500 ms
+    OHOS::JsSysModule::Process::ChildProcess* childprocess =
+        new OHOS::JsSysModule::Process::ChildProcess();
+    childprocess->InitOptionsInfo(env, options);
+    g_injectQueueWorkQosOrdinal = 3; // 3: two reader queues succeed, the timeout queue fails
+    childprocess->Spawn(env, MakeCmd(env, "sleep 2"));
+    usleep(700000); // 700000: 700 ms
+    int32_t pid = ChildPidToInt(env, childprocess->Getpid(env));
+    childprocess->Wait(env);
+    ASSERT_GT(pid, 0);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildFirstPipeFailTest001
+ * @tc.desc: Together with the destructor path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildFirstPipeFailTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ASSERT_TRUE(ExhaustFdTable(0));
+    OHOS::JsSysModule::Process::ChildProcess* childprocess =
+        new OHOS::JsSysModule::Process::ChildProcess();
+    childprocess->InitOptionsInfo(env, nullptr);
+    childprocess->Spawn(env, MakeCmd(env, "echo nofd"));
+    napi_value pid = childprocess->Getpid(env);
+    ASSERT_CHECK_VALUE_TYPE(env, pid, napi_undefined);
+    delete childprocess;
+    RestoreFdTable();
+}
+
+/**
+ * @tc.name: ProcessChildSecondPipeFailTest001
+ * @tc.desc: The first pipe succeeded, the second one fails, no fork happens and the destructor
+ *           closes the leaked read end.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildSecondPipeFailTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    ASSERT_TRUE(ExhaustFdTable(2)); // 2: leave two slots so only the first pipe succeeds
+    OHOS::JsSysModule::Process::ChildProcess* childprocess =
+        new OHOS::JsSysModule::Process::ChildProcess();
+    childprocess->InitOptionsInfo(env, nullptr);
+    childprocess->Spawn(env, MakeCmd(env, "echo halffd"));
+    napi_value pid = childprocess->Getpid(env);
+    ASSERT_CHECK_VALUE_TYPE(env, pid, napi_undefined);
+    delete childprocess;
+    RestoreFdTable();
+}
+
+/**
+ * @tc.name: ProcessChildDestructorWaitBranchTest001
+ * @tc.desc: A ChildProcess is destroyed while the child is still running and isWait_ is true.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildDestructorWaitBranchTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "sleep 2"),
+        nullptr);
+    int32_t pid = ChildPidToInt(env, childprocess->Getpid(env));
+    ASSERT_GT(pid, 0);
+    usleep(300000); // 300000: 300 ms
+    ASSERT_EQ(kill(pid, 0), 0);
+    delete childprocess;
+}
+
+/**
+ * @tc.name: ProcessChildCloseKillFailTest001
+ * @tc.desc: Kill fails inside Close after the WNOHANG check passed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessChildCloseKillFailTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::ChildProcess* childprocess = RunCommand(env, MakeCmd(env, "sleep 5"),
+        nullptr);
+    usleep(300000); // 300000: 300 ms
+    int32_t pid = ChildPidToInt(env, childprocess->Getpid(env));
+    ASSERT_GT(pid, 0);
+    g_injectKillFailPid = pid;
+    childprocess->Close();
+    ASSERT_TRUE(ChildBoolValue(env, childprocess->GetKilled(env)) == false);
+    ASSERT_EQ(kill(pid, 0), 0);
+    childprocess->Close();
+    childprocess->Wait(env);
+    ASSERT_EQ(ChildInt32Value(env, childprocess->GetExitCode(env)), SIGKILL);
+    delete childprocess;
 }
