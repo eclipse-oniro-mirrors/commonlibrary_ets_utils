@@ -37,6 +37,7 @@ ohos_unittest("test_xml_unittest") {
   sources = [
     "test_ark.cpp",
     "test_xml.cpp",
+    "test_xml_charref.cpp",
   ]
 
   deps = [ "${ets_util_path}/js_api_module/xml:xml_static" ]
