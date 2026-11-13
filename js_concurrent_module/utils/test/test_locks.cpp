@@ -68,6 +68,7 @@ private:
 } // namespace LocksTestCompat
 using LocksTestCompat::Latch;
 #endif
+#include <set>
 #include <sys/syscall.h>
 #include <thread>
 #include <unistd.h>
@@ -75,12 +76,14 @@ using LocksTestCompat::Latch;
 #include "ark_native_engine.h"
 #include "locks/async_lock.h"
 #include "locks/async_lock_manager.h"
+#include "locks/deadlock_helpers.h"
 #include "locks/lock_request.h"
 #include "test/unittest/common/test_common.h"
 #include "utils.h"
 
 using namespace Commonlibrary::Concurrent::LocksModule;
 
+namespace Commonlibrary::Concurrent::LocksModule {
 class LocksTest : public testing::Test {
 public:
     static void SetUpTestSuite()
@@ -161,6 +164,11 @@ public:
         return reinterpret_cast<napi_env>(engine_);
     }
 
+    static AsyncLock *FindRegisteredLock(AsyncLockIdentity *ident)
+    {
+        return AsyncLockManager::FindAsyncLockUnsafe(ident);
+    }
+
     static void Loop(LoopMode mode)
     {
         engine_->Loop(mode);
@@ -205,6 +213,8 @@ protected:
 private:
     napi_handle_scope scope_ {nullptr};
 };
+} // namespace Commonlibrary::Concurrent::LocksModule
+using Commonlibrary::Concurrent::LocksModule::LocksTest;
 
 thread_local NativeEngine *LocksTest::engine_ = nullptr;
 thread_local EcmaVM *LocksTest::vm_ = nullptr;
@@ -819,4 +829,279 @@ TEST_F(LocksTest, PendingSharedRequestAfterGC)
         Loop(LOOP_ONCE);
     }
     ASSERT_EQ(callbackData.callCount, 2U);
+}
+
+TEST(LocksGraphTest, DetectTwoVertexCycle)
+{
+    LockGraph::AdjacencyList adjlist;
+    AsyncLockDependency dep1 {1, 2, "L1", "stack1"}; // tid 1 waits for tid 2
+    AsyncLockDependency dep2 {2, 1, "L2", "stack2"}; // tid 2 waits for tid 1
+    adjlist.push_back(std::make_tuple(1, 2, &dep1));
+    adjlist.push_back(std::make_tuple(2, 1, &dep2));
+
+    LockGraph g(std::move(adjlist));
+    LockGraph::Path cycle = g.FindFirstCycle();
+    ASSERT_FALSE(cycle.IsEmpty());
+    ASSERT_EQ(cycle.vertices.size(), 3U);
+    ASSERT_EQ(cycle.vertices.front(), cycle.vertices.back());
+    EXPECT_NE(cycle.vertices[0], cycle.vertices[1]);
+    EXPECT_EQ(cycle.vertices[2], cycle.vertices[0]);
+    EXPECT_EQ(cycle.edges.size(), 2U);
+    EXPECT_NE(cycle.edges[0], nullptr);
+    EXPECT_NE(cycle.edges[1], nullptr);
+}
+
+TEST(LocksGraphTest, DetectThreeVertexCycle)
+{
+    LockGraph::AdjacencyList adjlist;
+    AsyncLockDependency dep1 {1, 2, "L1", "stack1"}; // tid 1 waits for tid 2
+    AsyncLockDependency dep2 {2, 3, "L2", "stack2"}; // tid 2 waits for tid 3
+    AsyncLockDependency dep3 {3, 1, "L3", "stack3"}; // tid 3 waits for tid 1
+    adjlist.push_back(std::make_tuple(1, 2, &dep1));
+    adjlist.push_back(std::make_tuple(2, 3, &dep2));
+    adjlist.push_back(std::make_tuple(3, 1, &dep3));
+
+    LockGraph g(std::move(adjlist));
+    LockGraph::Path cycle = g.FindFirstCycle();
+    ASSERT_FALSE(cycle.IsEmpty());
+    ASSERT_EQ(cycle.vertices.size(), 4U);
+    ASSERT_EQ(cycle.vertices.front(), cycle.vertices.back());
+    EXPECT_EQ(cycle.edges.size(), 3U);
+    std::set<tid_t> uniqueVertices(cycle.vertices.begin(), cycle.vertices.end());
+    EXPECT_EQ(uniqueVertices.size(), 3U);
+}
+
+TEST(LocksGraphTest, NoCycleInAcyclicGraph)
+{
+    LockGraph::AdjacencyList adjlist;
+    AsyncLockDependency dep1 {1, 2, "L1", "stack1"}; // tid 1 waits for tid 2
+    adjlist.push_back(std::make_tuple(1, 2, &dep1));
+
+    LockGraph g(std::move(adjlist));
+    LockGraph::Path cycle = g.FindFirstCycle();
+    EXPECT_TRUE(cycle.IsEmpty());
+}
+
+static bool IsNamedLockRegistered(napi_env env, napi_value asyncLockClass, const std::string &name)
+{
+    napi_value query;
+    if (napi_get_named_property(env, asyncLockClass, "query", &query) != napi_ok) {
+        return false;
+    }
+    napi_value nameValue;
+    if (napi_create_string_utf8(env, name.c_str(), NAPI_AUTO_LENGTH, &nameValue) != napi_ok) {
+        return false;
+    }
+    napi_value args[1] {nameValue};
+    napi_value result;
+    if (napi_call_function(env, asyncLockClass, query, 1, args, &result) != napi_ok) {
+        napi_value ignored;
+        napi_get_and_clear_last_exception(env, &ignored);
+        return false;
+    }
+    bool pending = false;
+    napi_is_exception_pending(env, &pending);
+    if (pending) {
+        napi_value ignored;
+        napi_get_and_clear_last_exception(env, &ignored);
+        return false;
+    }
+    return true;
+}
+
+static size_t RegisteredLockCount(napi_env env, napi_value asyncLockClass)
+{
+    napi_value queryAll;
+    if (napi_get_named_property(env, asyncLockClass, "queryAll", &queryAll) != napi_ok) {
+        return 0;
+    }
+    napi_value result;
+    if (napi_call_function(env, asyncLockClass, queryAll, 0, nullptr, &result) != napi_ok) {
+        return 0;
+    }
+    uint32_t length = 0;
+    if (napi_get_array_length(env, result, &length) != napi_ok) {
+        return 0;
+    }
+    return length;
+}
+
+static napi_value RequestLock(napi_env env, napi_value asyncLockRequest, napi_value undefinedVal,
+                              size_t argc, napi_value *args, AsyncLockIdentity **ident)
+{
+    napi_value lock;
+    if (napi_call_function(env, undefinedVal, asyncLockRequest, argc, args, &lock) != napi_ok) {
+        return nullptr;
+    }
+    if (napi_unwrap_sendable(env, lock, reinterpret_cast<void **>(ident)) != napi_ok) {
+        return nullptr;
+    }
+    return lock;
+}
+
+TEST_F(LocksTest, LifecycleNamedDestructorDropsReferenceAndRemovesEntry)
+{
+    napi_env env = GetEnv();
+    napi_value name;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "locksLifecycleNamed", NAPI_AUTO_LENGTH, &name));
+    napi_value args[1] {name};
+    AsyncLockIdentity *ident = nullptr;
+    ASSERT_NE(RequestLock(env, asyncLockRequest_, undefined_, 1, args, &ident), nullptr);
+    ASSERT_NE(ident, nullptr);
+    ASSERT_FALSE(ident->isAnonymous);
+    ASSERT_TRUE(IsNamedLockRegistered(env, asyncLockClass_, "locksLifecycleNamed"));
+
+    AsyncLockManager::Destructor(env, new AsyncLockIdentity(*ident), nullptr);
+    EXPECT_FALSE(IsNamedLockRegistered(env, asyncLockClass_, "locksLifecycleNamed"));
+}
+
+TEST_F(LocksTest, LifecycleNamedDestructorKeepsEntryWhileAnotherWrapperHoldsReference)
+{
+    napi_env env = GetEnv();
+    napi_value name;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "locksLifecycleMultiWrapper", NAPI_AUTO_LENGTH, &name));
+    napi_value args[1] {name};
+    AsyncLockIdentity *ident1 = nullptr;
+    AsyncLockIdentity *ident2 = nullptr;
+    ASSERT_NE(RequestLock(env, asyncLockRequest_, undefined_, 1, args, &ident1), nullptr);
+    ASSERT_NE(ident1, nullptr);
+    ASSERT_NE(RequestLock(env, asyncLockRequest_, undefined_, 1, args, &ident2), nullptr);
+    ASSERT_NE(ident2, nullptr);
+    ASSERT_TRUE(IsNamedLockRegistered(env, asyncLockClass_, "locksLifecycleMultiWrapper"));
+
+    AsyncLockManager::Destructor(env, new AsyncLockIdentity(*ident1), nullptr);
+    EXPECT_TRUE(IsNamedLockRegistered(env, asyncLockClass_, "locksLifecycleMultiWrapper"));
+
+    AsyncLockManager::Destructor(env, new AsyncLockIdentity(*ident2), nullptr);
+    EXPECT_FALSE(IsNamedLockRegistered(env, asyncLockClass_, "locksLifecycleMultiWrapper"));
+}
+
+TEST_F(LocksTest, LifecycleAnonymousDestructorDropsReferenceAndRemovesEntry)
+{
+    napi_env env = GetEnv();
+    const size_t countBefore = RegisteredLockCount(env, asyncLockClass_);
+    napi_value lock;
+    ASSERT_CHECK_CALL(napi_new_instance(env, asyncLockClass_, 0, nullptr, &lock));
+    AsyncLockIdentity *ident = nullptr;
+    ASSERT_CHECK_CALL(napi_unwrap_sendable(env, lock, reinterpret_cast<void **>(&ident)));
+    ASSERT_NE(ident, nullptr);
+    ASSERT_TRUE(ident->isAnonymous);
+    ASSERT_EQ(RegisteredLockCount(env, asyncLockClass_), countBefore + 1);
+
+    AsyncLockManager::Destructor(env, new AsyncLockIdentity(*ident), nullptr);
+    EXPECT_EQ(RegisteredLockCount(env, asyncLockClass_), countBefore);
+}
+
+TEST_F(LocksTest, LifecycleCheckAndRemoveLockIgnoresUnregisteredLock)
+{
+    napi_env env = GetEnv();
+    const std::string lockName = "locksLifecycleUnregistered";
+    AsyncLockIdentity ident {false, 0, lockName};
+    AsyncLock lock(lockName);
+    ASSERT_FALSE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+
+    AsyncLockManager::CheckAndRemoveLock(ident, &lock);
+    EXPECT_FALSE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+}
+
+TEST_F(LocksTest, LifecycleCheckAndRemoveLockIgnoresStalePointer)
+{
+    napi_env env = GetEnv();
+    const std::string lockName = "locksLifecycleStale";
+    napi_value name;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, lockName.c_str(), NAPI_AUTO_LENGTH, &name));
+    napi_value args[1] {name};
+    AsyncLockIdentity *ident = nullptr;
+    ASSERT_NE(RequestLock(env, asyncLockRequest_, undefined_, 1, args, &ident), nullptr);
+    ASSERT_NE(ident, nullptr);
+    ASSERT_TRUE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+
+    AsyncLock other(lockName);
+    AsyncLockIdentity staleIdent {false, 0, lockName};
+    AsyncLockManager::CheckAndRemoveLock(staleIdent, &other);
+    EXPECT_TRUE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+
+    AsyncLockManager::Destructor(env, new AsyncLockIdentity(*ident), nullptr);
+    EXPECT_FALSE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+}
+
+TEST_F(LocksTest, LifecycleDestructorKeepsHeldLockThenRemovesOnCompletion)
+{
+    napi_env env = GetEnv();
+    const std::string lockName = "locksLifecycleHeld";
+    CallbackData callbackData;
+    napi_value name;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, lockName.c_str(), NAPI_AUTO_LENGTH, &name));
+    napi_value args[1] {name};
+    AsyncLockIdentity *ident = nullptr;
+    napi_value lock = RequestLock(env, asyncLockRequest_, undefined_, 1, args, &ident);
+    ASSERT_NE(lock, nullptr);
+    ASSERT_NE(ident, nullptr);
+
+    napi_value lockAsync;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, lock, "lockAsync", &lockAsync));
+    napi_value callback = CreateFunction("locksLifecycleHeld", AsyncCb, &callbackData);
+    napi_value lockArgs[1] {callback};
+    napi_value result;
+    ASSERT_CHECK_CALL(napi_call_function(env, lock, lockAsync, 1, lockArgs, &result));
+
+    AsyncLockManager::Destructor(env, new AsyncLockIdentity(*ident), nullptr);
+    EXPECT_TRUE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+
+    for (int i = 0; i < 50 && IsNamedLockRegistered(env, asyncLockClass_, lockName); i++) { // 50: bounded retries
+        Loop(LOOP_ONCE);
+    }
+    EXPECT_EQ(callbackData.callCount, 1U);
+    EXPECT_FALSE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+}
+
+TEST_F(LocksTest, LifecycleProcessPendingLockRequestTriggersCheckAndRemove)
+{
+    uint32_t lockId = 90003U; // 90003U: lockId
+    AsyncLock lock(lockId);
+    lock.DecRefCount();
+    lock.ProcessPendingLockRequest(nullptr);
+    EXPECT_EQ(lock.GetLockId(), lockId);
+    EXPECT_TRUE(lock.IsReadyForDeletion());
+}
+
+TEST_F(LocksTest, LifecycleCheckAndRemoveLockKeepsReferencedNamedLock)
+{
+    napi_env env = GetEnv();
+    const std::string lockName = "locksLifecycleReferenced";
+    napi_value name;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, lockName.c_str(), NAPI_AUTO_LENGTH, &name));
+    napi_value args[1] {name};
+    AsyncLockIdentity *ident = nullptr;
+    ASSERT_NE(RequestLock(env, asyncLockRequest_, undefined_, 1, args, &ident), nullptr);
+    ASSERT_NE(ident, nullptr);
+    ASSERT_TRUE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+
+    AsyncLockIdentity lookup {*ident};
+    AsyncLock *registered = FindRegisteredLock(&lookup);
+    ASSERT_NE(registered, nullptr);
+    AsyncLockManager::CheckAndRemoveLock(lookup, registered);
+    EXPECT_TRUE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+
+    AsyncLockManager::Destructor(env, new AsyncLockIdentity(*ident), nullptr);
+    EXPECT_FALSE(IsNamedLockRegistered(env, asyncLockClass_, lockName));
+}
+
+TEST_F(LocksTest, LifecycleCheckAndRemoveLockErasesAnonymousLock)
+{
+    napi_env env = GetEnv();
+    napi_value lock;
+    ASSERT_CHECK_CALL(napi_new_instance(env, asyncLockClass_, 0, nullptr, &lock));
+    AsyncLockIdentity *ident = nullptr;
+    ASSERT_CHECK_CALL(napi_unwrap_sendable(env, lock, reinterpret_cast<void **>(&ident)));
+    ASSERT_NE(ident, nullptr);
+    ASSERT_TRUE(ident->isAnonymous);
+
+    const size_t countBefore = RegisteredLockCount(env, asyncLockClass_);
+    AsyncLockIdentity lookup {*ident};
+    AsyncLock *registered = FindRegisteredLock(&lookup);
+    ASSERT_NE(registered, nullptr);
+    registered->DecRefCount();
+    AsyncLockManager::CheckAndRemoveLock(lookup, registered);
+    EXPECT_EQ(RegisteredLockCount(env, asyncLockClass_), countBefore - 1);
 }

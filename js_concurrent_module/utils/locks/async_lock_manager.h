@@ -25,12 +25,6 @@
 
 namespace Commonlibrary::Concurrent::LocksModule {
 
-struct AsyncLockIdentity {
-    bool isAnonymous;
-    uint32_t id;
-    std::string name;
-};
-
 struct AsyncLockDependency {
     tid_t waiterTid;
     tid_t holderTid;
@@ -44,7 +38,7 @@ public:
     static napi_value Constructor(napi_env env, napi_callback_info cbinfo);
     static napi_value Request(napi_env env, napi_callback_info cbinfo);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
-    static void CheckAndRemoveLock(AsyncLock *lock);
+    static void CheckAndRemoveLock(const AsyncLockIdentity &ident, AsyncLock *lock);
 
     static napi_value LockAsync(napi_env env, napi_callback_info cbinfo);
     static napi_value Query(napi_env env, napi_callback_info cbinfo);
@@ -80,6 +74,8 @@ private:
     static std::unordered_map<std::string, AsyncLock *> lockMap;
     static std::unordered_map<uint32_t, AsyncLock *> anonymousLockMap;
     static std::atomic<uint32_t> nextId;
+
+    friend class LocksTest;
 };
 
 }  // namespace Commonlibrary::Concurrent::LocksModule
