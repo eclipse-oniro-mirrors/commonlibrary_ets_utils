@@ -57,7 +57,7 @@ if (flag || fastTreeSet === undefined) {
     constructor(comparator?: (firstValue: T, secondValue: T) => boolean) {
       errorUtil.checkNewTargetIsNullError('TreeSet', !new.target);
       if (comparator) {
-        errorUtil.checkTypeError('comparator', 'callable', comparator);
+        errorUtil.checkTypeError('comparator', 'callable', comparator, 0);
       }
       this.constitute = new treeAbility.TreeClass(comparator);
       return new Proxy(this, new HandlerTreeSet());
@@ -178,7 +178,7 @@ if (flag || fastTreeSet === undefined) {
     forEach(callbackfn: (value?: T, key?: T, set?: TreeSet<T>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', TreeSet, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       let tagetArray: Array<any> = this.constitute.keyValueArray;
       for (let i: number = 0; i < this.constitute.memberNumber; i++) {
         callbackfn.call(thisArg, tagetArray[i].value as T, tagetArray[i].key);

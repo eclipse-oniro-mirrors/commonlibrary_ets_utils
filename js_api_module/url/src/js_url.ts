@@ -170,10 +170,12 @@ class URLParams {
 
   append(params1: string, params2: string): void {
     if (arguments.length === 0 || typeof params1 !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${params1} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof params1}. ` +
+          `The type of ${params1} must be string`);
     }
     if (arguments.length === 1 || typeof params2 !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${params2} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. Expected: string, Actual: ${typeof params2}. ` +
+          `The type of ${params2} must be string`);
     }
     this.urlClass.append(params1, params2);
     if (this.parentUrl !== null) {
@@ -185,10 +187,24 @@ class URLParams {
 
   set(setName: string, setValues: string): void {
     if (arguments.length === 0 || typeof setName !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${setName} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof setName}. ` +
+          `The type of ${setName} must be string`);
     }
     if (arguments.length === 1 || typeof setValues !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${setValues} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: string, Actual: ${typeof setValues}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${setValues} must be string`);
     }
     this.urlClass.set(setName, setValues);
     if (this.parentUrl !== null) {
@@ -209,7 +225,8 @@ class URLParams {
 
   has(hasname: string): boolean {
     if (typeof hasname !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${hasname} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof hasname}. ` +
+          `The type of ${hasname} must be string`);
     }
     return this.urlClass.has(hasname);
   }
@@ -238,14 +255,16 @@ class URLParams {
 
   getAll(getAllname: string): string[] {
     if ((arguments.length !== 1) || (typeof getAllname !== 'string')) {
-      throw new BusinessError(`Parameter error. The type of ${getAllname} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string, Actual: ${typeof getAllname}. The type of ${getAllname} must be string`);
     }
     return this.urlClass.getAll(getAllname);
   }
 
   get(getname: string): string {
     if (arguments.length === 0 || typeof getname !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${getname} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof getname}. ` +
+          `The type of ${getname} must be string`);
     }
     return this.urlClass.get(getname);
   }
@@ -256,7 +275,8 @@ class URLParams {
 
   delete(deleteName: string): void {
     if (arguments.length === 0 || typeof deleteName !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${deleteName} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string, Actual: ${typeof deleteName}. The type of ${deleteName} must be string`);
     }
     this.urlClass.delete(deleteName);
     if (this.parentUrl !== null) {
@@ -269,7 +289,20 @@ class URLParams {
 
   forEach(objfun: Function, thisArg?: Object): void {
     if (typeof objfun !== 'function') {
-      throw new BusinessError(`Parameter error. The type of ${objfun} must be function`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: function, Actual: ${typeof objfun}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${objfun} must be function`);
     }
     let array = this.urlClass.array;
     if (array.length === 0) {
@@ -300,7 +333,8 @@ class URLParams {
 class URLUtil {
   static toString(urlParams: URLParams): string {
     if (arguments.length !== 1 || !(urlParams instanceof URLParams)) {
-      throw new BusinessError(`Parameter error. The type of ${urlParams} must be URLParams`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: URLParams, Actual: ${typeof urlParams}. The type of ${urlParams} must be URLParams`);
     }
     const resultArray: string[] = [];
     let arrayLen: number = urlParams.urlClass.array.length;
@@ -326,10 +360,12 @@ class URLSearchParams {
   }
   append(params1: string, params2: string): void {
     if (arguments.length === 0 || typeof params1 !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${params1} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof params1}. ` +
+          `The type of ${params1} must be string`);
     }
     if (arguments.length === 1 || typeof params2 !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${params2} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. Expected: string, Actual: ${typeof params2}. ` +
+          `The type of ${params2} must be string`);
     }
     this.urlClass.append(params1, params2);
     if (this.parentUrl !== null) {
@@ -341,10 +377,24 @@ class URLSearchParams {
 
   set(setName: string, setValues: string): void {
     if (arguments.length === 0 || typeof setName !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${setName} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof setName}. ` +
+          `The type of ${setName} must be string`);
     }
     if (arguments.length === 1 || typeof setValues !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${setValues} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: string, Actual: ${typeof setValues}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${setValues} must be string`);
     }
     this.urlClass.set(setName, setValues);
     if (this.parentUrl !== null) {
@@ -365,7 +415,8 @@ class URLSearchParams {
 
   has(hasname: string): boolean {
     if (typeof hasname !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${hasname} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof hasname}. ` +
+          `The type of ${hasname} must be string`);
     }
     return this.urlClass.has(hasname);
   }
@@ -507,7 +558,20 @@ function iteratorMethodThrow(input: Iterable<[string]>): Array<string> {
   seachParamsArr = [];
   for (const pair of input) {
     if ((typeof pair !== 'object' && typeof pair !== 'function') || pair === null || typeof pair[Symbol.iterator] !== 'function') {
-      throw new BusinessError(`Parameter error. The type of ${input} must be string[][]`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string[][], Actual: ${typeof pair}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${input} must be string[][]`);
     }
     const convertedPair = [];
     for (let element of pair) {
@@ -518,7 +582,8 @@ function iteratorMethodThrow(input: Iterable<[string]>): Array<string> {
 
   for (const pair of pairs) {
     if (pair.length !== 2) { // 2:Searching for the number and number of keys and values 2
-      throw new BusinessError(`Parameter error. The type of ${input} must be string[][]`);
+      throw new BusinessError(`Parameter error. Incorrect parameter count. Expected: 2, Actual: ${pair.length}. ` +
+          `The type of ${input} must be string[][]`);
     }
     seachParamsArr.push(pair[0], pair[1]);
   }
@@ -557,7 +622,8 @@ function decodeStringParmas(input: string): string {
 
 function initToStringSeachParams(input: string): Array<string> {
   if (typeof input !== 'string') {
-    throw new BusinessError(`Parameter error. The type of ${input} must be string`);
+    throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof input}. ` +
+        `The type of ${input} must be string`);
   }
   if (input[0] === '?') {
     input = input.slice(1);
@@ -592,7 +658,8 @@ class URL {
       if (typeof inputUrl === 'string' && inputUrl.length > 0) {
         nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl));
       } else {
-        throw new BusinessError(`Parameter error. The type of ${inputUrl} must be string`);
+        throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+            `Expected: string, Actual: ${typeof inputUrl}. The type of ${inputUrl} must be string`);
       }
     } else if (arguments.length === 2) { // 2:The number of parameters is 2
       if (typeof inputUrl === 'string') {
@@ -600,7 +667,8 @@ class URL {
           if (inputBase.length > 0) {
             nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl), fixIllegalString(inputBase));
           } else {
-            throw new BusinessError(`Parameter error. The type of ${inputUrl} must be string`);
+            throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+                `Expected: string, Actual: ${typeof inputBase}. The type of ${inputUrl} must be string`);
             return;
           }
         } else if (typeof inputBase === 'object') {
@@ -639,7 +707,20 @@ class URL {
 
   static parseURL(inputUrl: string, inputBase?: string | NativeUrl | URL): URL {
     if (typeof inputUrl !== 'string') {
-      throw new BusinessError(`Parameter error. The type of ${inputUrl} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string, Actual: ${typeof inputUrl}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${inputUrl} must be string`);
     }
     let nativeUrl !: NativeUrl;
     if (arguments.length === 1 || (arguments.length === 2 && (typeof inputBase === 'undefined' || inputBase === null))) {
@@ -649,13 +730,15 @@ class URL {
         if (inputBase.length > 0) {
           nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl), fixIllegalString(inputBase));
         } else {
-          throw new BusinessError(`Parameter error. The type of ${inputBase} must be string`);
+          throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+              `Expected: string, Actual: ${typeof inputBase}. The type of ${inputBase} must be string`);
         }
       } else if (typeof inputBase === 'object') {
         let nativeBase: NativeUrl = inputBase.getInfo();
         nativeUrl = new UrlInterface.Url(fixIllegalString(inputUrl), nativeBase);
       } else {
-        throw new BusinessError(`Parameter error. The type of ${inputBase} must be string or URL`);
+        throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+            `Expected: string or URL, Actual: ${typeof inputBase}. The type of ${inputBase} must be string or URL`);
       }
     }
     let urlHelper = new URL();

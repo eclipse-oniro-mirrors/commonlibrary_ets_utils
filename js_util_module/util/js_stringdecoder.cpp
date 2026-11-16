@@ -55,7 +55,8 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
     napi_is_typedarray(env, src, &result);
     if (!result) {
         napi_throw_error(env, "401",
-            "Parameter error. The type of Parameter must be Uint8Array or string.");
+            "Parameter error. Param[0] type mismatch. Expected: Uint8Array or string, Actual: mismatched type. "
+            "The type of Parameter must be Uint8Array or string.");
         return nullptr;
     }
     if (napi_get_typedarray_info(env, src, &type, &length, &data, &arrayBuffer, &byteOffset) != napi_ok) {
@@ -71,7 +72,9 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
     if (limit > 0) {
         arr = new UChar[limit + 1] { 0 };
     } else {
-        napi_throw_error(env, ERROR_CODE, "Error obtaining minimum number of input bytes");
+        napi_throw_error(env, ERROR_CODE,
+            "Parameter error. Param[0] type mismatch. Expected: non-empty Uint8Array, Actual: empty input. "
+            "Error obtaining minimum number of input bytes");
         return nullptr;
     }
     UChar *target = arr;
@@ -79,7 +82,8 @@ napi_value StringDecoder::Write(napi_env env, napi_value src, UBool flush)
     ucnv_toUnicode(conv_, &target, target + len, &source, source + length, nullptr, flush, &codeFlag);
     if (U_FAILURE(codeFlag)) {
         FreedMemory(arr);
-        std::string err = "decoder error, ";
+        std::string err = "Parameter error. Param[0] type mismatch. Expected: data matching the encoding format, "
+            "Actual: mismatched data. decoder error, ";
         err += u_errorName(codeFlag);
         napi_throw_error(env, ERROR_CODE, err.c_str());
         return nullptr;
@@ -121,7 +125,8 @@ napi_value StringDecoder::End(napi_env env)
     ucnv_toUnicode(conv_, &target, targetEnd, &src, sourceEnd, nullptr, flush, &errorCode);
     if (U_FAILURE(errorCode)) {
         ReportEtsUtilsIncompatibleEvent("StringDecoder::End", "truncated-tail", pendingLen_);
-        std::string err = "decoder error, ";
+        std::string err = "Parameter error. Param[0] type mismatch. Expected: data matching the encoding format, "
+            "Actual: mismatched data. decoder error, ";
         err += u_errorName(errorCode);
         napi_throw_error(env, ERROR_CODE, err.c_str());
         return nullptr;

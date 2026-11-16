@@ -20,7 +20,7 @@ interface errorUtil{
   checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void;
   checkNewTargetIsNullError(className: string, isNull: boolean): void;
   checkBindError(methodName: string, className: Function, self: unknown): void;
-  checkTypeError(paramName: string, type: string, receivedValue: unknown): void;
+  checkTypeError(paramName: string, type: string, receivedValue: unknown, index: number): void;
 }
 let flag: boolean = false;
 let fastArrayList: Object = undefined;
@@ -120,7 +120,7 @@ if (flag || fastArrayList === undefined) {
     }
     insert(element: T, index: number): void {
       errorUtil.checkBindError('insert', ArrayList, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 1);
       errorUtil.checkRangeError('index', index, 0, this.elementNum);
       if (this.isFull()) {
         this.resize();
@@ -151,7 +151,7 @@ if (flag || fastArrayList === undefined) {
     }
     removeByIndex(index: number): T {
       errorUtil.checkBindError('removeByIndex', ArrayList, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.elementNum - 1);
       let result: T = this[index];
       for (let i: number = index; i < this.elementNum - 1; i++) {
@@ -183,8 +183,8 @@ if (flag || fastArrayList === undefined) {
     }
     removeByRange(fromIndex: number, toIndex: number): void {
       errorUtil.checkBindError('removeByRange', ArrayList, this);
-      errorUtil.checkTypeError('fromIndex', 'Integer', fromIndex);
-      errorUtil.checkTypeError('toIndex', 'Integer', toIndex);
+      errorUtil.checkTypeError('fromIndex', 'Integer', fromIndex, 0);
+      errorUtil.checkTypeError('toIndex', 'Integer', toIndex, 1);
       errorUtil.checkRangeError('fromIndex', fromIndex, 0,
         (toIndex > this.elementNum) ? this.elementNum - 1 : toIndex - 1);
       errorUtil.checkRangeError('toIndex', toIndex, 0, this.elementNum);
@@ -198,7 +198,7 @@ if (flag || fastArrayList === undefined) {
     replaceAllElements(callbackfn: (value: T, index?: number, arrList?: ArrayList<T>) => T,
       thisArg?: Object): void {
       errorUtil.checkBindError('replaceAllElements', ArrayList, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       for (let i: number = 0; i < this.elementNum; i++) {
         this[i] = callbackfn.call(thisArg, this[i], i, this);
       }
@@ -206,7 +206,7 @@ if (flag || fastArrayList === undefined) {
     forEach(callbackfn: (value: T, index?: number, arrList?: ArrayList<T>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', ArrayList, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       for (let i: number = 0; i < this.elementNum; i++) {
         callbackfn.call(thisArg, this[i], i, this);
       }
@@ -215,7 +215,7 @@ if (flag || fastArrayList === undefined) {
       errorUtil.checkBindError('sort', ArrayList, this);
       let isSort: boolean = true;
       if (comparator) {
-        errorUtil.checkTypeError('comparator', 'callable', comparator);
+        errorUtil.checkTypeError('comparator', 'callable', comparator, 0);
         for (let i: number = 0; i < this.elementNum; i++) {
           for (let j: number = 0; j < this.elementNum - 1 - i; j++) {
             if (comparator(this[j], this[j + 1]) > 0) {
@@ -258,8 +258,8 @@ if (flag || fastArrayList === undefined) {
     }
     subArrayList(fromIndex: number, toIndex: number): ArrayList<T> {
       errorUtil.checkBindError('subArrayList', ArrayList, this);
-      errorUtil.checkTypeError('fromIndex', 'Integer', fromIndex);
-      errorUtil.checkTypeError('toIndex', 'Integer', toIndex);
+      errorUtil.checkTypeError('fromIndex', 'Integer', fromIndex, 0);
+      errorUtil.checkTypeError('toIndex', 'Integer', toIndex, 1);
       errorUtil.checkRangeError('fromIndex', fromIndex, 0,
         (toIndex > this.elementNum) ? this.elementNum - 1 : toIndex - 1);
       errorUtil.checkRangeError('toIndex', toIndex, 0, this.elementNum);
@@ -305,7 +305,7 @@ if (flag || fastArrayList === undefined) {
     }
     increaseCapacityTo(newCapacity: number): void {
       errorUtil.checkBindError('increaseCapacityTo', ArrayList, this);
-      errorUtil.checkTypeError('newCapacity', 'Integer', newCapacity);
+      errorUtil.checkTypeError('newCapacity', 'Integer', newCapacity, 0);
       if (newCapacity >= this.elementNum) {
         this.capacity = newCapacity;
       }

@@ -99,7 +99,8 @@ namespace OHOS::Util {
         }
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
-                "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
+                "Parameter error. Param[0] type mismatch. Expected: Uint8Array, Actual: mismatched type. "
+                "The type of Parameter must be Uint8Array and the length greater than zero.");
             return nullptr;
         }
         inputEncode_ = static_cast<const unsigned char*>(resultData);
@@ -135,7 +136,8 @@ namespace OHOS::Util {
         }
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
-                "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
+                "Parameter error. Param[0] type mismatch. Expected: Uint8Array, Actual: mismatched type. "
+                "The type of Parameter must be Uint8Array and the length greater than zero.");
             return nullptr;
         }
         inputEncode_ = static_cast<const unsigned char*>(resultData);
@@ -298,7 +300,8 @@ namespace OHOS::Util {
             pret = DecodeAchieve(env, inputDecode_, length, valueType);
         } else {
             std::string errMsg =
-                "Parameter error. The type of Parameter must be Uint8Array or string and the length greater than 0.";
+                "Parameter error. Param[0] type mismatch. Expected: Uint8Array or string, Actual: mismatched type. "
+                "The type of Parameter must be Uint8Array or string and the length greater than 0.";
             napi_throw_error(env, "401", errMsg.c_str());
             return false;
         }
@@ -464,7 +467,8 @@ namespace OHOS::Util {
         }
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
-                "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
+                "Parameter error. Param[0] type mismatch. Expected: Uint8Array, Actual: mismatched type. "
+                "The type of Parameter must be Uint8Array and the length greater than zero.");
             return nullptr;
         }
         unsigned char *inputEncode = nullptr;
@@ -487,7 +491,8 @@ namespace OHOS::Util {
         }
         if (type != napi_uint8_array || length == 0) {
             napi_throw_error(env, "401",
-                "Parameter error. The type of Parameter must be Uint8Array and the length greater than zero.");
+                "Parameter error. Param[0] type mismatch. Expected: Uint8Array, Actual: mismatched type. "
+                "The type of Parameter must be Uint8Array and the length greater than zero.");
             return nullptr;
         }
         unsigned char *inputEncode = nullptr;
@@ -642,7 +647,8 @@ namespace OHOS::Util {
         napi_open_handle_scope(env, &scope);
         if (scope == nullptr) {
             napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE,
-                "Parameter error: scope creation failed");
+                "Parameter error. Param[0] type mismatch. Expected: valid input, Actual: mismatched data. "
+                "scope creation failed");
             napi_reject_deferred(env, stdEncodeInfo->deferred, error);
             napi_delete_reference(env, stdEncodeInfo->arrayRef);
             napi_delete_async_work(env, stdEncodeInfo->worker);
@@ -657,7 +663,8 @@ namespace OHOS::Util {
             reinterpret_cast<const void*>(stdEncodeInfo->sinputEncoding), bufferSize) != EOK) {
             HILOG_ERROR("Base64:: copy ret to arraybuffer error");
             const char* errMessage =
-                "Parameter error. The type of the parameter must be a string and must be valid and legal";
+                "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched data. "
+                "The type of the parameter must be a string and must be valid and legal";
             napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE, errMessage);
             napi_reject_deferred(env, stdEncodeInfo->deferred, error);
             napi_delete_reference(env, stdEncodeInfo->arrayRef);
@@ -691,7 +698,8 @@ namespace OHOS::Util {
         napi_open_handle_scope(env, &scope);
         if (scope == nullptr) {
             napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE,
-                "Parameter error: scope creation failed");
+                "Parameter error. Param[0] type mismatch. Expected: valid input, Actual: mismatched data. "
+                "scope creation failed");
             napi_reject_deferred(env, stdEncodeInfo->deferred, error);
             napi_delete_reference(env, stdEncodeInfo->arrayRef);
             napi_delete_async_work(env, stdEncodeInfo->worker);
@@ -722,7 +730,8 @@ namespace OHOS::Util {
         if (valuetype != napi_valuetype::napi_string) {
             if (napi_get_typedarray_info(env, src, &type, &length, &resultData, nullptr, nullptr) != napi_ok) {
                 std::string errMsg =
-                    "Parameter error. The type of Parameter must be Uint8Array or string.";
+                    "Parameter error. Param[0] type mismatch. Expected: Uint8Array or string, "
+                    "Actual: mismatched type. The type of Parameter must be Uint8Array or string.";
                 napi_throw_error(env, "401", errMsg.c_str());
                 return nullptr;
             }
@@ -748,7 +757,8 @@ namespace OHOS::Util {
             CreateDecodePromise(env, inputDecode, length, valueType, src);
         } else {
             std::string errMsg =
-                "Parameter error. The type of Parameter must be Uint8Array or string and the length greater than 0.";
+                "Parameter error. Param[0] type mismatch. Expected: Uint8Array or string, Actual: mismatched type. "
+                "The type of Parameter must be Uint8Array or string and the length greater than 0.";
             napi_throw_error(env, "401", errMsg.c_str());
             FreeMemory(inputString);
             return nullptr;
@@ -935,7 +945,8 @@ namespace OHOS::Util {
         napi_open_handle_scope(env, &scope);
         if (scope == nullptr) {
             napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE,
-                "Parameter error: scope creation failed");
+                "Parameter error. Param[0] type mismatch. Expected: valid input, Actual: mismatched data. "
+                "scope creation failed");
             napi_reject_deferred(env, stdDecodeInfo->deferred, error);
             napi_delete_async_work(env, stdDecodeInfo->worker);
             napi_delete_reference(env, stdDecodeInfo->srcRef);
@@ -950,7 +961,8 @@ namespace OHOS::Util {
             reinterpret_cast<const void*>(stdDecodeInfo->sinputDecoding), bufferSize) != EOK) {
             HILOG_ERROR("Base64:: copy ret to arraybuffer error");
             const char* errMessage =
-                "Parameter error. The type of the parameter must be a string and must be valid and legal";
+                "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched data. "
+                "The type of the parameter must be a string and must be valid and legal";
             napi_value error = Tools::ErrorHelper::CreateError(env, TYPE_ERROR_CODE, errMessage);
             napi_reject_deferred(env, stdDecodeInfo->deferred, error);
             napi_delete_async_work(env, stdDecodeInfo->worker);

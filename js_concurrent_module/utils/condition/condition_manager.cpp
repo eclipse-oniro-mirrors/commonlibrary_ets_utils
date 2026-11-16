@@ -82,7 +82,8 @@ napi_value ConditionManager::WaitFor(napi_env env, napi_callback_info cbinfo)
 
     if (argc != 1) {
         Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
-                                                "Invalid number of arguments");
+                                                ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " +
+                                                 std::to_string(argc) + ". Invalid number of arguments").c_str());
         return nullptr;
     }
 
@@ -90,7 +91,8 @@ napi_value ConditionManager::WaitFor(napi_env env, napi_callback_info cbinfo)
     napi_status status = napi_get_value_int32(env, args, &timeout);
     if (status != napi_ok) {
         Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
-                                                "Invalid argument type. Expected number");
+                                                "Parameter error. Param[0] type mismatch. Expected: number, "
+                                                "Actual: mismatched type. Invalid argument type. Expected number");
         return nullptr;
     }
 
@@ -173,7 +175,8 @@ napi_value ConditionManager::Constructor(napi_env env, napi_callback_info cbinfo
         NAPI_CALL(env, napi_typeof(env, args[0], &type));
         if (type != napi_string) {
             Common::Helper::ErrorHelper::ThrowError(env, Common::Helper::ErrorHelper::TYPE_ERROR,
-                                                    "Request:: param must be string");
+                                                    "Parameter error. Param[0] type mismatch. Expected: string, "
+                                                    "Actual: mismatched type. Request:: param must be string");
             return nullptr;
         }
 

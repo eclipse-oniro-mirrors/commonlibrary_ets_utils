@@ -55,7 +55,9 @@ napi_value AsyncRunner::AsyncRunnerConstructor(napi_env env, napi_callback_info 
     } else if (argc == 1) { // 1: AsyncRunner(runningCapacity)
         runningCapacity = args[0];
     } else {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "The numbers of params not more than three or less one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: 1 to 3, Actual: " + std::to_string(argc) +
+            ". The numbers of params not more than three or less one.").c_str());
         return nullptr;
     }
     AsyncRunner* asyncRunner = CheckAndCreateAsyncRunner(env, thisVar, name, runningCapacity, waitingCapacity);
@@ -98,7 +100,8 @@ napi_value AsyncRunner::Execute(napi_env env, napi_callback_info cbinfo)
     napi_get_cb_info(env, cbinfo, &argc, args, &thisVar, nullptr);
     if (argc < 1 || argc > 2) { // 2 : task, Priority
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "The numbers of execute's params not more than two or less one.");
+            ("Parameter error. Incorrect parameter count. Expected: 1 to 2, Actual: " + std::to_string(argc) +
+             ". The numbers of execute's params not more than two or less one.").c_str());
         return nullptr;
     }
     napi_value napiTask = args[0];
@@ -118,7 +121,9 @@ napi_value AsyncRunner::Execute(napi_env env, napi_callback_info cbinfo)
     Task* task = nullptr;
     napi_unwrap(env, napiTask, reinterpret_cast<void**>(&task));
     if (task == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "The type of execute's param must be task.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: task, Actual: object. "
+            "The type of execute's param must be task.");
         return nullptr;
     }
     if (!task->CanForAsyncRunner(env)) {
@@ -151,33 +156,43 @@ AsyncRunner* AsyncRunner::CheckAndCreateAsyncRunner(napi_env env, napi_value& th
     std::int32_t waitingCapacityValue = 0;
     if (name != nullptr) {
         if (!NapiHelper::IsString(env, name)) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Name must be string.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: string, Actual: mismatched type. "
+                    "Name must be string.");
             return nullptr;
         }
         nameValue = NapiHelper::GetString(env, name);
     }
     if (runningCapacity == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "RunningCapacity cannot be empty.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] is required, cannot be null or undefined. RunningCapacity cannot be empty.");
         return nullptr;
     }
     if (!NapiHelper::IsNumber(env, runningCapacity)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "RunningCapacity must be number.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: number, Actual: mismatched type. "
+            "RunningCapacity must be number.");
         return nullptr;
     }
     runningCapacityVal = NapiHelper::GetUint32Value(env, runningCapacity);
     if (runningCapacityVal < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "RunningCapacity must be greater than zero.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: number greater than zero, Actual: mismatched type. "
+            "RunningCapacity must be greater than zero.");
         return nullptr;
     }
     if (waitingCapacity != nullptr) {
         if (!NapiHelper::IsNumber(env, waitingCapacity)) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "WaitingCapacity must be number.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[2] type mismatch. Expected: number, Actual: mismatched type. "
+                "WaitingCapacity must be number.");
             return nullptr;
         }
         waitingCapacityValue = NapiHelper::GetInt32Value(env, waitingCapacity);
         if (waitingCapacityValue < 0) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-                "WaitingCapacity must be greater than or equal zero.");
+                "Parameter error. Param[2] type mismatch. Expected: number greater than or equal to zero, "
+                "Actual: mismatched type. WaitingCapacity must be greater than or equal zero.");
             return nullptr;
         }
     }
@@ -197,17 +212,23 @@ AsyncRunner* AsyncRunner::CheckAndCreateAsyncRunner(napi_env env, napi_value& th
 bool AsyncRunner::CheckExecuteArgs(napi_env env, napi_value napiTask, napi_value napiPriority)
 {
     if (!NapiHelper::IsObject(env, napiTask) || !NapiHelper::HasNameProperty(env, napiTask, TASKID_STR)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "execute's first param must be task.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: task, Actual: mismatched type. "
+            "execute's first param must be task.");
         return false;
     }
     if (napiPriority != nullptr) {
         if (!NapiHelper::IsNumber(env, napiPriority)) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "The type of execute's second param must be number.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[1] type mismatch. Expected: number, Actual: mismatched type. "
+                "The type of execute's second param must be number.");
             return false;
         }
         uint32_t priority = NapiHelper::GetUint32Value(env, napiPriority);
         if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "Priority value is error.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[1] type mismatch. Expected: valid priority number, Actual: mismatched type. "
+                "Priority value is error.");
             return false;
         }
     }

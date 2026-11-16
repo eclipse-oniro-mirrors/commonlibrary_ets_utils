@@ -20,7 +20,7 @@ interface errorUtil{
   checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void;
   checkNewTargetIsNullError(className: string, isNull: boolean): void;
   checkBindError(methodName: string, className: Function, self: unknown): void;
-  checkTypeError(paramName: string, type: string, receivedValue: unknown): void;
+  checkTypeError(paramName: string, type: string, receivedValue: unknown, index: number): void;
 }
 let flag: boolean = false;
 let fastList: Object = undefined;
@@ -137,7 +137,7 @@ if (flag || fastList === undefined) {
     }
     get(index: number): T {
       errorUtil.checkBindError('get', List, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       if (index >= 0 && index < this.elementNum) {
         let current: NodeObj<T> = this.head;
         for (let i: number = 0; i < index && current !== undefined; i++) {
@@ -235,7 +235,7 @@ if (flag || fastList === undefined) {
     }
     removeByIndex(index: number): T {
       errorUtil.checkBindError('removeByIndex', List, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.elementNum - 1);
       let oldNode: NodeObj<T> = this.head;
       if (index === 0) {
@@ -263,7 +263,7 @@ if (flag || fastList === undefined) {
     replaceAllElements(callbackfn: (value: T, index?: number, list?: List<T>) => T,
       thisArg?: Object): void {
       errorUtil.checkBindError('replaceAllElements', List, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       let index: number = 0;
       if (this.head !== undefined) {
         let current: NodeObj<T> = this.head;
@@ -296,7 +296,7 @@ if (flag || fastList === undefined) {
     }
     insert(element: T, index: number): void {
       errorUtil.checkBindError('insert', List, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 1);
       errorUtil.checkRangeError('index', index, 0, this.elementNum);
       let newNode: NodeObj<T> = undefined;
       newNode = new NodeObj(element);
@@ -314,7 +314,7 @@ if (flag || fastList === undefined) {
     }
     set(index: number, element: T): T {
       errorUtil.checkBindError('set', List, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.length - 1);
       let current: NodeObj<T> = undefined;
       current = this.getNode(index);
@@ -323,7 +323,7 @@ if (flag || fastList === undefined) {
     }
     sort(comparator: (firstValue: T, secondValue: T) => number): void {
       errorUtil.checkBindError('sort', List, this);
-      errorUtil.checkTypeError('comparator', 'callable', comparator);
+      errorUtil.checkTypeError('comparator', 'callable', comparator, 0);
       let isSort: boolean = true;
       for (let i: number = 0; i < this.elementNum; i++) {
         for (let j: number = 0; j < this.elementNum - 1 - i; j++) {
@@ -344,8 +344,8 @@ if (flag || fastList === undefined) {
     }
     getSubList(fromIndex: number, toIndex: number): List<T> {
       errorUtil.checkBindError('getSubList', List, this);
-      errorUtil.checkTypeError('fromIndex', 'Integer', fromIndex);
-      errorUtil.checkTypeError('toIndex', 'Integer', toIndex);
+      errorUtil.checkTypeError('fromIndex', 'Integer', fromIndex, 0);
+      errorUtil.checkTypeError('toIndex', 'Integer', toIndex, 1);
       errorUtil.checkRangeError('fromIndex', fromIndex, 0,
         (toIndex > this.elementNum) ? this.elementNum - 1 : toIndex - 1);
       errorUtil.checkRangeError('toIndex', toIndex, 0, this.elementNum);
@@ -384,7 +384,7 @@ if (flag || fastList === undefined) {
     forEach(callbackfn: (value: T, index?: number, list?: List<T>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', List, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       let index: number = 0;
       if (this.head !== undefined) {
         let current: NodeObj<T> = this.head;

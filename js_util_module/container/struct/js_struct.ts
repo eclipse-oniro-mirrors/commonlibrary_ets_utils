@@ -1052,7 +1052,7 @@ function checkBindError(methodName: string, className: Function, self: unknown):
   }
 }
 
-function checkTypeError(paramName: string, type: string, receivedValue: unknown): void {
+function checkTypeError(paramName: string, type: string, receivedValue: unknown, index: number): void {
   let tmpType = '';
   if (typeof receivedValue === 'object') {
     tmpType = (receivedValue === null) ? 'Null' : receivedValue.constructor.name;
@@ -1067,7 +1067,8 @@ function checkTypeError(paramName: string, type: string, receivedValue: unknown)
   }
   if (tmpType.toLocaleLowerCase() !== type.toLocaleLowerCase()) {
     type = (type === 'Integer') ? 'number' : type;
-    throw new BusinessError(`The type of "${paramName}" must be ${type}. Received value is: ${receivedValue}`, TYPE_ERROR_CODE);
+    throw new BusinessError(`Parameter error. Param[${index}] type mismatch. Expected: ${type}, Actual: ${tmpType}. ` +
+        `The type of "${paramName}" must be ${type}. Received value is: ${receivedValue}`, TYPE_ERROR_CODE);
   }
 }
 

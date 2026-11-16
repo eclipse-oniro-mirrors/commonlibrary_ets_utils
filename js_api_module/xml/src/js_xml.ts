@@ -92,7 +92,8 @@ class XmlSerializer {
   xmlSerializerClass: NativeXMLSerializer;
   constructor(obj: object, inputStr: string) {
     if (typeof obj !== 'object') {
-      throw new BusinessError(`Parameter error.The type of ${obj} must be object`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: object, Actual: ${typeof obj}. ` +
+          `The type of ${obj} must be object`);
     }
     if (arguments.length === 1 ||
         (arguments.length === ARGUMENT_LENGTH_TWO && (typeof inputStr === 'undefined' || inputStr === null))) {
@@ -101,11 +102,25 @@ class XmlSerializer {
     } else if (arguments.length === ARGUMENT_LENGTH_TWO && (typeof inputStr === 'string' && inputStr.length !== 0)) {
       let strTemp: string = inputStr;
       if (strTemp.toLowerCase() !== 'utf-8') {
-        throw new BusinessError('Parameter error.Just support utf-8');
+        throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+            `Expected: string, Actual: ${typeof inputStr}. Just support utf-8`);
       }
       this.xmlSerializerClass = new XML.XmlSerializer(obj, inputStr);
     } else {
-      throw new BusinessError(`Parameter error.The type of ${inputStr} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: string, Actual: ${typeof inputStr}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${inputStr} must be string`);
     }
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
@@ -115,13 +130,16 @@ class XmlSerializer {
 
   setAttributes(name: string, value: string): void {
     if (typeof name !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${name} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof name}. ` +
+          `The type of ${name} must be string`);
     }
     if (name.length === 0) {
-      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof name}. ` +
+          `Parameter cannot be empty`);
     }
     if (typeof value !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${value} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. Expected: string, Actual: ${typeof value}. ` +
+          `The type of ${value} must be string`);
     }
 
     this.xmlSerializerClass.setAttributes(name, value);
@@ -133,10 +151,12 @@ class XmlSerializer {
 
   addEmptyElement(name: string): void {
     if (typeof name !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${name} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof name}. ` +
+          `The type of ${name} must be string`);
     }
     if (name.length === 0) {
-      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof name}. ` +
+          `Parameter cannot be empty`);
     }
 
     this.xmlSerializerClass.addEmptyElement(name);
@@ -156,10 +176,12 @@ class XmlSerializer {
 
   startElement(name: string): void {
     if (typeof name !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${name} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof name}. ` +
+          `The type of ${name} must be string`);
     }
     if (name.length === 0) {
-      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof name}. ` +
+          `Parameter cannot be empty`);
     }
     this.xmlSerializerClass.startElement(name);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -178,13 +200,16 @@ class XmlSerializer {
 
   setNamespace(prefix: string, ns: string): void {
     if (typeof prefix !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${prefix} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof prefix}. ` +
+          `The type of ${prefix} must be string`);
     }
     if (prefix.length === 0) {
-      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof prefix}. ` +
+          `Parameter cannot be empty`);
     }
     if (typeof ns !== 'string' || ns.length === 0) {
-      throw new BusinessError(`Parameter error.The type of ${ns} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. Expected: string, Actual: ${typeof ns}. ` +
+          `The type of ${ns} must be string`);
     }
     this.xmlSerializerClass.setNamespace(prefix, ns);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -195,11 +220,13 @@ class XmlSerializer {
 
   setComment(text: string): void {
     if (typeof text !== 'string') {
-      let error = new BusinessError(`Parameter error.The type of ${text} must be string`);
+      let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: string, Actual: ${typeof text}. The type of ${text} must be string`);
       throw error;
     }
     if (text.length === 0) {
-      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `Parameter cannot be empty`);
     }
     this.xmlSerializerClass.setComment(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -210,10 +237,12 @@ class XmlSerializer {
 
   setCDATA(text: string): void {
     if (typeof text !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `The type of ${text} must be string`);
     }
     if (text.length === 0) {
-      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `Parameter cannot be empty`);
     }
     this.xmlSerializerClass.setCDATA(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -224,10 +253,12 @@ class XmlSerializer {
 
   setText(text: string): void {
     if (typeof text !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `The type of ${text} must be string`);
     }
     if (text.length === 0) {
-      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `Parameter cannot be empty`);
     }
     this.xmlSerializerClass.setText(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -238,10 +269,12 @@ class XmlSerializer {
 
   setDocType(text: string): void {
     if (typeof text !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `The type of ${text} must be string`);
     }
     if (text.length === 0) {
-      throw new BusinessError(`Parameter error. Parameter cannot be empty`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `Parameter cannot be empty`);
     }
     this.xmlSerializerClass.setDocType(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
@@ -257,7 +290,8 @@ class XmlDynamicSerializer {
     let input: string = 'utf-8';
     if (arguments.length === ARGUMENT_LENGTH_ONE) {
       if (typeof encoding !== 'string') {
-        throw new BusinessError(`Parameter error.The type of ${encoding} must be string`);
+        throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+            `Expected: string, Actual: ${typeof encoding}. The type of ${encoding} must be string`);
       }
       if (encoding.toLowerCase() !== 'utf-8') {
         throw new BusinessError('Incorrect encoding format, only support utf-8.', EncodingErrorCode);
@@ -276,20 +310,23 @@ class XmlDynamicSerializer {
 
   setAttributes(name: string, value: string): void {
     if (typeof name !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${name} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof name}. ` +
+          `The type of ${name} must be string`);
     }
     if (name.length === 0) {
       throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
     }
     if (typeof value !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${value} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. Expected: string, Actual: ${typeof value}. ` +
+          `The type of ${value} must be string`);
     }
     this.xmlSerializerClass.setAttributes(name, value);
   }
 
   addEmptyElement(name: string): void {
     if (typeof name !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${name} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof name}. ` +
+          `The type of ${name} must be string`);
     }
     if (name.length === 0) {
       throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
@@ -303,7 +340,8 @@ class XmlDynamicSerializer {
 
   startElement(name: string): void {
     if (typeof name !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${name} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof name}. ` +
+          `The type of ${name} must be string`);
     }
     if (name.length === 0) {
       throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
@@ -317,10 +355,12 @@ class XmlDynamicSerializer {
 
   setNamespace(prefix: string, ns: string): void {
     if (typeof prefix !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${prefix} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof prefix}. ` +
+          `The type of ${prefix} must be string`);
     }
     if (typeof ns !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${ns} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. Expected: string, Actual: ${typeof ns}. ` +
+          `The type of ${ns} must be string`);
     }
     if (prefix.length === 0 || ns.length === 0) {
       throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
@@ -330,7 +370,8 @@ class XmlDynamicSerializer {
 
   setComment(text: string): void {
     if (typeof text !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `The type of ${text} must be string`);
     }
     if (text.length === 0) {
       throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
@@ -340,7 +381,8 @@ class XmlDynamicSerializer {
 
   setCdata(text: string): void {
     if (typeof text !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `The type of ${text} must be string`);
     }
     if (text.length === 0) {
       throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
@@ -350,7 +392,8 @@ class XmlDynamicSerializer {
 
   setText(text: string): void {
     if (typeof text !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `The type of ${text} must be string`);
     }
     if (text.length === 0) {
       throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
@@ -360,7 +403,8 @@ class XmlDynamicSerializer {
 
   setDocType(text: string): void {
     if (typeof text !== 'string') {
-      throw new BusinessError(`Parameter error.The type of ${text} must be string`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: string, Actual: ${typeof text}. ` +
+          `The type of ${text} must be string`);
     }
     if (text.length === 0) {
       throw new BusinessError('Parameter error. Cannot be an empty string.', EmptyErrorCode);
@@ -373,7 +417,8 @@ class XmlPullParser {
   xmlPullParserClass: NativeXmlPullParser;
   constructor(obj: object, inputStr: string) {
     if (typeof obj !== 'object') {
-      throw new BusinessError(`Parameter error.The type of ${obj} must be object`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: object, Actual: ${typeof obj}. ` +
+          `The type of ${obj} must be object`);
     }
     if (arguments.length === 1 ||
         (arguments.length === ARGUMENT_LENGTH_TWO && (typeof inputStr === 'undefined' || inputStr === null))) {
@@ -383,11 +428,25 @@ class XmlPullParser {
       'string' && inputStr.length !== 0)) {
       let strTemp: string = inputStr;
       if (strTemp.toLowerCase() !== 'utf-8') {
-        throw new BusinessError('Parameter error.Just support utf-8');
+        throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+            `Expected: string, Actual: ${typeof inputStr}. Just support utf-8`);
       }
       this.xmlPullParserClass = new XML.XmlPullParser(obj, inputStr);
     } else {
-      throw new BusinessError(`Parameter error.The type of ${inputStr} must be string`);
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: string, Actual: ${typeof inputStr}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `The type of ${inputStr} must be string`);
     }
     let errStr: string = this.xmlPullParserClass.XmlPullParserError();
     if (errStr.length !== 0) {
@@ -396,7 +455,8 @@ class XmlPullParser {
   }
   parse(options: object): void {
     if (typeof options !== 'object') {
-      throw new BusinessError(`Parameter error.The type of ${options} must be object`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: object, Actual: ${typeof options}. ` +
+          `The type of ${options} must be object`);
     }
     this.xmlPullParserClass.parse(options);
     let errStr: string = this.xmlPullParserClass.XmlPullParserError();
@@ -407,7 +467,8 @@ class XmlPullParser {
 
   parseXml(options: object): void {
     if (typeof options !== 'object') {
-      throw new BusinessError(`Parameter error.The type of ${options} must be object`);
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: object, Actual: ${typeof options}. ` +
+          `The type of ${options} must be object`);
     }
     if (this.xmlPullParserClass.parseXml(options)) {
       let errStr: string = this.xmlPullParserClass.XmlPullParserError();
@@ -436,13 +497,40 @@ class XmlSAXParser {
 
   constructor(inputStream: stream.Readable, encoding?: string) {
     if (typeof inputStream !== 'object') {
-      throw new BusinessError('Parameter error. Input stream must be a readable stream.');
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
+          `Expected: object, Actual: ${typeof inputStream}. Input stream must be a readable stream.`);
     }
     if (encoding !== undefined && typeof encoding !== 'string') {
-      throw new BusinessError('Parameter error. Encoding must be a string.');
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: string, Actual: ${typeof encoding}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `Encoding must be a string.`);
     }
     if (encoding && encoding.toLowerCase() !== 'utf-8') {
-      throw new BusinessError('Parameter error. Only UTF-8 encoding is supported.');
+      throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
+          `Expected: string, Actual: ${typeof encoding}. ` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `` +
+          `Only UTF-8 encoding is supported.`);
     }
 
     this.inputStream = inputStream;
@@ -453,11 +541,14 @@ class XmlSAXParser {
 
   parse(handler: XmlSAXHandler): void {
     if (typeof handler !== 'object') {
-      throw new BusinessError('Parameter error. Handler must be an object.');
+      throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: object, Actual: ${typeof handler}. ` +
+          `Handler must be an object.`);
     }
 
     if (this.isParsing === PARSER_IS_PARSING) {
-      throw new BusinessError('Parser is already parsing. Cannot call parse() again before parsing completes.');
+      throw new BusinessError(
+          'Parameter error. Param[0] type mismatch. Expected: idle parser, Actual: mismatched state. ' +
+        'Parser is already parsing. Cannot call parse() again before parsing completes.');
     }
 
     this.isParsing = PARSER_IS_PARSING;

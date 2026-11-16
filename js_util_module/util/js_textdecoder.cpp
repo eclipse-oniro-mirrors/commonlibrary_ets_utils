@@ -214,7 +214,8 @@ namespace OHOS::Util {
         if (codeFlag != U_ZERO_ERROR) {
             FreedMemory(arr);
             napi_throw_error(env, "401",
-                "Parameter error. Please check if the decode data matches the encoding format.");
+                "Parameter error. Param[0] type mismatch. Expected: data matching the encoding format, "
+                "Actual: mismatched data. Please check if the decode data matches the encoding format.");
             return nullptr;
         }
         size_t resultLen = target - arr;

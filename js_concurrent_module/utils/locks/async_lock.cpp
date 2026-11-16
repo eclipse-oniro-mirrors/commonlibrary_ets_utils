@@ -38,7 +38,8 @@ napi_value AsyncLock::LockAsync(napi_env env, napi_ref cb, LockMode mode, const 
     napi_deferred deferred;
     napi_create_promise(env, &deferred, &promise);
     if (!NativeEngine::IsAlive(reinterpret_cast<NativeEngine *>(env))) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "env is not alive");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: valid type, Actual: mismatched type. env is not alive");
         return nullptr;
     }
     if (!CanAcquireLock(mode) && options.isAvailable) {

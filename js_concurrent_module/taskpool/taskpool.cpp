@@ -184,11 +184,15 @@ napi_value TaskPool::TerminateTask(napi_env env, napi_callback_info cbinfo)
     napi_value args[1];
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of terminateTask's params must be one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: 1, Actual: " + std::to_string(argc) + ". "
+                "the number of terminateTask's params must be one.").c_str());
         return nullptr;
     }
     if (!NapiHelper::IsObject(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of terminateTask's params must be object.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: object, Actual: mismatched type. "
+            "the type of terminateTask's params must be object.");
         return nullptr;
     }
     napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
@@ -196,6 +200,7 @@ napi_value TaskPool::TerminateTask(napi_env env, napi_callback_info cbinfo)
     auto task = TaskManager::GetInstance().GetTask(taskId);
     if (task == nullptr || !task->IsLongTask()) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: long task, Actual: object. "
             "the type of terminateTask's params must be long task.");
         return nullptr;
     }
@@ -208,7 +213,9 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     HITRACE_HELPER_METER_NAME(__PRETTY_FUNCTION__);
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of execute's params must be at least one.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: at least 1, Actual: " + std::to_string(argc) +
+            ". the number of execute's params must be at least one.").c_str());
         return nullptr;
     }
     napi_value* args = new napi_value[argc];
@@ -233,7 +240,9 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
         Task* task = nullptr;
         napi_unwrap(env, args[0], reinterpret_cast<void**>(&task));
         if (task == nullptr) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's first param must be task.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: task, Actual: object. "
+                "the type of execute's first param must be task.");
             return nullptr;
         }
         if (!task->CanExecute(env, timeout)) {
@@ -250,6 +259,7 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
     }
     if (type != napi_function) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: object or function, Actual: mismatched type. "
             "the type of execute's first param must be object or function.");
         return nullptr;
     }
@@ -267,7 +277,8 @@ napi_value TaskPool::Execute(napi_env env, napi_callback_info cbinfo)
             task = nullptr;
         }
         std::string err = "execute create promise failed, maybe has exception.";
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, err.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: function, Actual: mismatched type. " + err).c_str());
         HILOG_ERROR("taskpool:: %{public}s", err.c_str());
         return nullptr;
     }
@@ -348,7 +359,8 @@ napi_value TaskPool::ExecuteDelayed(napi_env env, napi_callback_info cbinfo)
         delete taskMessage;
         taskMessage = nullptr;
         std::string err = "executeDelayed create promise failed, maybe has exception.";
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, err.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[1] type mismatch. "
+            "Expected: task, Actual: mismatched type. " + err).c_str());
         HILOG_ERROR("taskpool:: %{public}s", err.c_str());
         return nullptr;
     }
@@ -385,7 +397,8 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
     HILOG_INFO("taskpool::ExecuteGroup groupId %{public}s", std::to_string(groupId).c_str());
     auto taskGroup = TaskGroupManager::GetInstance().GetTaskGroup(groupId);
     if (taskGroup == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "taskGroup is nullptr.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: taskGroup, Actual: object. taskGroup is nullptr.");
         return nullptr;
     }
     if (taskGroup->IsTimeoutTaskGroup()) {
@@ -415,7 +428,8 @@ napi_value TaskPool::ExecuteGroup(napi_env env, napi_value napiTaskGroup, Priori
         delete groupInfo;
         groupInfo = nullptr;
         std::string err = "executeGroup create promise failed, maybe has exception.";
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, err.c_str());
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Param[0] type mismatch. "
+            "Expected: taskGroup, Actual: mismatched type. " + err).c_str());
         HILOG_ERROR("taskpool:: %{public}s", err.c_str());
         return nullptr;
     }
@@ -669,7 +683,8 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     napi_value args[1];
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc < 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of cancel's params must be 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: 1, Actual: " + std::to_string(argc) + ". the number of cancel's params must be 1.").c_str());
         return nullptr;
     }
 
@@ -680,14 +695,18 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     }
 
     if (!NapiHelper::IsObject(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of cancel's params must be object.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: object, Actual: mismatched type. "
+            "the type of cancel's params must be object.");
         return nullptr;
     }
 
     if (!NapiHelper::HasNameProperty(env, args[0], GROUP_ID_STR)) {
         napi_value napiTaskId = NapiHelper::GetNameProperty(env, args[0], TASKID_STR);
         if (napiTaskId == nullptr) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of cancel's params must be task.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: task, Actual: object. "
+                "the type of cancel's params must be task.");
             return nullptr;
         }
         uint32_t taskId = NapiHelper::GetUint32Value(env, napiTaskId);
@@ -695,7 +714,9 @@ napi_value TaskPool::Cancel(napi_env env, napi_callback_info cbinfo)
     } else {
         napi_value napiGroupId = NapiHelper::GetNameProperty(env, args[0], GROUP_ID_STR);
         if (napiGroupId == nullptr) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of cancel's params must be taskGroup.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[0] type mismatch. Expected: taskGroup, Actual: object. "
+                "the type of cancel's params must be taskGroup.");
             return nullptr;
         }
         uint64_t groupId = NapiHelper::GetUint64Value(env, napiGroupId);
@@ -710,12 +731,15 @@ napi_value TaskPool::IsConcurrent(napi_env env, napi_callback_info cbinfo)
     napi_value args[1];
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc != 1) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of isConcurrent's params must be 1.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: 1, Actual: " + std::to_string(argc) + ". "
+                "the number of isConcurrent's params must be 1.").c_str());
         return nullptr;
     }
 
     if (!NapiHelper::IsFunction(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: function, Actual: mismatched type. "
             "the type of isConcurrent's first param must be function.");
         return nullptr;
     }
@@ -823,19 +847,22 @@ bool TaskPool::CheckDelayedParams(napi_env env, napi_callback_info cbinfo, uint3
     napi_value args[3]; // 3: delayTime, task and priority
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc < 2 || argc > 3) { // 2: delayTime and task 3: delayTime, task and priority
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of executeDelayed's params must be two or three.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: 2 to 3, Actual: " + std::to_string(argc) +
+            ". the number of executeDelayed's params must be two or three.").c_str());
         return false;
     }
 
     if (!NapiHelper::IsNumber(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: number, Actual: mismatched type. "
             "the type of executeDelayed's first param must be number.");
         return false;
     }
 
     if (!NapiHelper::IsObject(env, args[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: object, Actual: mismatched type. "
             "the type of the second param must be object.");
         return false;
     }
@@ -849,19 +876,24 @@ bool TaskPool::CheckDelayedParams(napi_env env, napi_callback_info cbinfo, uint3
     if (argc > 2) { // 2: the params might have priority
         if (!NapiHelper::IsNumber(env, args[2])) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[2] type mismatch. Expected: number, Actual: mismatched type. "
                 "the type of executeDelayed's third param must be number.");
             return false;
         }
         priority = NapiHelper::GetUint32Value(env, args[2]); // 2: get task priority
         if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
-            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "executeDelayed's priority value is error.");
+            ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[2] type mismatch. Expected: valid priority number, Actual: mismatched type. "
+                "executeDelayed's priority value is error.");
             return false;
         }
     }
 
     napi_unwrap(env, args[1], reinterpret_cast<void**>(&task));
     if (task == nullptr) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of executeDelayed's second param must be task");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: task, Actual: object. "
+            "the type of executeDelayed's second param must be task");
         return false;
     }
     if (!task->CanExecuteDelayed(env)) {
@@ -877,12 +909,14 @@ bool TaskPool::CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, 
     napi_value args[3]; // 3 : period, task, priority
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (argc < 2 || argc > 3) { // 2 : period, task and 3 : period, task, priority
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
-            "the number of executePeriodically's params must be two or three.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: 2 to 3, Actual: " + std::to_string(argc) +
+            ". the number of executePeriodically's params must be two or three.").c_str());
         return false;
     }
     if (!NapiHelper::IsNumber(env, args[0])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: number, Actual: mismatched type. "
             "the type of executePeriodically's first param must be number.");
         return false;
     }
@@ -893,6 +927,7 @@ bool TaskPool::CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, 
     }
     if (!NapiHelper::IsObject(env, args[1])) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: task, Actual: mismatched type. "
             "the type of executePeriodically's second param must be task.");
         return false;
     }
@@ -900,12 +935,14 @@ bool TaskPool::CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, 
     if (argc >= 3) { // 3 : third param maybe priority
         if (!NapiHelper::IsNumber(env, args[2])) { // 2 : priority
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[2] type mismatch. Expected: number, Actual: mismatched type. "
                 "the executePeriodically's third param must be priority.");
             return false;
         }
         priority = NapiHelper::GetUint32Value(env, args[2]); // 2 : priority
         if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[2] type mismatch. Expected: valid priority number, Actual: mismatched type. "
                 "the value of executePeriodically's priority is invalid.");
             return false;
         }
@@ -914,6 +951,7 @@ bool TaskPool::CheckPeriodicallyParams(napi_env env, napi_callback_info cbinfo, 
     napi_unwrap(env, args[1], reinterpret_cast<void**>(&periodicTask));
     if (periodicTask == nullptr) {
         ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: task, Actual: object. "
             "the type of executePeriodically's second param must be task.");
         return false;
     }
@@ -954,14 +992,18 @@ napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)
 {
     size_t argc = NapiHelper::GetCallbackInfoArgc(env, cbinfo);
     if (argc < 1 || argc > 2) { // 1: taskId, 2: taskId and name
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the number of getTask's params must be one or two.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, ("Parameter error. Incorrect parameter count. "
+            "Expected: 1 to 2, Actual: " + std::to_string(argc) +
+            ". the number of getTask's params must be one or two.").c_str());
         return nullptr;
     }
     napi_value* args = new napi_value[argc];
     ObjectScope<napi_value> scope(args, true);
     napi_get_cb_info(env, cbinfo, &argc, args, nullptr, nullptr);
     if (!NapiHelper::IsNumber(env, args[0])) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of getTask's first param must be number.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[0] type mismatch. Expected: number, Actual: mismatched type. "
+            "the type of getTask's first param must be number.");
         return nullptr;
     }
     napi_value undefined = NapiHelper::GetUndefinedValue(env);
@@ -971,6 +1013,7 @@ napi_value TaskPool::GetTask(napi_env env, napi_callback_info cbinfo)
     if (argc > 1 && NapiHelper::IsNotUndefined(env, args[1])) {
         if (!NapiHelper::IsString(env, args[1])) {
             ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                "Parameter error. Param[1] type mismatch. Expected: string, Actual: mismatched type. "
                 "the type of getTask's second param must be string.");
             return nullptr;
         }
@@ -1077,7 +1120,9 @@ std::pair<uint32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_valu
         napi_value timeoutValue = NapiHelper::GetNameProperty(env, arg, "timeout");
         if (NapiHelper::IsNotUndefined(env, timeoutValue)) {
             if (!NapiHelper::IsNumber(env, timeoutValue)) {
-                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's timeout must be number.");
+                ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+                    "Parameter error. Param[1].(timeout) type mismatch. Expected: number, Actual: mismatched type. "
+                    "the type of execute's timeout must be number.");
                 return std::make_pair(Priority::NUMBER, 0);
             }
             timeout = NapiHelper::GetInt32Value(env, timeoutValue);
@@ -1092,12 +1137,16 @@ std::pair<uint32_t, uint32_t> TaskPool::GetExecuteParams(napi_env env, napi_valu
         priorityValue = arg;
     }
     if (!NapiHelper::IsNumber(env, priorityValue)) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "the type of execute's priority must be number.");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: number, Actual: mismatched type. "
+            "the type of execute's priority must be number.");
         return std::make_pair(Priority::NUMBER, 0);
     }
     priority = NapiHelper::GetUint32Value(env, priorityValue);
     if (priority > Priority::MAX || (priority > Priority::IDLE && !TaskManager::GetInstance().IsSystemApp())) {
-        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR, "execute's priority value is error");
+        ErrorHelper::ThrowError(env, ErrorHelper::TYPE_ERROR,
+            "Parameter error. Param[1] type mismatch. Expected: valid priority number, Actual: mismatched type. "
+            "execute's priority value is error");
         return std::make_pair(Priority::NUMBER, 0);
     }
     return std::make_pair(priority, static_cast<uint32_t>(timeout));

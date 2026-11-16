@@ -20,7 +20,7 @@ interface errorUtil{
   checkRangeError(paramName: string, receivedValue: unknown, min?: number, max?: number, options?: string): void;
   checkNewTargetIsNullError(className: string, isNull: boolean): void;
   checkBindError(methodName: string, className: Function, self: unknown): void;
-  checkTypeError(paramName: string, type: string, receivedValue: unknown): void;
+  checkTypeError(paramName: string, type: string, receivedValue: unknown, index: number): void;
 }
 let flag: boolean = false;
 let fastStack: Object = undefined;
@@ -140,7 +140,7 @@ if (flag || fastStack === undefined) {
     forEach(callbackfn: (value: T, index?: number, stack?: Stack<T>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', Stack, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       for (let i: number = 0; i < this.length; i++) {
         callbackfn.call(thisArg, this[i], i, this);
       }

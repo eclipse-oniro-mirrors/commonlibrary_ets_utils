@@ -63,7 +63,7 @@ if (flag || fastPlainArray === undefined) {
     }
     add(key: number, value: T): void {
       errorUtil.checkBindError('add', PlainArray, this);
-      errorUtil.checkTypeError('key', 'number', key);
+      errorUtil.checkTypeError('key', 'number', key, 0);
       this.addmember(key, value);
     }
     clear(): void {
@@ -84,19 +84,19 @@ if (flag || fastPlainArray === undefined) {
     }
     has(key: number): boolean {
       errorUtil.checkBindError('has', PlainArray, this);
-      errorUtil.checkTypeError('key', 'number', key);
+      errorUtil.checkTypeError('key', 'number', key, 0);
       return this.binarySearchAtPlain(key) > -1;
     }
     get(key: number): T {
       errorUtil.checkBindError('get', PlainArray, this);
-      errorUtil.checkTypeError('key', 'number', key);
+      errorUtil.checkTypeError('key', 'number', key, 0);
       let index: number = 0;
       index = this.binarySearchAtPlain(key);
       return this.members.values[index];
     }
     getIndexOfKey(key: number): number {
       errorUtil.checkBindError('getIndexOfKey', PlainArray, this);
-      errorUtil.checkTypeError('key', 'number', key);
+      errorUtil.checkTypeError('key', 'number', key, 0);
       let result: number = 0;
       result = this.binarySearchAtPlain(key);
       return result < 0 ? -1 : result;
@@ -111,12 +111,12 @@ if (flag || fastPlainArray === undefined) {
     }
     getKeyAt(index: number): number {
       errorUtil.checkBindError('getKeyAt', PlainArray, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       return this.members.keys[index];
     }
     remove(key: number): T {
       errorUtil.checkBindError('remove', PlainArray, this);
-      errorUtil.checkTypeError('key', 'number', key);
+      errorUtil.checkTypeError('key', 'number', key, 0);
       let result: T = undefined;
       let index: number = 0;
       index = this.binarySearchAtPlain(key);
@@ -127,13 +127,13 @@ if (flag || fastPlainArray === undefined) {
     }
     removeAt(index: number): T {
       errorUtil.checkBindError('removeAt', PlainArray, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       return this.deletemember(index);
     }
     removeRangeFrom(index: number, size: number): number {
       errorUtil.checkBindError('removeRangeFrom', PlainArray, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
-      errorUtil.checkTypeError('size', 'Integer', size);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
+      errorUtil.checkTypeError('size', 'Integer', size, 1);
       errorUtil.checkRangeError('index', index, 0, this.memberNumber - 1);
       let safeSize: number = 0;
       safeSize = (this.memberNumber - (index + size) < 0) ? this.memberNumber - index : size;
@@ -142,7 +142,7 @@ if (flag || fastPlainArray === undefined) {
     }
     setValueAt(index: number, value: T): void {
       errorUtil.checkBindError('setValueAt', PlainArray, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.memberNumber - 1);
       this.members.values[index] = value;
     }
@@ -156,14 +156,14 @@ if (flag || fastPlainArray === undefined) {
     }
     getValueAt(index: number): T {
       errorUtil.checkBindError('getValueAt', PlainArray, this);
-      errorUtil.checkTypeError('index', 'Integer', index);
+      errorUtil.checkTypeError('index', 'Integer', index, 0);
       errorUtil.checkRangeError('index', index, 0, this.memberNumber - 1);
       return this.members.values[index];
     }
     forEach(callbackfn: (value: T, index?: number, PlainArray?: PlainArray<T>) => void,
       thisArg?: Object): void {
       errorUtil.checkBindError('forEach', PlainArray, this);
-      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn);
+      errorUtil.checkTypeError('callbackfn', 'callable', callbackfn, 0);
       for (let i: number = 0; i < this.memberNumber; i++) {
         callbackfn.call(thisArg, this.members.values[i], this.members.keys[i]);
       }
