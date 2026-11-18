@@ -67,16 +67,22 @@ namespace OHOS::Util {
             121, 122, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 45, 95
         };
 
+        size_t GetDecodePaddingCount(const char *input, size_t inputLen)
+        {
+            size_t equalCount = 0;
+            if (inputLen >= 1 && *(input + inputLen - 1) == '=') {
+                equalCount++;
+            }
+            if (inputLen >= TRAGET_TWO && *(input + inputLen - TRAGET_TWO) == '=') {
+                equalCount++;
+            }
+            return equalCount;
+        }
+
         void ReportDecodeInputFaults(const char *input, size_t inputLen, size_t decodeOutLen,
                                      const char *funcName)
         {
-            size_t equalProbe = 0;
-            if (inputLen >= 1 && *(input + inputLen - 1) == '=') {
-                equalProbe++;
-            }
-            if (inputLen >= TRAGET_TWO && *(input + inputLen - TRAGET_TWO) == '=') {
-                equalProbe++;
-            }
+            size_t equalProbe = GetDecodePaddingCount(input, inputLen);
             if (equalProbe > decodeOutLen) {
                 // DecodeOut in the caller underflows the output length for this padding.
                 // Detection only, the original flow continues.
@@ -323,15 +329,14 @@ namespace OHOS::Util {
         }
         retLen = (inputLen / TRAGET_FOUR) * TRAGET_THREE;
         decodeOutLen = retLen;
-        size_t equalCount = 0;
-
-        if (inputLen >= 1) {
-            equalCount += static_cast<size_t>(*(input + inputLen - 1) == '=');
-        }
-        if (inputLen >= TRAGET_TWO) {
-            equalCount += static_cast<size_t>(*(input + inputLen - TRAGET_TWO) == '=');
-        }
+        size_t equalCount = GetDecodePaddingCount(input, inputLen);
         ReportDecodeInputFaults(input, inputLen, decodeOutLen, "Base64::DecodeAchieve");
+        if (equalCount > decodeOutLen) {
+            std::string message = "Parameter error. Param[0] length mismatch. Expected: at least 4 bytes for "
+                "padded Base64 input, Actual: " + std::to_string(inputLen) + " bytes";
+            napi_throw_error(env, "401", message.c_str());
+            return nullptr;
+        }
         retLen = DecodeOut(equalCount, retLen);
         if (retLen > 0) {
             retDecode = new (std::nothrow) unsigned char[retLen + 1];
@@ -835,7 +840,6 @@ namespace OHOS::Util {
         size_t retLen = 0;
         retLen = (inputLen / TRAGET_FOUR) * TRAGET_THREE;
         decodeInfo->decodeOutLen = retLen;
-        size_t equalCount = 0;
         unsigned char *retDecode = nullptr;
         if (input == nullptr || inputLen == 0) {
             // The reads below access input[-1] / input[-2] for empty input. Detection
@@ -847,13 +851,12 @@ namespace OHOS::Util {
             // Detection only, the original flow continues.
             ReportEtsUtilsSecurityFault("Base64::DecodeAchieves", "short-input-oob-read", inputLen);
         }
-        if (inputLen >= 1) {
-            equalCount += static_cast<size_t>(*(input + inputLen - 1) == '=');
-        }
-        if (inputLen >= TRAGET_TWO) {
-            equalCount += static_cast<size_t>(*(input + inputLen - TRAGET_TWO) == '=');
-        }
+        size_t equalCount = GetDecodePaddingCount(input, inputLen);
         ReportDecodeInputFaults(input, inputLen, decodeInfo->decodeOutLen, "Base64::DecodeAchieves");
+        if (equalCount > decodeInfo->decodeOutLen) {
+            HILOG_ERROR("Base64:: DecodeAchieves the length of input does not comply with the base64 padding rules.");
+            return nullptr;
+        }
         retLen = DecodeOut(equalCount, retLen, decodeInfo);
         if (retLen > 0) {
             retDecode = new unsigned char[retLen + 1];
