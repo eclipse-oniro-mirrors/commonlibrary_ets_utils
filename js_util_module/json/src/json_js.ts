@@ -57,17 +57,6 @@ function parse(text: string, reviver?: TransformsFunc, options?: ParseOptions): 
   if (typeof text !== 'string') {
     let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
         `Expected: string, Actual: ${typeof text}. ` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
         `The type of ${text} must be string`);
     throw error;
   }
@@ -82,7 +71,8 @@ function parse(text: string, reviver?: TransformsFunc, options?: ParseOptions): 
   try {
     return (JSON as unknown as JSON).parseBigInt(text, reviver, options);
   } catch (e) {
-    let error = new BusinessError(`e.message: ` + (e as Error).message + `, e.name: ` + (e as Error).name);
+    let error = new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid json text, ' +
+        `Actual: mismatched data. e.message: ` + (e as Error).message + `, e.name: ` + (e as Error).name);
     throw error;
   }
 }
@@ -171,7 +161,8 @@ function stringify(value: Object, replacer?: ReplacerType, space?: string | numb
       }
     }
   } catch (e) {
-    let error = new BusinessError((e as Error).message + `, e.name: ` + (e as Error).name);
+    let error = new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid json value, ' +
+        `Actual: mismatched data. ` + (e as Error).message + `, e.name: ` + (e as Error).name);
     throw error;
   }
 }
@@ -180,17 +171,6 @@ function has(value: object, key: string): boolean {
   if (typeof value !== 'object' || typeof value === 'undefined' || value === null) {
     let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
         `Expected: object, Actual: ${typeof value}. ` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
         `The type of ${value} must be object`);
     throw error;
   }
@@ -211,17 +191,6 @@ function remove(value: object, key: string): void {
   if (typeof value !== 'object' || typeof value === 'undefined' || value === null) {
     let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
         `Expected: object, Actual: ${typeof value}. ` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
-        `` +
         `The type of ${value} must be object`);
     throw error;
   }

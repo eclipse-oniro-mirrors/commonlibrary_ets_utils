@@ -89,17 +89,6 @@ class URI {
     if (typeof fragment !== 'string') {
       throw new BusinessError(`Parameter error. Param[2] type mismatch. ` +
           `Expected: string, Actual: ${typeof fragment}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${fragment} must be string`);
     }
     let uriStr: string = scheme;
