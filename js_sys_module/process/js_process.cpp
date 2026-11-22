@@ -46,6 +46,14 @@ namespace OHOS::JsSysModule::Process {
         return result;
     }
 
+    napi_value Process::GetAppUid(napi_env env) const
+    {
+        napi_value result = nullptr;
+        auto processGetAppUid = Commonlibrary::Platform::GetAppUid();
+        NAPI_CALL(env, napi_create_uint32(env, processGetAppUid, &result));
+        return result;
+    }
+
     napi_value Process::GetGid(napi_env env) const
     {
         napi_value result = nullptr;
@@ -287,8 +295,8 @@ namespace OHOS::JsSysModule::Process {
     {
         napi_value result = nullptr;
         bool flag = true;
-        auto prouid = static_cast<int32_t>(getuid());
-        auto uid = prouid % PER_USER_RANGE;
+        auto appuid = static_cast<int32_t>(Commonlibrary::Platform::GetAppUid());
+        auto uid = appuid % PER_USER_RANGE;
         if ((uid >= 99000 && uid <= 99999) || // 99999:Only isolateuid numbers between 99000 and 99999.
             (uid >= 9000 && uid <= 98999)) { // 98999:Only appuid numbers between 9000 and 98999.
             NAPI_CALL(env, napi_get_boolean(env, flag, &result));

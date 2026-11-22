@@ -46,6 +46,13 @@ namespace OHOS::JsSysModule::Process {
         napi_value GetUid(napi_env env) const;
 
         /**
+         * Get app uid(AppUid) of the process.
+         *
+         * @param env The parameter is NAPI environment variables.
+         */
+        napi_value GetAppUid(napi_env env) const;
+
+        /**
          * Get the user ID of the process.
          *
          * @param env The parameter is NAPI environment variables.

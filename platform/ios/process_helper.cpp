@@ -17,6 +17,7 @@
 
 #include <map>
 #include <sys/sysctl.h>
+#include <unistd.h>
 
 namespace Commonlibrary::Platform {
 
@@ -469,6 +470,12 @@ int GetThreadId()
     uint64_t proTid;
     pthread_threadid_np(0, &proTid);
     return proTid;
+}
+
+uint32_t GetAppUid()
+{
+    // AppUid does not exist on iOS/macOS platforms; fall back to uid.
+    return static_cast<uint32_t>(getuid());
 }
 
 int GetThreadPRY(int tid)
