@@ -362,7 +362,6 @@ void TaskManager::TryTriggerExpand()
         HILOG_WARN("taskpool:: the dispatchHandle_ is nullptr");
         return;
     }
-    uv_async_send(dispatchHandle_);
     ConcurrentHelper::UvCheckAndAsyncSend(dispatchHandle_);
 }
 
