@@ -17,6 +17,7 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/sysinfo.h>
+#include <unistd.h>
 #include <uv.h>
 
 namespace Commonlibrary::Platform {
@@ -50,6 +51,20 @@ int GetThreadId()
 {
     auto proTid = static_cast<int64_t>(gettid());
     return proTid;
+}
+
+uint32_t GetAppUid()
+{
+#if defined(CROSS_PLATFORM) || defined(ETS_UTILS_HOST_UT)
+    // AppUid does not exist on ArkUI-X cross platforms, and the host libc of
+    // the Linux host UT environment provides no getappuid; fall back to uid.
+    return static_cast<uint32_t>(getuid());
+#else
+    // AppUid never changes after process initialization; cache it to avoid
+    // the heavy getappuid() call (ioctl-based in musl) on every access.
+    static uint32_t cached = static_cast<uint32_t>(getappuid());
+    return cached;
+#endif
 }
 
 int GetThreadPRY(int tid)

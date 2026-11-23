@@ -30,6 +30,7 @@
 #include "securec.h"
 #include "js_childprocess.h"
 #include "js_process.h"
+#include "platform/process_helper.h"
 #include "tools/log.h"
 
 #define ASSERT_CHECK_CALL(call)   \
@@ -523,6 +524,66 @@ HWTEST_F(NativeEngineTest, ProcessGetUidTest001, testing::ext::TestSize.Level0)
 }
 
 /**
+ * @tc.name: ProcessGetAppUidTest001
+ * @tc.desc: Test process appuid equals the appid of the process.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessGetAppUidTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value napiAppUid = process.GetAppUid(env);
+    ASSERT_CHECK_VALUE_TYPE(env, napiAppUid, napi_number);
+    uint32_t appUid = 0;
+    ASSERT_CHECK_CALL(napi_get_value_uint32(env, napiAppUid, &appUid));
+    uint32_t appid = static_cast<uint32_t>(Commonlibrary::Platform::GetAppUid());
+    ASSERT_EQ(appUid, appid);
+    napi_value napiAppUidAgain = process.GetAppUid(env);
+    uint32_t appUidAgain = 0;
+    ASSERT_CHECK_CALL(napi_get_value_uint32(env, napiAppUidAgain, &appUidAgain));
+    ASSERT_EQ(appUidAgain, appid);
+}
+
+/**
+ * @tc.name: ProcessUidCombinedScenarioTest001
+ * @tc.desc: Test combined scenario: appuid equals uid, and isAppUid agrees
+ *           with the bundleId range check on appuid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessUidCombinedScenarioTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    napi_value napiUid = process.GetUid(env);
+    napi_value napiAppUid = process.GetAppUid(env);
+    uint32_t uid = 0;
+    uint32_t appUid = 0;
+    ASSERT_CHECK_CALL(napi_get_value_uint32(env, napiUid, &uid));
+    ASSERT_CHECK_CALL(napi_get_value_uint32(env, napiAppUid, &appUid));
+    // A UT process carries no app identity: GetAppUid falls back to getuid on
+    // the host and getappuid is a getuid stub on device, so both are equal.
+    ASSERT_EQ(uid, appUid);
+
+    napi_value appUidArg = nullptr;
+    ASSERT_CHECK_CALL(napi_create_uint32(env, appUid, &appUidArg));
+    napi_value isAppUidResult = process.IsAppUid(env, appUidArg);
+    bool isAppUidRes = false;
+    ASSERT_CHECK_CALL(napi_get_value_bool(env, isAppUidResult, &isAppUidRes));
+    // A uid belongs to an app only when it is positive and, after stripping
+    // the multi-user prefix, lies inside the bundleId range (the constants
+    // mirror js_process.cpp, which keeps them file-local). Deriving the
+    // expectation from appUid itself makes the case hold in every
+    // environment running this binary: false for a UT process (e.g. uid 0),
+    // true for a real app process (that path is covered by the xts HAP case).
+    const uint32_t perUserRange = 100000; // 100000: multi-user uid divisor, PER_USER_RANGE
+    const uint32_t firstApplicationUid = 10000; // 10000: bundleId lower limit
+    const uint32_t lastApplicationUid = 65535; // 65535: bundleId upper limit
+    uint32_t appId = appUid % perUserRange;
+    bool expected = appUid > 0 && appId >= firstApplicationUid && appId <= lastApplicationUid;
+    ASSERT_EQ(isAppUidRes, expected);
+}
+
+/**
  * @tc.name: ProcessGetGidTest001
  * @tc.desc: Test process gid.
  * @tc.type: FUNC
@@ -825,6 +886,31 @@ HWTEST_F(NativeEngineTest, ProcessIsolatedProcess001, testing::ext::TestSize.Lev
         ASSERT_TRUE(res);
     } else {
         ASSERT_FALSE(res);
+    }
+}
+
+/**
+ * @tc.name: ProcessIsAppUidDualEntryConsistencyTest001
+ * @tc.desc: test process.isAppUid and process.ProcessManager.isAppUid return
+ *           consistent results for the same input.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ProcessIsAppUidDualEntryConsistencyTest001, testing::ext::TestSize.Level0)
+{
+    napi_env env = (napi_env)engine_;
+    OHOS::JsSysModule::Process::Process process;
+    OHOS::JsSysModule::Process::ProcessManager processManager;
+    int32_t inputs[] = { 10000, 65535, 9999, 65536, 0 };
+    for (int32_t v : inputs) {
+        napi_value arg = nullptr;
+        ASSERT_CHECK_CALL(napi_create_int32(env, v, &arg));
+        napi_value resultA = process.IsAppUid(env, arg);
+        napi_value resultB = processManager.IsAppUid(env, arg);
+        bool resA = false;
+        bool resB = false;
+        ASSERT_CHECK_CALL(napi_get_value_bool(env, resultA, &resA));
+        ASSERT_CHECK_CALL(napi_get_value_bool(env, resultB, &resB));
+        ASSERT_EQ(resA, resB);
     }
 }
 

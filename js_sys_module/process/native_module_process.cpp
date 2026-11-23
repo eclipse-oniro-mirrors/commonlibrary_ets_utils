@@ -267,6 +267,12 @@ namespace OHOS::JsSysModule::Process {
         return object.GetUid(env);
     }
 
+    static napi_value GetAppUid(napi_env env, [[maybe_unused]] napi_callback_info info)
+    {
+        Process object;
+        return object.GetAppUid(env);
+    }
+
     static napi_value GetGid(napi_env env, [[maybe_unused]] napi_callback_info info)
     {
         Process object;
@@ -689,6 +695,7 @@ namespace OHOS::JsSysModule::Process {
         napi_property_descriptor desc[] = {
             DECLARE_NAPI_FUNCTION("runCmd", RunCommand),
             DECLARE_NAPI_GETTER("uid", GetUid),
+            DECLARE_NAPI_GETTER("appuid", GetAppUid),
             DECLARE_NAPI_GETTER("gid", GetGid),
             DECLARE_NAPI_GETTER("euid", GetEUid),
             DECLARE_NAPI_GETTER("egid", GetEGid),

@@ -29,5 +29,6 @@ double GetSysTimer();
 int GetThreadId();
 int GetThreadPRY(int tid);
 double GetProcessStartRealtime();
+uint32_t GetAppUid();
 } // namespace Commonlibrary::Platform
 #endif // PLATFORM_PROCESS_HELPER_H
