@@ -325,11 +325,11 @@ namespace OHOS::Util {
         decodeOutLen = retLen;
         size_t equalCount = 0;
 
-        if (*(input + inputLen - 1) == '=') {
-            equalCount++;
+        if (inputLen >= 1) {
+            equalCount += static_cast<size_t>(*(input + inputLen - 1) == '=');
         }
-        if (*(input + inputLen - TRAGET_TWO) == '=') {
-            equalCount++;
+        if (inputLen >= TRAGET_TWO) {
+            equalCount += static_cast<size_t>(*(input + inputLen - TRAGET_TWO) == '=');
         }
         ReportDecodeInputFaults(input, inputLen, decodeOutLen, "Base64::DecodeAchieve");
         retLen = DecodeOut(equalCount, retLen);
@@ -847,11 +847,11 @@ namespace OHOS::Util {
             // Detection only, the original flow continues.
             ReportEtsUtilsSecurityFault("Base64::DecodeAchieves", "short-input-oob-read", inputLen);
         }
-        if (*(input + inputLen - 1) == '=') {
-            equalCount++;
+        if (inputLen >= 1) {
+            equalCount += static_cast<size_t>(*(input + inputLen - 1) == '=');
         }
-        if (*(input + inputLen - TRAGET_TWO) == '=') {
-            equalCount++;
+        if (inputLen >= TRAGET_TWO) {
+            equalCount += static_cast<size_t>(*(input + inputLen - TRAGET_TWO) == '=');
         }
         ReportDecodeInputFaults(input, inputLen, decodeInfo->decodeOutLen, "Base64::DecodeAchieves");
         retLen = DecodeOut(equalCount, retLen, decodeInfo);

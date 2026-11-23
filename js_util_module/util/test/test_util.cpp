@@ -2694,6 +2694,372 @@ HWTEST_F(NativeEngineTest, decodeTest007_hispeedOff, testing::ext::TestSize.Leve
 #endif
 }
 
+/**
+ * @tc.name: decodeTest008
+ * @tc.desc: DecodeSync with legal short inputs: a single-char input skips the second
+ *           padding probe and keeps returning undefined, a padded input keeps
+ *           returning the deterministic result.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest008, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeTest008 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+    // Degenerate single-char input: both the old and the new code return undefined;
+    // the new code reaches this without the out-of-bounds probe read of input[-1].
+    std::string input = "A";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    // Padded legal input keeps the deterministic result.
+    std::string input1 = "QQ==";
+    napi_value src1 = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &src1);
+    napi_value result1 = base64.DecodeSync(env, src1, OHOS::Util::Type::BASIC);
+    ASSERT_NE(result1, nullptr);
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void* srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+    napi_get_typedarray_info(env, result1, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+    char* res = (char*)srcData;
+    ASSERT_EQ(srcLength, 1);
+    ASSERT_EQ(res[0], 65);
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: decodeTest009
+ * @tc.desc: DecodeSync with degenerate inputs whose padding probes hit the '='
+ *           inside the input keeps returning undefined without a pending error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest009, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeTest009 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+    // 1-byte '=' input: the second padding probe is skipped (inputLen < TRAGET_TWO),
+    // the output length wraps around, the arraybuffer allocation fails and
+    // DecodeSync returns undefined without a pending exception.
+    std::string input = "=";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    // 2-byte "==" input: both probes hit the padding inside the input.
+    std::string input1 = "==";
+    napi_value src1 = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &src1);
+    napi_value result1 = base64.DecodeSync(env, src1, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result1, nullptr);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    // 3-byte "A==" input: both probes hit the padding inside the input.
+    std::string input2 = "A==";
+    napi_value src2 = nullptr;
+    napi_create_string_utf8(env, input2.c_str(), input2.size(), &src2);
+    napi_value result2 = base64.DecodeSync(env, src2, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result2, nullptr);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: decodeTest010
+ * @tc.desc: DecodeSync with degenerate inputs whose padding probes hit only one '='
+ *           inside the input keeps returning undefined without a pending error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest010, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeTest010 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+    // "A=" input: only the first probe (the trailing '=') hits the padding.
+    std::string input = "A=";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    // "AB=" input: only the first probe (the trailing '=') hits the padding.
+    std::string input1 = "AB=";
+    napi_value src1 = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &src1);
+    napi_value result1 = base64.DecodeSync(env, src1, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result1, nullptr);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+
+    // "=A" input: only the second probe (the byte before the last) hits the padding.
+    std::string input2 = "=A";
+    napi_value src2 = nullptr;
+    napi_create_string_utf8(env, input2.c_str(), input2.size(), &src2);
+    napi_value result2 = base64.DecodeSync(env, src2, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result2, nullptr);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_EQ(exception, nullptr);
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: decodeTest011
+ * @tc.desc: DecodeSync keeps the pre-fix error and wrap-around observables: error -1
+ *           for an illegal character, one 'A' byte for the URL_SAFE "QQ=" wrap-around.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest011, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeTest011 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+    // "!=": the inner scan rejects the '!' with error -1 (pre-fix semantics; the
+    // trailing '=' wraps the output length but the illegal char aborts first).
+    std::string input = "!=";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_EQ(result, nullptr);
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_NE(exception, nullptr);
+
+    // URL_SAFE "QQ=": decodeOutLen wraps 0 - 1 + 2 = 1 and the input resolves one
+    // 'A' byte (the pre-fix wrap-around garbage output, pinned as a regression guard).
+    std::string input1 = "QQ=";
+    napi_value src1 = nullptr;
+    napi_create_string_utf8(env, input1.c_str(), input1.size(), &src1);
+    napi_value result1 = base64.DecodeSync(env, src1, OHOS::Util::Type::BASIC_URL_SAFE);
+    ASSERT_NE(result1, nullptr);
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void* srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+    napi_get_typedarray_info(env, result1, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+    char* res = (char*)srcData;
+    ASSERT_EQ(srcLength, 1);
+    ASSERT_EQ(res[0], 65);
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: decodeTest012
+ * @tc.desc: DecodeAchieves with legal short inputs keeps returning the deterministic
+ *           results: empty for degenerate/empty inputs, one 'A' for "QQ==".
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest012, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeTest012 start");
+    napi_env env = (napi_env)engine_;
+    // Single-char legal input decodes to an empty result.
+    char singleInput[] = "A";
+    OHOS::Util::DecodeInfo singleInfo = {};
+    singleInfo.sinputDecode = singleInput;
+    singleInfo.slength = 1;
+    singleInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *singleResult = OHOS::Util::DecodeAchieves(env, &singleInfo);
+    ASSERT_NE(singleResult, nullptr);
+    ASSERT_EQ(singleInfo.decodeOutLen, 0);
+    delete[] singleResult;
+
+    // Padded legal input decodes one 'A'.
+    char paddedInput[] = "QQ==";
+    OHOS::Util::DecodeInfo paddedInfo = {};
+    paddedInfo.sinputDecode = paddedInput;
+    paddedInfo.slength = 4;
+    paddedInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *paddedResult = OHOS::Util::DecodeAchieves(env, &paddedInfo);
+    ASSERT_NE(paddedResult, nullptr);
+    ASSERT_EQ(paddedResult[0], 65);
+    delete[] paddedResult;
+
+    // Empty input decodes an empty result.
+    char emptyInput[] = "QQ";
+    OHOS::Util::DecodeInfo emptyInfo = {};
+    emptyInfo.sinputDecode = emptyInput;
+    emptyInfo.slength = 0;
+    emptyInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *emptyResult = OHOS::Util::DecodeAchieves(env, &emptyInfo);
+    ASSERT_NE(emptyResult, nullptr);
+    delete[] emptyResult;
+
+    // URL_SAFE alphabet hit (the async Finds early-returns from the BASEURL table).
+    char urlInput[] = "QQ==";
+    OHOS::Util::DecodeInfo urlInfo = {};
+    urlInfo.sinputDecode = urlInput;
+    urlInfo.slength = 4;
+    urlInfo.valueType = OHOS::Util::Type::BASIC_URL_SAFE;
+    unsigned char *urlResult = OHOS::Util::DecodeAchieves(env, &urlInfo);
+    ASSERT_NE(urlResult, nullptr);
+    ASSERT_EQ(urlResult[0], 65);
+    delete[] urlResult;
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: decodeTest013
+ * @tc.desc: DecodeAchieves with degenerate BASIC inputs keeps the pre-fix observables:
+ *           a non-null result and the wrap-around decodeOutLen instead of a nullptr
+ *           rejection.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest013, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeTest013 start");
+    napi_env env = (napi_env)engine_;
+    // 1-byte '=' input: decodeOutLen wraps 0 - 1 = SIZE_MAX.
+    char paddingInput[] = "=";
+    OHOS::Util::DecodeInfo paddingInfo = {};
+    paddingInfo.sinputDecode = paddingInput;
+    paddingInfo.slength = 1;
+    paddingInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *paddingResult = OHOS::Util::DecodeAchieves(env, &paddingInfo);
+    ASSERT_NE(paddingResult, nullptr);
+    ASSERT_EQ(paddingInfo.decodeOutLen, static_cast<size_t>(-1));
+    delete[] paddingResult;
+
+    // 2-byte "A=" input: decodeOutLen wraps 0 - 1 = SIZE_MAX.
+    char paddedShortInput[] = "A=";
+    OHOS::Util::DecodeInfo paddedShortInfo = {};
+    paddedShortInfo.sinputDecode = paddedShortInput;
+    paddedShortInfo.slength = 2;
+    paddedShortInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *paddedShortResult = OHOS::Util::DecodeAchieves(env, &paddedShortInfo);
+    ASSERT_NE(paddedShortResult, nullptr);
+    ASSERT_EQ(paddedShortInfo.decodeOutLen, static_cast<size_t>(-1));
+    delete[] paddedShortResult;
+
+    // 2-byte "==" input: decodeOutLen wraps 0 - 2 = SIZE_MAX - 1.
+    char doublePaddingInput[] = "==";
+    OHOS::Util::DecodeInfo doublePaddingInfo = {};
+    doublePaddingInfo.sinputDecode = doublePaddingInput;
+    doublePaddingInfo.slength = 2;
+    doublePaddingInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *doublePaddingResult = OHOS::Util::DecodeAchieves(env, &doublePaddingInfo);
+    ASSERT_NE(doublePaddingResult, nullptr);
+    ASSERT_EQ(doublePaddingInfo.decodeOutLen, static_cast<size_t>(-2));
+    delete[] doublePaddingResult;
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: decodeTest014
+ * @tc.desc: DecodeAchieves with an illegal-char input and a URL_SAFE wrap-around input
+ *           keeps the pre-fix observables: the illegal character decodes as 0, the
+ *           URL remainder corrects the wrapped decodeOutLen to 1.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest014, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeTest014 start");
+    napi_env env = (napi_env)engine_;
+    // "A!": '!' decodes as 0 (the pre-fix Finds miss value), one 0x00 byte.
+    char illegalInput[] = "A!";
+    OHOS::Util::DecodeInfo illegalInfo = {};
+    illegalInfo.sinputDecode = illegalInput;
+    illegalInfo.slength = 2;
+    illegalInfo.valueType = OHOS::Util::Type::BASIC;
+    unsigned char *illegalResult = OHOS::Util::DecodeAchieves(env, &illegalInfo);
+    ASSERT_NE(illegalResult, nullptr);
+    ASSERT_EQ(illegalInfo.decodeOutLen, 0);
+    ASSERT_EQ(illegalResult[0], 0);
+    delete[] illegalResult;
+
+    // URL_SAFE "AA=": decodeOutLen wraps 0 - 1 + 2 = 1, one 0x00 byte.
+    char urlInput[] = "AA=";
+    OHOS::Util::DecodeInfo urlInfo = {};
+    urlInfo.sinputDecode = urlInput;
+    urlInfo.slength = 3;
+    urlInfo.valueType = OHOS::Util::Type::BASIC_URL_SAFE;
+    unsigned char *urlResult = OHOS::Util::DecodeAchieves(env, &urlInfo);
+    ASSERT_NE(urlResult, nullptr);
+    ASSERT_EQ(urlInfo.decodeOutLen, 1);
+    ASSERT_EQ(urlResult[0], 0);
+    delete[] urlResult;
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
+/**
+ * @tc.name: decodeTest015
+ * @tc.desc: The full async chain with an illegal-char short input keeps creating a
+ *           promise; the engine settles it with the pre-fix resolve/reject routing.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, decodeTest015, testing::ext::TestSize.Level0)
+{
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64UnloadHispeedPlugin();
+#endif
+    HILOG_INFO("decodeTest015 start");
+    napi_env env = (napi_env)engine_;
+    OHOS::Util::Base64 base64;
+    std::string input = "A!";
+    napi_value src = nullptr;
+    napi_create_string_utf8(env, input.c_str(), input.size(), &src);
+    napi_value result = base64.Decode(env, src, OHOS::Util::Type::BASIC);
+    ASSERT_NE(result, nullptr);
+    bool res = false;
+    napi_is_promise(env, result, &res);
+    ASSERT_TRUE(res);
+#if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
+    Base64LoadHispeedPlugin();
+#endif
+}
+
 /* @tc.name: encodeAsyncTest001
  * @tc.desc: Asynchronously encodes all bytes in the specified u8 array
              into the newly allocated u8 array using the Base64 encoding scheme.
@@ -10474,8 +10840,8 @@ static std::string NapiStringToString(napi_env env, napi_value value)
 
 /**
  * @tc.name: decodeSyncShortInputFaultTest001
- * @tc.desc: DecodeSync with a 1-byte Uint8Array input triggers the short-input-oob-read
- *           security fault detection and keeps the original failing behavior.
+ * @tc.desc: DecodeSync with a 1-byte Uint8Array input skips the second padding probe
+ *           (inputLen < TRAGET_TWO) and keeps the original failing behavior.
  * @tc.type: FUNC
  */
 HWTEST_F(NativeEngineTest, decodeSyncShortInputFaultTest001, testing::ext::TestSize.Level0)
@@ -10491,14 +10857,15 @@ HWTEST_F(NativeEngineTest, decodeSyncShortInputFaultTest001, testing::ext::TestS
     size_t arrayBufferSize = 8; // 8 : backing store bigger than the typed array
     napi_create_arraybuffer(env, arrayBufferSize, &data, &arrayBuffer);
     ASSERT_NE(data, nullptr);
-    // Fill the backing store so the byte right before the 1-byte typed array, which the
-    // padding probe reads out of range, is a deterministic non-'=' character.
+    // Fill the backing store deterministically; the fixed code never reads the byte
+    // right before the 1-byte typed array.
     ASSERT_EQ(memset_s(data, arrayBufferSize, 'z', arrayBufferSize), EOK);
     static_cast<uint8_t *>(data)[4] = 'c'; // 4 : byte offset of the 1-byte typed array
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, 1, arrayBuffer, 4, &src);
     napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
-    // Detection only: the original flow continues and fails on the degenerate input.
+    // The second padding probe is skipped; the original flow continues and fails on
+    // the degenerate input.
     ASSERT_EQ(result, nullptr);
 #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
@@ -10507,8 +10874,8 @@ HWTEST_F(NativeEngineTest, decodeSyncShortInputFaultTest001, testing::ext::TestS
 
 /**
  * @tc.name: decodeSyncPaddingFaultTest001
- * @tc.desc: DecodeSync with a 1-byte '=' Uint8Array input triggers the short-input-oob-read
- *           and invalid-padding-underflow security fault detections.
+ * @tc.desc: DecodeSync with a 1-byte '=' Uint8Array input skips the second padding
+ *           probe (inputLen < TRAGET_TWO) and keeps the original failing behavior.
  * @tc.type: FUNC
  */
 HWTEST_F(NativeEngineTest, decodeSyncPaddingFaultTest001, testing::ext::TestSize.Level0)
@@ -10529,8 +10896,9 @@ HWTEST_F(NativeEngineTest, decodeSyncPaddingFaultTest001, testing::ext::TestSize
     napi_value src = nullptr;
     napi_create_typedarray(env, napi_uint8_array, 1, arrayBuffer, 4, &src);
     napi_value result = base64.DecodeSync(env, src, OHOS::Util::Type::BASIC);
-    // Detection only: the padding count underflows the output length and the original
-    // flow continues, failing on the degenerate input.
+    // The second padding probe is skipped and the padding stays 1; the output length
+    // wraps around and the original flow fails on the degenerate input without a
+    // pending exception (pre-fix behavior, no out-of-bounds read).
     ASSERT_EQ(result, nullptr);
 #if (defined(__aarch64__) || defined(_M_ARM64)) && defined(ENABLE_BASE64_OPT)
     Base64LoadHispeedPlugin();
@@ -10540,8 +10908,8 @@ HWTEST_F(NativeEngineTest, decodeSyncPaddingFaultTest001, testing::ext::TestSize
 /**
  * @tc.name: decodeAchievesFaultTest001
  * @tc.desc: DecodeAchieves with an empty input, a 1-byte input and a 2-byte "==" input
- *           triggers the null-or-empty-input / short-input-oob-read /
- *           invalid-padding-underflow security fault detections.
+ *           skips the padding probes below their length thresholds and keeps the
+ *           original (non-rejecting) behavior.
  * @tc.type: FUNC
  */
 HWTEST_F(NativeEngineTest, decodeAchievesFaultTest001, testing::ext::TestSize.Level0)
@@ -10552,8 +10920,7 @@ HWTEST_F(NativeEngineTest, decodeAchievesFaultTest001, testing::ext::TestSize.Le
     HILOG_INFO("decodeAchievesFaultTest001 start");
     napi_env env = (napi_env)engine_;
 
-    // Empty input: reported, the padding probes read the two bytes before the input
-    // pointer (both inside the backing buffer), the original flow continues.
+    // Empty input: both padding probes are skipped, the original flow continues.
     char emptyBacking[] = "ABcD";
     OHOS::Util::DecodeInfo emptyInfo = {};
     emptyInfo.sinputDecode = emptyBacking + 2; // 2 : point into the middle of the backing buffer
@@ -10564,7 +10931,8 @@ HWTEST_F(NativeEngineTest, decodeAchievesFaultTest001, testing::ext::TestSize.Le
     ASSERT_EQ(emptyInfo.decodeOutLen, 0);
     delete[] emptyResult;
 
-    // 1-byte input: reported (short-input-oob-read), the original flow continues.
+    // 1-byte input: the second padding probe is skipped (inputLen < TRAGET_TWO), the
+    // original flow continues.
     char shortBacking[] = "ABcD";
     OHOS::Util::DecodeInfo shortInfo = {};
     shortInfo.sinputDecode = shortBacking + 2;
@@ -10575,7 +10943,8 @@ HWTEST_F(NativeEngineTest, decodeAchievesFaultTest001, testing::ext::TestSize.Le
     ASSERT_EQ(shortInfo.decodeOutLen, 0);
     delete[] shortResult;
 
-    // 2-byte "==" input: reported (invalid-padding-underflow), the original flow continues.
+    // 2-byte "==" input: both probes hit the padding inside the input, the output
+    // length wraps around and the decode still succeeds (pre-fix behavior).
     char paddingBacking[] = "xy==";
     OHOS::Util::DecodeInfo paddingInfo = {};
     paddingInfo.sinputDecode = paddingBacking + 2;
