@@ -19,6 +19,10 @@ import("//commonlibrary/ets_utils/ets_utils_config.gni")
 # compile .ts to .js.
 action("build_ts_js") {
   script = "${ets_util_path}/js_api_module/build_ts_js.py"
+  inputs = [
+    "src/js_buffer.ts",
+    "tsconfig.json",
+  ]
 
   outFile_Path = target_out_dir + "/" + current_cpu
   args = [

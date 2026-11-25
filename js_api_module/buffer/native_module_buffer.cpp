@@ -20,6 +20,7 @@
 
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_blob.h"
 #include "commonlibrary/ets_utils/js_api_module/buffer/js_buffer.h"
+#include "tools/ets_error.h"
 #include "tools/security_fault_reporter.h"
 
 using namespace std;
@@ -30,6 +31,8 @@ extern const char _binary_buffer_abc_start[];
 extern const char _binary_buffer_abc_end[];
 
 namespace OHOS::buffer {
+
+static constexpr int32_t BUFFER_RANGE_ERROR = 10200001;
 
 // Type tags for secure wrapping
 static const napi_type_tag bufferTypeTag = {
@@ -337,6 +340,15 @@ static Buffer* DealParaTypeBuffer(napi_env env, size_t argc, napi_value* argv, u
             napi_get_value_uint32(env, argv[3], &length) != napi_ok) { // 3 : the forth argument
             return nullptr;
         }
+        const uint32_t sourceOffset = valueBuffer->GetByteOffset();
+        const uint32_t sourceLength = valueBuffer->GetLength();
+        // The constructor takes an absolute offset into the backing storage.
+        if (poolOffset < sourceOffset || poolOffset - sourceOffset > sourceLength ||
+            length > sourceLength - (poolOffset - sourceOffset)) {
+            OHOS::Tools::ErrorHelper::ThrowError(env, BUFFER_RANGE_ERROR,
+                "The requested view is outside the bounds of the Buffer.");
+            return nullptr;
+        }
         buffer->Init(valueBuffer, poolOffset, length);
     } else {
         return nullptr;
@@ -366,9 +378,11 @@ static bool InitAnyArrayBuffer(napi_env env, napi_value* argv, Buffer *&buffer)
             return false;
         }
         if (byteOffset > bufferSize || length > bufferSize - byteOffset) {
-            // The view below exceeds the array buffer. Detection only, the original
-            // flow continues.
             ReportEtsUtilsSecurityFault("InitAnyArrayBuffer", "out-of-range", byteOffset, length);
+            OHOS::Tools::ErrorHelper::ThrowError(env, BUFFER_RANGE_ERROR,
+                "The requested view is outside the bounds of the SharedArrayBuffer.");
+            freeBufferMemory(buffer);
+            return false;
         }
         buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
         return true;
@@ -378,9 +392,11 @@ static bool InitAnyArrayBuffer(napi_env env, napi_value* argv, Buffer *&buffer)
         return false;
     }
     if (byteOffset > bufferSize || length > bufferSize - byteOffset) {
-        // The view below exceeds the array buffer. Detection only, the original flow
-        // continues.
         ReportEtsUtilsSecurityFault("InitAnyArrayBuffer", "out-of-range", byteOffset, length);
+        OHOS::Tools::ErrorHelper::ThrowError(env, BUFFER_RANGE_ERROR,
+            "The requested view is outside the bounds of the ArrayBuffer.");
+        freeBufferMemory(buffer);
+        return false;
     }
     buffer->Init(reinterpret_cast<uint8_t*>(data), byteOffset, length);
     return true;

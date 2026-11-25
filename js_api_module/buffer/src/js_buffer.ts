@@ -235,6 +235,7 @@ interface NativeBuffer {
   compare(target: NativeBuffer, targetStart: number, sourceStart: number, length: number): number;
   toUtf8(start: number, end: number): string;
   toBase64(start: number, end: number): string;
+  toBase64Url(start: number, end: number): string;
   indexOf(value: string, byteOffset: number, encoding: string, isReverse: boolean): number;
 }
 interface NativeBlob {
@@ -253,8 +254,37 @@ interface IBuffer {
 
 declare function requireInternal(s: string): IBuffer;
 const internalBuffer = requireInternal('buffer');
-const bufferSymbol = Symbol('bufferClass');
-const lengthSymbol = Symbol('bufferLength');
+// Keep native state off the instance so user proxies cannot observe or replace it.
+interface BufferState {
+  native: NativeBuffer;
+  length: number;
+  owner?: Buffer;
+}
+
+const bufferStates = new WeakMap<Buffer, BufferState>();
+const resolvingBuffers = new WeakSet<Buffer>();
+
+function getBufferState(buffer: Buffer): BufferState {
+  let state = bufferStates.get(buffer);
+  if (state === undefined && !resolvingBuffers.has(buffer)) {
+    // Use a public operation to register forwarding proxies without probing private keys.
+    resolvingBuffers.add(buffer);
+    try {
+      const valueOf = buffer.valueOf;
+      if (typeof valueOf === 'function') {
+        Reflect.apply(valueOf, buffer, []);
+      }
+      state = bufferStates.get(buffer);
+    } finally {
+      resolvingBuffers.delete(buffer);
+    }
+  }
+  if (state === undefined) {
+    throw new BusinessError('Parameter error. Receiver type mismatch. Expected: initialized Buffer, ' +
+      `Actual: ${buffer === null ? 'null' : typeof buffer}`, ERROR_CODES.TYPE_ERROR);
+  }
+  return state;
+}
 const bufferEncoding = ['ascii', 'utf8', 'utf-8', 'utf16le', 'utf-16le', 'ucs2', 'ucs-2',
   'base64', 'base64url', 'latin1', 'binary', 'hex'];
 
@@ -313,7 +343,7 @@ const _log = console.log;
 console.log = function (...args) : void {
   if (args.length === 1 && args[0] instanceof Buffer) {
     let buf: Buffer = args[0];
-    let bufArr: Array<number> = buf[bufferSymbol].getBufferData();
+    let bufArr: Array<number> = getBufferState(buf).native.getBufferData();
     let getStr = function (bufArr: Array<number>, len: number): string {
       let str: string = '';
       for (let i = 0; i < len; i++) {
@@ -460,12 +490,33 @@ enum Style {
 };
 
 class HandlerBuffer {
+  private registerReceiver?: () => Object;
+
+  private getValueOf(obj: Buffer): () => Object {
+    if (this.registerReceiver !== undefined) {
+      return this.registerReceiver;
+    }
+    const state = getBufferState(obj);
+    this.registerReceiver = function valueOf(this: Buffer): Object {
+      const receiver = Object.prototype.valueOf.call(this);
+      // Only register during lookup; borrowed calls must not rebind other Buffers.
+      if (receiver instanceof Buffer && resolvingBuffers.has(receiver) && !bufferStates.has(receiver)) {
+        bufferStates.set(receiver, state);
+      }
+      return receiver;
+    };
+    return this.registerReceiver;
+  }
+
   get(obj: Buffer, prop: string): number | undefined {
+    if (prop === 'valueOf' && obj[prop] === Object.prototype.valueOf) {
+      return this.getValueOf(obj) as unknown as number;
+    }
     if (typeof prop === 'number') {
       if (prop >= obj.length) {
         return obj[prop];
       }
-      return obj[bufferSymbol].get(prop);
+      return getBufferState(obj).native.get(prop);
     }
     return obj[prop];
   }
@@ -475,14 +526,11 @@ class HandlerBuffer {
         return false;
       }
       value = utils.getLowerEight(value);
-      obj[bufferSymbol].set(prop, value);
+      getBufferState(obj).native.set(prop, value);
       return true;
     }
 
-    if (prop === lengthSymbol || prop === bufferSymbol) {
-      obj[prop] = value;
-      return true;
-    } else if (prop === 'length' || prop === 'buffer' || prop === 'byteOffset') {
+    if (prop === 'length' || prop === 'buffer' || prop === 'byteOffset') {
       throw typeErrorForProperty(prop);
     }
     return false;
@@ -499,47 +547,62 @@ class Buffer {
   private _arrayBuffer: ArrayBuffer | SharedArrayBuffer | undefined;
 
   public get length(): number {
-    return this[lengthSymbol];
+    return getBufferState(this).length;
   }
 
   public get byteOffset(): number {
-    return this[bufferSymbol].getByteOffset();
+    return getBufferState(this).native.getByteOffset();
   }
 
   public get buffer(): ArrayBufferLike {
     if (this._arrayBuffer) {
       return this._arrayBuffer;
     }
-    let arr = this[bufferSymbol].getArrayBuffer();
+    let arr = getBufferState(this).native.getArrayBuffer();
     return arr;
   }
 
   constructor(value: number | Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | Array<number> | string,
     byteOffsetOrEncoding?: number | string, length?: number) {
-    if (arguments.length === 1) {
+    let native!: NativeBuffer;
+    let owner: Buffer | undefined;
+    if (value instanceof Buffer && arguments.length === threeBytes &&
+        typeof byteOffsetOrEncoding === 'number' && typeof length === 'number') {
+      const source = getBufferState(value);
+      const sourceOffset = source.native.getByteOffset();
+      const sourceEnd = sourceOffset + source.native.getLength();
+      const byteOffset = byteOffsetOrEncoding || 0;
+      const viewLength = length || 0;
+      rangeErrorCheck(byteOffset, 'byteOffset', sourceOffset, sourceEnd);
+      rangeErrorCheck(viewLength, 'length', 0, sourceEnd - byteOffset);
+      rangeErrorCheck(byteOffset, 'byteOffset', 0, MAX_LENGTH - 1);
+      native = new internalBuffer.Buffer(ParaType.BUFFER, source.native,
+        Math.trunc(byteOffset), Math.trunc(viewLength));
+      owner = source.owner ?? value;
+    } else if (value instanceof Buffer && arguments.length === 1) {
+      native = new internalBuffer.Buffer(ParaType.BUFFER, getBufferState(value).native);
+    } else if (value instanceof ArrayBuffer || value instanceof SharedArrayBuffer) {
+      const view = createArrayBufferView(value, byteOffsetOrEncoding, length);
+      native = new internalBuffer.Buffer(ParaType.ARRAYBUFFER, value, view.byteOffset, view.byteLength);
+      this._arrayBuffer = value;
+    } else if (arguments.length === 1) {
       if (typeof value === 'number') {
-        this[bufferSymbol] = new internalBuffer.Buffer(ParaType.NUMBER, value);
-      } else if (value instanceof Buffer) {
-        this[bufferSymbol] = new internalBuffer.Buffer(ParaType.BUFFER, value[bufferSymbol]);
+        native = new internalBuffer.Buffer(ParaType.NUMBER, value);
       } else if (value instanceof Uint8Array) {
-        this[bufferSymbol] = new internalBuffer.Buffer(ParaType.UINT8ARRAY, value);
+        native = new internalBuffer.Buffer(ParaType.UINT8ARRAY, value);
       } else if (value instanceof Array) {
-        this[bufferSymbol] = new internalBuffer.Buffer(ParaType.NUMBERS, value);
-      }
-    } else if (arguments.length === 3 && typeof byteOffsetOrEncoding === 'number' && typeof length === 'number') {
-      if (value instanceof ArrayBuffer || value instanceof SharedArrayBuffer) {
-        this[bufferSymbol] = new internalBuffer.Buffer(ParaType.ARRAYBUFFER, value, byteOffsetOrEncoding, length);
-        this._arrayBuffer = value;
-      } else if (value instanceof Buffer) {
-        this[bufferSymbol] = new internalBuffer.Buffer(ParaType.BUFFER, value[bufferSymbol], byteOffsetOrEncoding, length);
+        native = new internalBuffer.Buffer(ParaType.NUMBERS, value);
       }
     } else if (arguments.length === twoBytes && typeof value === 'string' && typeof byteOffsetOrEncoding === 'string') {
-      this[bufferSymbol] = new internalBuffer.Buffer(ParaType.STRING, value, byteOffsetOrEncoding);
+      native = new internalBuffer.Buffer(ParaType.STRING, value, byteOffsetOrEncoding);
     } else {
-      this[bufferSymbol] = new internalBuffer.Buffer(ParaType.NUMBER, 0);
+      native = new internalBuffer.Buffer(ParaType.NUMBER, 0);
     }
-    this[lengthSymbol] = this[bufferSymbol].getLength();
-    return new Proxy(this, new HandlerBuffer());
+    const state: BufferState = { native, length: native.getLength(), owner };
+    const proxy = new Proxy(this, new HandlerBuffer());
+    bufferStates.set(this, state);
+    bufferStates.set(proxy, state);
+    return proxy;
   }
 
   fillInner(value: string | Buffer | Uint8Array | number, offset: number = 0, end: number = this.length,
@@ -555,22 +618,22 @@ class Buffer {
     if (typeof value === 'string') {
       if (normalizedEncoding === 'hex') {
         let numbers = hexStrtoNumbers(value);
-        this[bufferSymbol].fillNumbers(numbers, offset, end);
+        getBufferState(this).native.fillNumbers(numbers, offset, end);
       } else {
-        this[bufferSymbol].fillString(value, offset, end, normalizedEncoding);
+        getBufferState(this).native.fillString(value, offset, end, normalizedEncoding);
       }
     }
     if (typeof value === 'number') {
       let nums: Array<number> = [];
       nums.push(value & 0xFF); // 0xFF : get lower 8-bits
-      this[bufferSymbol].fillNumbers(nums, offset, end);
+      getBufferState(this).native.fillNumbers(nums, offset, end);
     }
     if (value instanceof Buffer) {
-      this[bufferSymbol].fillBuffer(value[bufferSymbol], offset, end);
+      getBufferState(this).native.fillBuffer(getBufferState(value).native, offset, end);
     }
     if (value instanceof Uint8Array) {
       let nums = Array.from(value);
-      this[bufferSymbol].fillNumbers(nums, offset, end);
+      getBufferState(this).native.fillNumbers(nums, offset, end);
     }
     return this;
   }
@@ -633,15 +696,15 @@ class Buffer {
       encoding = 'utf8';
     }
     if (arguments.length === 1) {
-      return this[bufferSymbol].writeString(str, 0, length, 'utf8');
+      return getBufferState(this).native.writeString(str, 0, length, 'utf8');
     } else if (arguments.length === twoBytes) {
       if (typeof offset === 'string') {
         encoding = offset;
         let encode = encodingTypeErrorCheck(encoding, 1);
-        return this[bufferSymbol].writeString(str, 0, this.length, encode);
+        return getBufferState(this).native.writeString(str, 0, this.length, encode);
       } else if (typeof offset === 'number') {
         rangeErrorCheck(offset, 'offset', 0, this.length - 1);
-        return this[bufferSymbol].writeString(str, offset, length, 'utf8');
+        return getBufferState(this).native.writeString(str, offset, length, 'utf8');
       } else {
         throw typeError(offset, 'offset', ['number'], 1);
       }
@@ -651,12 +714,12 @@ class Buffer {
       if (typeof length === 'number') {
         rangeErrorCheck(length, 'length', 0, this.length);
         length = (length > this.length - offset) ? (this.length - offset) : length;
-        return this[bufferSymbol].writeString(str, offset, length, 'utf8');
+        return getBufferState(this).native.writeString(str, offset, length, 'utf8');
       } else if (typeof length === 'string') {
         encoding = length;
         length = this.length - offset;
         let encode = encodingTypeErrorCheck(encoding, 2);
-        return this[bufferSymbol].writeString(str, offset, length, encode);
+        return getBufferState(this).native.writeString(str, offset, length, encode);
       } else {
         throw typeError(length, 'length', ['number'], 2);
       }
@@ -669,7 +732,7 @@ class Buffer {
         rangeErrorCheck(offset, 'offset', 0, this.length - 1);
         let encode = encodingTypeErrorCheck(encoding, 3);
         length = (length > this.length - offset) ? (this.length - offset) : length;
-        return this[bufferSymbol].writeString(str, offset, length, encode);
+        return getBufferState(this).native.writeString(str, offset, length, encode);
       }
     }
   }
@@ -1308,7 +1371,7 @@ class Buffer {
     rangeErrorCheck(value, 'value', - (Math.pow(twoBytes, 31)), (Math.pow(twoBytes, 31) - 1));
 
     value = +value;
-    this[bufferSymbol].writeInt32BE(value, offset);
+    getBufferState(this).native.writeInt32BE(value, offset);
     return offset + fourBytes;
   }
 
@@ -1322,7 +1385,7 @@ class Buffer {
     }
     typeErrorCheck(offset, ['number'], 'offset', 0);
     this.checkOffsetRange(offset, fourBytes);
-    return this[bufferSymbol].readInt32BE(offset);
+    return getBufferState(this).native.readInt32BE(offset);
   }
 
   writeInt32LE(value: number, offset: number = 0): number {
@@ -1336,7 +1399,7 @@ class Buffer {
     rangeErrorCheck(value, 'value', - (Math.pow(twoBytes, 31)), (Math.pow(twoBytes, 31) - 1));
 
     value = +value;
-    this[bufferSymbol].writeInt32LE(value, offset);
+    getBufferState(this).native.writeInt32LE(value, offset);
     return offset + fourBytes;
   }
 
@@ -1346,7 +1409,7 @@ class Buffer {
     }
     typeErrorCheck(offset, ['number'], 'offset', 0);
     this.checkOffsetRange(offset, fourBytes);
-    return this[bufferSymbol].readInt32LE(offset);
+    return getBufferState(this).native.readInt32LE(offset);
   }
 
   writeUInt32BE(value: number, offset: number = 0): number {
@@ -1359,7 +1422,7 @@ class Buffer {
     // 2 : 32 : The range of 32-bit UInt value is from zero to the 32st power of 2 minus 1
     rangeErrorCheck(value, 'value', 0, (MAX_LENGTH - 1));
     value = +value;
-    this[bufferSymbol].writeUInt32BE(value, offset);
+    getBufferState(this).native.writeUInt32BE(value, offset);
     return offset + fourBytes;
   }
 
@@ -1369,7 +1432,7 @@ class Buffer {
     }
     typeErrorCheck(offset, ['number'], 'offset', 0);
     this.checkOffsetRange(offset, fourBytes);
-    return this[bufferSymbol].readUInt32BE(offset);
+    return getBufferState(this).native.readUInt32BE(offset);
   }
 
   writeUInt32LE(value: number, offset: number = 0): number {
@@ -1381,7 +1444,7 @@ class Buffer {
     this.checkOffsetRange(offset, fourBytes);
     rangeErrorCheck(value, 'value', 0, (MAX_LENGTH - 1));
     value = +value;
-    this[bufferSymbol].writeUInt32LE(value, offset);
+    getBufferState(this).native.writeUInt32LE(value, offset);
     return offset + fourBytes;
   }
 
@@ -1391,7 +1454,7 @@ class Buffer {
     }
     typeErrorCheck(offset, ['number'], 'offset', 0);
     this.checkOffsetRange(offset, fourBytes);
-    return this[bufferSymbol].readUInt32LE(offset);
+    return getBufferState(this).native.readUInt32LE(offset);
   }
 
   writeDoubleBE(value: number, offset: number = 0): number {
@@ -1564,7 +1627,7 @@ class Buffer {
       let length2: number = targetEnd - targetStart;
       let length: number = length1 > length2 ? length2 : length1;
       if (target instanceof Buffer) {
-        let val = this[bufferSymbol].compare(target[bufferSymbol], targetStart, sourceStart, length);
+        let val = getBufferState(this).native.compare(getBufferState(target).native, targetStart, sourceStart, length);
         if (val === 0) {
           if (length1 === length2) {
             return 0;
@@ -1574,7 +1637,7 @@ class Buffer {
           return val < 0 ? 1 : -1;
         }
       } else {
-        let bufData1 = this[bufferSymbol].getBufferData();
+        let bufData1 = getBufferState(this).native.getBufferData();
         for (let i = 0; i < length; i++) {
           let value1 = +bufData1[i + sourceStart];
           let value2 = +target[i + targetStart];
@@ -1636,8 +1699,11 @@ class Buffer {
     if (start < 0 || end < 0 || end <= start) {
       return newBuf;
     }
-    newBuf[bufferSymbol].subBuffer(this[bufferSymbol], start, end);
-    newBuf[lengthSymbol] = (end - start);
+    const sourceState = getBufferState(this);
+    const state = getBufferState(newBuf);
+    state.native.subBuffer(sourceState.native, start, end);
+    state.length = end - start;
+    state.owner = sourceState.owner ?? this;
     return newBuf;
   }
 
@@ -1658,7 +1724,7 @@ class Buffer {
     }
     if (target instanceof Buffer) {
       sourceEnd = sourceEnd > this.length ? this.length : sourceEnd;
-      return this[bufferSymbol].copy(target[bufferSymbol], targetStart, sourceStart, sourceEnd);
+      return getBufferState(this).native.copy(getBufferState(target).native, targetStart, sourceStart, sourceEnd);
     }
     if (sourceEnd - sourceStart > target.length - targetStart) {
         sourceEnd = target.length - targetStart + sourceStart;
@@ -1693,14 +1759,14 @@ class Buffer {
     if (this.length <= 0) {
       return { type: 'Buffer', data: [] };
     }
-    let data = this[bufferSymbol].getBufferData();
+    let data = getBufferState(this).native.getBufferData();
     return { type: 'Buffer', data };
   }
 
   indexOf(value: string | number | Buffer | Uint8Array, byteOffset: number = 0, encoding: string = 'utf8'): number {
     typeErrorCheck(value, ['string', 'number', 'Buffer', 'Uint8Array'], 'value', 0);
     if (typeof value === 'string') {
-      const length = this[lengthSymbol];
+      const length = getBufferState(this).length;
       if (typeof byteOffset === 'string') {
         encoding = byteOffset;
       }
@@ -1722,18 +1788,18 @@ class Buffer {
           byteOffset = length - offsetResult;
         }
       }
-      return this[bufferSymbol].indexOf(value, byteOffset, encoding, false);
+      return getBufferState(this).native.indexOf(value, byteOffset, encoding, false);
     } else if (typeof value === 'number') {
       value = +value;
       if (value < 0 || value > utils.eightBits) {
         return -1;
       }
-      let data = this[bufferSymbol].getBufferData();
+      let data = getBufferState(this).native.getBufferData();
       return data.indexOf(value, byteOffset);
     } else {
-      let sourceData = this[bufferSymbol].getBufferData();
+      let sourceData = getBufferState(this).native.getBufferData();
       if (value instanceof Buffer) {
-        let targetData = value[bufferSymbol].getBufferData();
+        let targetData = getBufferState(value).native.getBufferData();
         return sourceData.join(',').indexOf(targetData.join(','), byteOffset);
       }
       return sourceData.join(',').indexOf(value.join(','), byteOffset);
@@ -1762,12 +1828,12 @@ class Buffer {
       if (value < 0 || value > utils.eightBits) {
         return -1;
       }
-      let data = this[bufferSymbol].getBufferData();
+      let data = getBufferState(this).native.getBufferData();
       return data.lastIndexOf(value, byteOffset);
     } else {
-      let sourceData = this[bufferSymbol].getBufferData();
+      let sourceData = getBufferState(this).native.getBufferData();
       if (value instanceof Buffer) {
-        let targetData = value[bufferSymbol].getBufferData();
+        let targetData = getBufferState(value).native.getBufferData();
         return sourceData.join(',').lastIndexOf(targetData.join(','), byteOffset);
       }
       return sourceData.join(',').lastIndexOf(value.join(','), byteOffset);
@@ -1781,7 +1847,7 @@ class Buffer {
     }
     encoding = encodingTypeErrorCheck(encoding, 2);
     if (typeof value === 'string') {
-      const length = this[lengthSymbol];
+      const length = getBufferState(this).length;
       if (byteOffset > length) {
         return false;
       }
@@ -1842,19 +1908,19 @@ class Buffer {
   }
 
   keys(): IterableIterator<number> {
-    return this[bufferSymbol].getBufferData().keys();
+    return getBufferState(this).native.getBufferData().keys();
   }
 
   values(): IterableIterator<number> {
-    return this[bufferSymbol].getBufferData().values();
+    return getBufferState(this).native.getBufferData().values();
   }
 
   entries(): IterableIterator<[number, number]> {
-    return this[bufferSymbol].getBufferData().entries();
+    return getBufferState(this).native.getBufferData().entries();
   }
 
   [Symbol.iterator](): IterableIterator<[number, number]> {
-    return this[bufferSymbol].getBufferData().entries();
+    return getBufferState(this).native.getBufferData().entries();
   }
 }
 
@@ -2011,7 +2077,12 @@ function allocUninitializedFromPool(size: number): Buffer {
     if (size > (poolSize - poolOffset)) {
       createPool();
     }
-    const b = new Buffer(pool, poolOffset, size);
+    const b = new Buffer(0);
+    const state = getBufferState(b);
+    state.native = new internalBuffer.Buffer(ParaType.BUFFER, getBufferState(pool).native, poolOffset, size);
+    state.length = state.native.getLength();
+    // Keep the native allocation alive when the pool rotates.
+    state.owner = pool;
     poolOffset += size;
     alignPool();
     return b;
@@ -2046,7 +2117,7 @@ function from(value: Buffer | Uint8Array | ArrayBuffer | SharedArrayBuffer | str
     throw typeError(value, 'value', ['Buffer', 'ArrayBuffer', 'Array', 'Array-like', 'string', 'object'], 0);
   }
   if (value instanceof ArrayBuffer || value instanceof SharedArrayBuffer) {
-    return createBufferFromArrayBuffer(value, offsetOrEncoding, length);
+    return new Buffer(value, offsetOrEncoding, length);
   }
   if (value instanceof Buffer || value instanceof Uint8Array) {
     return new Buffer(value);
@@ -2085,18 +2156,26 @@ function checkEncodeing(value: string | object, offsetOrEncoding: string | numbe
   return '';
 }
 
-function createBufferFromArrayBuffer(value: ArrayBuffer | SharedArrayBuffer,
-  offsetOrEncoding?: number | string, length?: number): Buffer {
-  offsetOrEncoding = isNaN(Number(offsetOrEncoding)) ? 0 : Number(offsetOrEncoding);
-  const maxLength: number = value.byteLength - offsetOrEncoding;
-  if (length === undefined) {
-    length = maxLength;
-  } else {
-    length = isNaN(Number(length)) ? 0 : Number(length);
+function createArrayBufferView(value: ArrayBuffer | SharedArrayBuffer,
+  offset?: number | string, length?: number): Uint8Array {
+  const byteOffset = Number(offset) || 0;
+  rangeErrorCheck(byteOffset, 'byteOffset', 0, value.byteLength);
+  const maxLength = value.byteLength - byteOffset;
+  const viewLength = length === undefined ? maxLength : Number(length) || 0;
+  rangeErrorCheck(viewLength, 'length', 0, maxLength);
+  let view: Uint8Array;
+  try {
+    // Validate the actual backing store and truncate fractions before NAPI's uint32 conversion.
+    view = new Uint8Array(value, byteOffset, viewLength);
+  } catch (error) {
+    if (error instanceof RangeError) {
+      throw rangeError('byteOffset', 0, value.byteLength, byteOffset);
+    }
+    throw error;
   }
-  rangeErrorCheck(offsetOrEncoding, 'byteOffset', 0, value.byteLength);
-  rangeErrorCheck(length, 'length', 0, maxLength);
-  return new Buffer(value, offsetOrEncoding, length);
+  rangeErrorCheck(view.byteOffset, 'byteOffset', 0, MAX_LENGTH - 1);
+  rangeErrorCheck(view.byteLength, 'length', 0, MAX_LENGTH - 1);
+  return view;
 }
 
 function createBufferFromArray(value: Array<number>): Buffer {
@@ -2104,7 +2183,7 @@ function createBufferFromArray(value: Array<number>): Buffer {
     return new Buffer(0);
   }
   const buffer = allocUninitializedFromPool(value.length);
-  buffer[bufferSymbol].setArray(value);
+  getBufferState(buffer).native.setArray(value);
   return buffer;
 }
 
@@ -2135,8 +2214,8 @@ function fromString(value: string, encoding: string, index: number): Buffer {
   }
   let size = byteLength(value, enc);
   let buffer = allocUninitializedFromPool(size);
-  buffer[bufferSymbol].fromString(value, enc, size);
-  buffer[lengthSymbol] = buffer[bufferSymbol].getLength();
+  getBufferState(buffer).native.fromString(value, enc, size);
+  getBufferState(buffer).length = getBufferState(buffer).native.getLength();
   return buffer;
 }
 
@@ -2196,11 +2275,11 @@ function transcode(source: Buffer | Uint8Array, fromEnc: string, toEnc: string):
 }
 
 function toUtf8(self: Buffer, start: number, end: number): string {
-  return self[bufferSymbol].toUtf8(start, end);
+  return getBufferState(self).native.toUtf8(start, end);
 }
 
 function toAscii(self: Buffer, start: number, end: number): string {
-  let bufData = self[bufferSymbol].getBufferData();
+  let bufData = getBufferState(self).native.getBufferData();
   let val = '';
   for (let i = start; i < end; i++) {
     val += String.fromCharCode(+bufData[i] & 0x7F); // 0x7F : get the lower 15-bits
@@ -2209,7 +2288,7 @@ function toAscii(self: Buffer, start: number, end: number): string {
 }
 
 function toBinary(self: Buffer, start: number, end: number): string {
-  let bufData = self[bufferSymbol].getBufferData();
+  let bufData = getBufferState(self).native.getBufferData();
   let val = '';
   for (let i = start; i < end; i++) {
     val += String.fromCharCode(+bufData[i]);
@@ -2218,7 +2297,7 @@ function toBinary(self: Buffer, start: number, end: number): string {
 }
 
 function toHex(self: Buffer, start: number, end: number): string {
-  let bufData = self[bufferSymbol].getBufferData();
+  let bufData = getBufferState(self).native.getBufferData();
   let str = '';
   for (let i = start, len = end; i < len; i++) {
     let tmpstr = Number(bufData[i]).toString(16); // 16 : 16 decimal
@@ -2229,7 +2308,7 @@ function toHex(self: Buffer, start: number, end: number): string {
 }
 
 function toUtf16LE(self: Buffer, start: number, end: number): string {
-  let bufData: Array<number> = self[bufferSymbol].getBufferData();
+  let bufData: Array<number> = getBufferState(self).native.getBufferData();
   let val = '';
   for (let i = start; i + 1 < end; i += 2) { // 2 is array->NextIndex
     val += String.fromCodePoint((bufData[i + 1] << eightBytes) + (bufData[i]));
@@ -2238,12 +2317,12 @@ function toUtf16LE(self: Buffer, start: number, end: number): string {
 }
 
 function toBase64(self: Buffer, start: number, end: number): string {
-  let str = self[bufferSymbol].toBase64(start, end);
+  let str = getBufferState(self).native.toBase64(start, end);
   return str;
 }
 
 function toBase64Url(self: Buffer, start: number, end: number): string {
-  let str = self[bufferSymbol].toBase64Url(start, end);
+  let str = getBufferState(self).native.toBase64Url(start, end);
   return str;
 }
 
@@ -2329,12 +2408,12 @@ function compare(buf1: Buffer | Uint8Array, buf2: Buffer | Uint8Array): 1 | 0 | 
   let bufData1: Array<number> | Uint8Array;
   let bufData2: Array<number> | Uint8Array;
   if (buf1 instanceof Buffer) {
-    bufData1 = buf1[bufferSymbol].getBufferData();
+    bufData1 = getBufferState(buf1).native.getBufferData();
   } else {
     bufData1 = buf1;
   }
   if (buf2 instanceof Buffer) {
-    bufData2 = buf2[bufferSymbol].getBufferData();
+    bufData2 = getBufferState(buf2).native.getBufferData();
   } else {
     bufData2 = buf2;
   }
