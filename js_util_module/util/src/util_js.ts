@@ -752,17 +752,6 @@ class TextDecoder {
       if (typeof options !== 'object' && options !== undefined && options !== null) {
         throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
             `Expected: object, Actual: ${typeof options}. ` +
-            `` +
-            `` +
-            `` +
-            `` +
-            `` +
-            `` +
-            `` +
-            `` +
-            `` +
-            `` +
-            `` +
             `The type of ${options} must be object`);
       }
       return new TextDecoder(encoding, options);
@@ -1305,34 +1294,12 @@ class RationalNumber {
     if (typeof num !== 'number') {
       let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
           `Expected: number, Actual: ${typeof num}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${num} must be number`);
       throw error;
     }
     if (typeof den !== 'number') {
       let error = new BusinessError(`Parameter error. Param[1] type mismatch. ` +
           `Expected: number, Actual: ${typeof den}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${den} must be number`);
       throw error;
     }
@@ -1371,17 +1338,6 @@ class RationalNumber {
     if (typeof str !== 'string' || str === null) {
       let error = new BusinessError(`Parameter error. Param[0] type mismatch. ` +
           `Expected: string, Actual: ${typeof str}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${str} must be string`);
       throw error;
     }

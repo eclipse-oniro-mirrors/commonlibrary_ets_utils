@@ -193,17 +193,6 @@ class URLParams {
     if (arguments.length === 1 || typeof setValues !== 'string') {
       throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
           `Expected: string, Actual: ${typeof setValues}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${setValues} must be string`);
     }
     this.urlClass.set(setName, setValues);
@@ -291,17 +280,6 @@ class URLParams {
     if (typeof objfun !== 'function') {
       throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
           `Expected: function, Actual: ${typeof objfun}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${objfun} must be function`);
     }
     let array = this.urlClass.array;
@@ -383,17 +361,6 @@ class URLSearchParams {
     if (arguments.length === 1 || typeof setValues !== 'string') {
       throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
           `Expected: string, Actual: ${typeof setValues}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${setValues} must be string`);
     }
     this.urlClass.set(setName, setValues);
@@ -560,17 +527,6 @@ function iteratorMethodThrow(input: Iterable<[string]>): Array<string> {
     if ((typeof pair !== 'object' && typeof pair !== 'function') || pair === null || typeof pair[Symbol.iterator] !== 'function') {
       throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
           `Expected: string[][], Actual: ${typeof pair}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${input} must be string[][]`);
     }
     const convertedPair = [];
@@ -709,17 +665,6 @@ class URL {
     if (typeof inputUrl !== 'string') {
       throw new BusinessError(`Parameter error. Param[0] type mismatch. ` +
           `Expected: string, Actual: ${typeof inputUrl}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${inputUrl} must be string`);
     }
     let nativeUrl !: NativeUrl;

@@ -1847,7 +1847,8 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
         if (argc < requireArgc) {
             ThrowError(env,
-                "Parameter error. SetTrackGlobalRef: input parameter count must be > 0.");
+                ("Parameter error. Incorrect parameter count. Expected: 1, Actual: " +
+                std::to_string(argc) + ". SetTrackGlobalRef: input parameter count must be > 0.").c_str());
             return nullptr;
         }
 
@@ -1855,7 +1856,8 @@ namespace OHOS::Util {
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
         if (valuetype != napi_boolean) {
             ThrowError(env,
-                "Parameter error. SetTrackGlobalRef: input parameter type must be boolean.");
+                "Parameter error. Param[0] type mismatch. Expected: boolean, Actual: mismatched type. "
+                "SetTrackGlobalRef: input parameter type must be boolean.");
             return nullptr;
         }
         bool enable = false;
@@ -2013,7 +2015,9 @@ namespace OHOS::Util {
             napi_valuetype type;
             NAPI_CALL_BASE(env, napi_typeof(env, value, &type), -1.0);
             if (type != napi_number) {
-                std::string errorMsg = std::string(propName) + " must be a number.";
+                std::string errorMsg = "Parameter error. Param[1].(" + std::string(propName) +
+                    ") type mismatch. Expected: number, Actual: mismatched type. " +
+                    std::string(propName) + " must be a number.";
                 ThrowError(env, errorMsg.c_str());
                 return -1.0;
             }
@@ -2038,19 +2042,25 @@ namespace OHOS::Util {
         napi_value args[2] = {nullptr};
         NAPI_CALL(env, napi_get_cb_info(env, info, &actualArgc, args, nullptr, nullptr));
         if (actualArgc < expectedArgc) {
-            return ThrowError(env, "Expected 2 parameters.");
+            return ThrowError(env,
+                ("Parameter error. Incorrect parameter count. Expected: 2, Actual: " +
+                std::to_string(actualArgc) + ". Expected 2 parameters.").c_str());
         }
 
         napi_valuetype valuetype0;
         NAPI_CALL(env, napi_typeof(env, args[0], &valuetype0));
         if (valuetype0 != napi_function) {
-            return ThrowError(env, "First parameter must be a function.");
+            return ThrowError(env,
+                "Parameter error. Param[0] type mismatch. Expected: function, Actual: mismatched type. "
+                "First parameter must be a function.");
         }
 
         napi_valuetype valuetype1;
         NAPI_CALL(env, napi_typeof(env, args[1], &valuetype1));
         if (valuetype1 != napi_object) {
-            return ThrowError(env, "Second parameter must be an object.");
+            return ThrowError(env,
+                "Parameter error. Param[1] type mismatch. Expected: object, Actual: mismatched type. "
+                "Second parameter must be an object.");
         }
 
         double localHeapThreshold = GetThresholdProperty(env, args[1], "localHeapThreshold");
@@ -2212,12 +2222,16 @@ namespace OHOS::Util {
             napi_valuetype valuetype;
             NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
             if (valuetype != napi_number) {
-                return ThrowError(env, "Parameter error. hintGC: input parameter must be of type UrgencyLevel.");
+                return ThrowError(env,
+                    "Parameter error. Param[0] type mismatch. Expected: number, Actual: mismatched type. "
+                    "hintGC: input parameter must be of type UrgencyLevel.");
             }
             NAPI_CALL(env, napi_get_value_int32(env, args[0], &urgencyLevel));
             if (urgencyLevel < 0 || urgencyLevel > 2) { // 2: max urgency level
                 return ThrowError(env,
-                    "Parameter error. hintGC: urgencyLevel must be UrgencyLevel.LOW(0), MEDIUM(1) or HIGH(2).");
+                    "Parameter error. Param[0] type mismatch. "
+                    "Expected: UrgencyLevel.LOW(0), MEDIUM(1) or HIGH(2), Actual: mismatched value. "
+                    "hintGC: urgencyLevel must be UrgencyLevel.LOW(0), MEDIUM(1) or HIGH(2).");
             }
         }
         NativeEngine *engine = reinterpret_cast<NativeEngine*>(env);

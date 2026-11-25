@@ -109,22 +109,12 @@ class XmlSerializer {
     } else {
       throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
           `Expected: string, Actual: ${typeof inputStr}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${inputStr} must be string`);
     }
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -145,7 +135,8 @@ class XmlSerializer {
     this.xmlSerializerClass.setAttributes(name, value);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -162,7 +153,8 @@ class XmlSerializer {
     this.xmlSerializerClass.addEmptyElement(name);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -170,7 +162,8 @@ class XmlSerializer {
     this.xmlSerializerClass.setDeclaration();
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -186,7 +179,8 @@ class XmlSerializer {
     this.xmlSerializerClass.startElement(name);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -194,7 +188,8 @@ class XmlSerializer {
     this.xmlSerializerClass.endElement();
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -214,7 +209,8 @@ class XmlSerializer {
     this.xmlSerializerClass.setNamespace(prefix, ns);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -231,7 +227,8 @@ class XmlSerializer {
     this.xmlSerializerClass.setComment(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -247,7 +244,8 @@ class XmlSerializer {
     this.xmlSerializerClass.setCDATA(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -263,7 +261,8 @@ class XmlSerializer {
     this.xmlSerializerClass.setText(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -279,7 +278,8 @@ class XmlSerializer {
     this.xmlSerializerClass.setDocType(text);
     let errStr: string = this.xmlSerializerClass.XmlSerializerError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 }
@@ -435,22 +435,12 @@ class XmlPullParser {
     } else {
       throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
           `Expected: string, Actual: ${typeof inputStr}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `The type of ${inputStr} must be string`);
     }
     let errStr: string = this.xmlPullParserClass.XmlPullParserError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
   parse(options: object): void {
@@ -461,7 +451,8 @@ class XmlPullParser {
     this.xmlPullParserClass.parse(options);
     let errStr: string = this.xmlPullParserClass.XmlPullParserError();
     if (errStr.length !== 0) {
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 
@@ -472,7 +463,8 @@ class XmlPullParser {
     }
     if (this.xmlPullParserClass.parseXml(options)) {
       let errStr: string = this.xmlPullParserClass.XmlPullParserError();
-      throw new BusinessError(errStr);
+      throw new BusinessError('Parameter error. Param[0] type mismatch. Expected: valid xml data, ' +
+          'Actual: mismatched data. ' + errStr);
     }
   }
 }
@@ -503,33 +495,11 @@ class XmlSAXParser {
     if (encoding !== undefined && typeof encoding !== 'string') {
       throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
           `Expected: string, Actual: ${typeof encoding}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `Encoding must be a string.`);
     }
     if (encoding && encoding.toLowerCase() !== 'utf-8') {
       throw new BusinessError(`Parameter error. Param[1] type mismatch. ` +
           `Expected: string, Actual: ${typeof encoding}. ` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
-          `` +
           `Only UTF-8 encoding is supported.`);
     }
 
@@ -565,7 +535,8 @@ class XmlSAXParser {
         this.nativeSAXParser.parse(handler, data, false);
       } catch (e) {
         this.isParsing = PARSER_NOT_PARSING;
-        throw new BusinessError(`Parse error: ${e}`);
+        throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: valid xml data, ` +
+            `Actual: mismatched data. Parse error: ${e}`);
       }
     });
 
@@ -575,13 +546,15 @@ class XmlSAXParser {
         this.isParsing = PARSER_NOT_PARSING;
       } catch (e) {
         this.isParsing = PARSER_NOT_PARSING;
-        throw new BusinessError(`Parse error: ${e}`);
+        throw new BusinessError(`Parameter error. Param[0] type mismatch. Expected: valid xml data, ` +
+            `Actual: mismatched data. Parse error: ${e}`);
       }
     });
 
     this.inputStream.on('error', (error: Error) => {
       this.isParsing = PARSER_NOT_PARSING;
-      throw new BusinessError(`Stream error: ${error.message}`);
+      throw new BusinessError(`Parameter error. Param[0].(inputStream) type mismatch. ` +
+          `Expected: readable stream, Actual: error stream. Stream error: ${error.message}`);
     });
   }
 }
