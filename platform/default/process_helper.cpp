@@ -55,7 +55,7 @@ int GetThreadId()
 
 uint32_t GetAppUid()
 {
-#if defined(CROSS_PLATFORM) || defined(ETS_UTILS_HOST_UT)
+#if defined(ANDROID_PLATFORM) || defined(ETS_UTILS_HOST_UT)
     // AppUid does not exist on ArkUI-X cross platforms, and the host libc of
     // the Linux host UT environment provides no getappuid; fall back to uid.
     return static_cast<uint32_t>(getuid());
