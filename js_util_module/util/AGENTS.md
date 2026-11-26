@@ -1,500 +1,93 @@
-# Util Component Documentation
+# util（@ohos.util）模块指南
 
-## Name
-util
+> **维护声明（MUST）**：使用 agent 修改代码时，如新增/删除文件、构建目标变更、公共 API 变更或约束变更，必须同步更新本文件。
 
-## Purpose
-The util component provides a comprehensive utility library for ArkTS/JavaScript applications, offering text encoding/decoding, Base64 conversion, type checking, UUID generation, caching mechanisms, rational number operations, scope management, and aspect-oriented programming utilities. It serves as a foundational utility module that supports data transformation, validation, and common programming patterns across the OpenHarmony ecosystem.
+## 1. 模块定位
 
-## Primary Language
-- **TypeScript** (Primary implementation for utility classes and functions)
-- **C++** (Native module registration and NAPI bindings)
-- **C** (Performance-critical string operations)
+util 是基础工具库：文本编解码（TextEncoder/TextDecoder，多编码）、Base64 编解码（Base64Helper）、字节流解码（StringDecoder）、UUID 生成（v4，加密安全随机）、类型检查（Types）、LRU 缓存（LRUCache）、有理数（RationalNumber）、范围判断（Scope）、AOP 切面（Aspect）、异步风格转换（promisify/callbackWrapper）。C++ 层提供性能路径，TS 层（`src/util_js.ts`）承载容器与泛型类实现。
 
-## Directory Structure
-```
-util/
-├── BUILD.gn                          # Build configuration
-├── tsconfig.json                     # TypeScript configuration
-├── js_base64.cpp/h                  # Base64 encoding/decoding implementation
-├── js_stringdecoder.cpp/h            # String decoder for byte streams
-├── js_textdecoder.cpp/h              # Text decoder with encoding support
-├── js_textencoder.cpp/h              # Text encoder implementation
-├── js_types.cpp/h                   # Type checking utilities
-├── js_uuid.cpp/h                    # UUID generation and parsing
-├── native_module_util.cpp/h          # Native module registration and exports
-├── plugin/
-│   ├── hispeed_string_plugin.c/h     # High-performance string operations
-├── src/
-│   └── util_js.ts                   # TypeScript utility implementations
-└── test/
-    ├── BUILD.gn                      # Test build configuration
-    ├── test_ark.cpp                  # ArkTS-related tests
-    ├── test_util.cpp                 # Core utility tests
-    ├── test_uuid.cpp                 # UUID functionality tests
-    └── test.h                        # Test infrastructure with Ark runtime environment setup
-```
+## 2. 代码地图
 
-### File Descriptions
-- **BUILD.gn**: GN build configuration defining compilation targets and dependencies
-- **tsconfig.json**: TypeScript compiler configuration
-- **js_base64.cpp/h**: Base64 encoding/decoding with sync and async operations
-- **js_stringdecoder.cpp/h**: Decoder for byte streams to strings with encoding support
-- **js_textdecoder.cpp/h**: Text decoder supporting multiple character encodings
-- **js_textencoder.cpp/h**: Text encoder for string to UTF-8 conversion
-- **js_types.cpp/h**: Type checking utilities for various JavaScript types
-- **js_uuid.cpp/h**: UUID generation (random) and parsing functionality
-- **native_module_util.cpp/h**: NAPI module registration and export definitions
-- **plugin/hispeed_string_plugin.c/h**: Performance-optimized string operations
-- **src/util_js.ts**: TypeScript implementations including LRUCache, RationalNumber, Scope, Aspect, etc.
-- **test/**: Unit tests for all utility functions
+| 路径 | 职责 | 风险 |
+|------|------|------|
+| `src/util_js.ts` | TS 公共 API：LRUCache、RationalNumber、Scope、Aspect、promisify 等 | 🟡 公共 API 定义层 |
+| `js_base64.h` / `js_base64.cpp` | Base64 编解码 | 🔴 编码表与错误码契约 |
+| `js_textencoder.h` / `js_textencoder.cpp` | 文本编码（UTF-8/UTF-16LE 等） | 🔴 编码边界与 ICU 行为 |
+| `js_textdecoder.h` / `js_textdecoder.cpp` | 文本解码（含 fatal/BOM 语义） | 🔴 非法序列处理是公共契约 |
+| `js_stringdecoder.h` / `js_stringdecoder.cpp` | 字节流按字符切分 | 🟡 |
+| `js_uuid.h` / `js_uuid.cpp` | UUID v4 生成 | 🟡 随机源必须加密安全 |
+| `js_types.h` / `js_types.cpp` | 类型检查（isXxx） | 🟢 |
+| `native_module_util.h` / `native_module_util.cpp` | NAPI 模块注册入口 | 🟡 导出面须与 d.ts 一致 |
+| `libutil.map` | 导出符号裁剪 | 🟡 |
+| `BUILD.gn` / `tsconfig.json` | 构建配置 | 🟢 |
+| `test/` | 单元测试 | 🟢 |
 
-## Building
+## 3. 知识路由
 
-### Build System
-The component uses GN (Generate Ninja) build system with the following build targets:
+| 任务/术语 | 先读 |
+|-----------|------|
+| Buffer/Base64（二进制模块） | `js_api_module/buffer/AGENTS.md` |
+| Stream（依赖 TextEncoder/StringDecoder） | `js_util_module/stream/AGENTS.md` |
+| 容器（另一模块） | `js_util_module/container/AGENTS.md` |
+| 专家经验（编码坑点） | `docs/knowledge/expert/ets-utils-expert.md` |
 
-1. **build_ts_js (action)**: Compiles TypeScript to JavaScript
-   - Script: `$util_module/build_ts_js.py`
-   - Input: `src/util_js.ts`
-   - Output: `util_js.js`
+**外部组件依赖**：`napi:ace_napi`、`hilog:libhilog`、`icu:shared_icuuc`、`bounds_checking_function:libsec_shared`。共享配置经 `ets_utils_config.gni`。
 
-2. **gen_util_abc (es2abc_gen_abc)**: Compiles JavaScript to ABC bytecode
-   - Input: `util_js.js`
-   - Output: `util.abc`
-   - Extra args: `--module`
+## 4. 约束与边界
 
-3. **util_js (gen_obj)**: Generates object file from JavaScript code
-   - Output: `util.o` or `util.c` (platform-dependent)
+### 4.1 Do not（禁止项）
 
-4. **util_abc (gen_obj)**: Generates object file from ABC bytecode
-   - Output: `util_abc.o` or `util_abc.c` (platform-dependent)
+1. 禁止对既有 util 公共 API 做不兼容变更；确需变更必须走废弃流程
+2. 禁止改变 TextEncoder/TextDecoder 编码语义（默认编码、fatal 行为、BOM 处理）
+3. 禁止在 Base64 中偏离标准字母表/填充语义
+4. 禁止使用非加密安全随机源生成 UUID
+5. 禁止绕过 es2abc/TypeScript 编译流水线；禁止直接编辑 `.abc`/`.o` 构建产物
+6. 禁止修改错误码语义与错误消息格式（401 参数错等公共契约）
+7. 禁止绕过边界检查的内存操作；禁止向 JS 层暴露裸内存指针
+8. 禁止为通过测试删除或跳过既有用例
+9. 禁止新增功能时不更新本文件
 
-5. **util (ohos_shared_library)**: Main shared library target
-   - Install directory: `module`
-   - Module name: `util` (@ohos.util)
-   - Security features: Branch protector (pac_ret), CFI, CFI cross-DSO
+### 4.2 Ask before（需确认后再修改）
 
-6. **util_static (ohos_source_set)**: Static source set containing implementation
-   - Sources: All C++ implementation files
-   - Include dirs: platform_root, ets_util_path, plugin directory
+- 新增 TextDecoder 编码支持时，须先确认 ICU 覆盖与既有应用解码结果不变
+- 修改 LRUCache 淘汰策略前，须先确认容量边界与更新语义用例通过
+- 修改 RationalNumber 精度或比较语义前，须先确认约分/溢出用例通过
+- 修改 promisify/callbackWrapper 行为前，须先确认错误优先回调约定不变
 
-7. **util_packages (group)**: Aggregates all util packages
+### 4.3 架构不变量
 
-### Build Process Flow
-```
-util_js.ts → util_js.js → util.o/util.c → shared library
-                     ↓
-                util.abc → util_abc.o/util_abc.c → shared library
+1. C++ 层提供编解码性能路径；TS 层承载纯 JS 可实现的功能
+2. 所有编解码经 ICU 与既有安全函数（libsec）
+3. 对外错误统一为 BusinessError
+
+## 5. 构建与验证
+
+构建命令从 OpenHarmony 源码根目录执行，不在本子目录执行。
+
+### 5.1 构建
+
+```sh
+./build.sh --product-name rk3568 --build-target util
+# 聚合组（含 TS 编译流水线）
+./build.sh --product-name rk3568 --build-target util_packages
 ```
 
-### Build Dependencies
-**Standard OpenHarmony:**
-- `hilog:libhilog` - Logging framework
-- `napi:ace_napi` - Node-API bindings
-- `icu:shared_icuuc` - Internationalization components
-- `openssl:libcrypto_shared` - Cryptographic operations (UUID generation)
-- `c_utils:utils` - Common utilities
-- `bounds_checking_function:libsec_shared` - Security functions
+### 5.2 单元测试
 
-### Compiler Configuration
-- C++ Standard: Default (uses platform-specific standards)
-- Security: Branch protector (pac_ret), CFI enabled, CFI cross-DSO
-- Optimization: -g3 for debug builds in tests
-
-### Build Commands
-```bash
-# Build util module
-./build.sh --product-name <product_name> --build-target util
-
-# Build util packages group
-./build.sh --product-name <product_name> --build-target util_packages
-
-# Build tests
-./build.sh --product-name <product_name> --build-target test_util_unittest
+```sh
+./build.sh --product-name rk3568 --build-target test_util_unittest
+hdc file send ./out/rk3568/tests/unittest/ets_utils/ets_utils/jsutil/util/napi/test_util_unittest /data/local/tmp/
+hdc shell "cd /data/local/tmp && chmod 777 ./test_util_unittest && ./test_util_unittest"
 ```
 
-## Test Suite
+### 5.3 Done 定义
 
-### Test Structure
-The component has a dedicated test directory with comprehensive unit tests:
+1. ✅ 修改的文件无新增编译错误，`util` 构建成功
+2. ✅ `test_util_unittest` 通过（或按 §5.4 声明未验证项）
+3. ✅ 未引入公共 API 不兼容变更（.ts 导出面与 d.ts 一致）
+4. ✅ 未违反本文件禁止事项（尤其编码语义与随机源安全）
+5. ✅ 新增/修改错误路径有明确 BusinessError 返回与日志
 
-1. **test_util.cpp**: Tests for core utilities
-   - TextEncoder/TextDecoder functionality
-   - Base64 encoding/decoding
-   - String decoder operations
-   - Type checking utilities
-   - LRUCache operations
-   - Rational number operations
-   - Scope management
-   - Aspect-oriented programming
+### 5.4 禁止伪造验证（强制）
 
-2. **test_uuid.cpp**: Tests for UUID functionality
-   - Random UUID generation
-   - Binary UUID generation
-   - UUID parsing
-   - UUID validation
-
-3. **test_ark.cpp**: ArkTS-specific tests
-   - TypeScript interoperability
-   - ABC bytecode integration
-   - Native bridge functionality
-
-### Test Coverage Areas
-
-#### TextEncoder/TextDecoder
-- UTF-8 encoding/decoding
-- Multiple character encodings (GBK, Big5, Shift_JIS, etc.)
-- Fatal and ignore BOM options
-- Stream mode decoding
-- Encoding format validation
-
-#### Base64
-- Synchronous encode/decode
-- Asynchronous encode/decode
-- BASIC, MIME, URL-SAFE variants
-- String and Uint8Array conversions
-- MIME format line breaks (76 characters)
-
-#### Type Checking
-- All JavaScript type checks (ArrayBuffer, TypedArray, Map, Set, etc.)
-- Boxed primitives detection
-- Promise, Proxy, Generator checks
-- Module namespace detection
-
-#### LRUCache/LRUCache
-- Put/Get operations
-- Cache eviction
-- Hit rate calculation
-- Capacity updates
-- Clear, contains, remove operations
-- Statistics (hits, misses, evictions)
-
-#### RationalNumber
-- Construction from integers
-- Parse from string ("1:2" or "1/2" format)
-- Comparison operations
-- Arithmetic validation
-- Finite, NaN, Zero checks
-- Numerator/denominator access
-
-#### Scope/ScopeHelper
-- Range creation and validation
-- Contains operations
-- Clamp operations
-- Intersection/Expansion
-- Lower/upper limit access
-
-#### Aspect
-- Before/After advice
-- Replace method functionality
-- Static and instance method support
-- Async/sync method handling
-
-#### Additional Utilities
-- printf/format string formatting
-- UUID generation and parsing
-- Error code to string conversion
-- Hash calculation
-- Stack trace retrieval
-- promisify/promiseWrapper
-- callbackWrapper
-
-## Dependency
-
-### Internal Dependencies
-- **Subsystem**: `commonlibrary`
-- **Component**: `ets_utils`
-- **Module**: Part of `js_util_module` alongside `collections`, `container`, `json`, and `stream`
-- **Shared Build Scripts**: Uses `$util_module/build_ts_js.py` from parent directory
-
-### External Dependencies
-
-#### Core Dependencies
-1. **NAPI (ace_napi)**
-   - Purpose: Provides Node-API interface for native module registration
-   - Usage: Module initialization, JS/ABC code embedding, type checking
-   - Version: Compatible with OpenHarmony NAPI specification
-
-2. **HiLog (libhilog)**
-   - Purpose: System logging framework
-   - Usage: Error logging and debugging
-   - Integration: Used for logging error conditions and debug information
-
-3. **ICU (shared_icuuc)**
-   - Purpose: International Components for Unicode
-   - Usage: Character encoding/decoding, text conversion
-   - Integration: Essential for TextEncoder/TextDecoder multi-encoding support
-
-4. **OpenSSL (libcrypto_shared)**
-   - Purpose: Cryptographic library
-   - Usage: Random number generation for UUIDs
-   - Integration: Provides cryptographically secure random values
-
-5. **libuv (uv_static)**
-   - Purpose: Asynchronous I/O library
-   - Usage: Async operations in tests
-   - Integration: Event loop for async Base64 operations
-
-6. **SecureC (libsec_shared)**
-   - Purpose: Secure C library functions
-   - Usage: Safe string operations (memset_s, etc.)
-   - Integration: Memory safety and bounds checking
-
-7. **c_utils (utils)**
-   - Purpose: Common C utilities
-   - Usage: Utility functions and helpers
-   - Integration: Shared utility functions across OpenHarmony
-
-
-### Runtime Dependencies
-- **ArkTS Runtime**: Must support standard JavaScript/ArkTS APIs
-- **Global Object**: Access to global scope for requireInternal utility
-- **FinalizationRegistry**: For AutoFinalizerCleaner functionality
-- **Reflect API**: For Aspect method manipulation
-- **Map/Set**: For LRUCache implementation
-- **Uint8Array**: For Base64 and TextEncoder operations
-
-### External Directory Interactions
-1. **Build System**: Interacts with GN build configuration and es2abc compiler
-2. **Runtime Core**: Integrates with ArkTS runtime's object model
-3. **Framework Integration**: Installed to `module` directory
-4. **Platform Helpers**: Uses platform_root for util_helper and jni_helper
-5. **util_module**: Shares build_ts_js.py script with sibling modules
-6. **Plugin System**: Integrates with hispeed_string_plugin for performance
-
-## Boundaries
-
-### What Can Be Done Within This Component
-
-#### ✅ Allowed Operations
-1. **Text Encoding/Decoding**
-   - Implement TextEncoder for string to UTF-8 conversion
-   - Implement TextDecoder for byte to string conversion with encoding support
-   - Support multiple character encodings (UTF-8, GBK, Big5, Shift_JIS, etc.)
-   - Handle BOM (Byte Order Mark) options
-   - Implement stream mode for continuous decoding
-   - Validate encoding formats
-
-2. **Base64 Operations**
-   - Implement synchronous Base64 encode/decode
-   - Implement asynchronous Base64 encode/decode
-   - Support BASIC, MIME, and URL-SAFE variants
-   - Handle Uint8Array and string conversions
-   - Add line breaks for MIME format (76 characters)
-   - Remove line breaks for decoding
-
-3. **Type Checking**
-   - Implement type checking for all JavaScript types
-   - Check for ArrayBuffer, TypedArray, DataView
-   - Check for Map, Set, WeakMap, WeakSet
-   - Check for Promise, Proxy, Generator
-   - Check for boxed primitives (Number, String, Boolean, Symbol)
-   - Check for module namespace objects
-
-4. **String Decoder**
-   - Implement byte stream to string conversion
-   - Handle incomplete byte sequences
-   - Support multiple encodings
-   - Manage internal buffer state
-
-5. **UUID Operations**
-   - Generate random UUIDs (v4)
-   - Generate binary UUIDs
-   - Parse UUID strings to byte arrays
-   - Validate UUID format
-   - Use cryptographically secure random numbers
-
-6. **Caching Mechanisms**
-   - Implement LRUBuffer/LRUCache (Least Recently Used)
-   - Support put, get, remove operations
-   - Implement cache eviction policies
-   - Track statistics (hits, misses, evictions)
-   - Support capacity updates
-   - Implement contains, isEmpty, clear operations
-
-7. **Rational Number Operations**
-   - Implement RationalNumber class
-   - Parse from integer pairs
-   - Parse from strings ("1:2" or "1/2" format)
-   - Compare rational numbers
-   - Check equality
-   - Check for finite, NaN, zero values
-   - Access numerator and denominator
-   - Convert to floating point value
-   - Calculate greatest common divisor
-
-8. **Scope Management**
-   - Implement Scope and ScopeHelper classes
-   - Create ranges with lower/upper limits
-   - Check if values are within range
-   - Clamp values to range
-   - Intersect ranges
-   - Expand ranges
-   - Validate limit ordering
-
-9. **Aspect-Oriented Programming**
-   - Implement addBefore advice
-   - Implement addAfter advice
-   - Implement replace method functionality
-   - Support static and instance methods
-   - Handle async and sync methods
-   - Use Reflect API for method manipulation
-
-10. **String Formatting**
-    - Implement printf-style formatting
-    - Support format specifiers (%d, %s, %f, %o, %O, %i, %j, %c)
-    - Format integers, floats, strings, objects
-    - Handle arrays and nested structures
-    - Implement format string parsing
-
-11. **Error Handling**
-    - Implement error code to string conversion
-    - Support uv errno conversion
-    - Throw BusinessError with error codes
-    - Validate parameters and throw appropriate errors
-
-12. **Promise/Callback Conversion**
-    - Implement promisify for callback-based functions
-    - Implement promiseWrapper
-    - Implement callbackWrapper
-    - Handle success and error cases
-
-13. **Utility Functions**
-    - Implement hash calculation for objects
-    - Get main thread stack trace
-    - Get object property descriptors
-    - Generate random values
-
-14. **Build Configuration**
-    - Configure TypeScript compilation
-    - Set up JS to ABC bytecode compilation
-    - Manage platform-specific dependencies
-    - Configure security features (CFI, branch protector)
-
-15. **Native Module Registration**
-    - Implement NAPI module registration
-    - Embed JS and ABC code
-    - Export classes and functions
-    - Handle module initialization
-
-16. **Performance Optimization**
-    - Implement hispeed_string_plugin for fast string ops
-    - Use SecureC for safe memory operations
-    - Optimize critical paths
-
-### What Cannot Be Done Within This Component
-
-#### ❌ Prohibited Operations
-1. **Network I/O**
-   - Do NOT implement network sockets or HTTP clients
-   - Do NOT perform network requests or API calls
-   - Do NOT handle network protocols
-   - Network I/O handled by dedicated network modules
-
-2. **File System I/O**
-   - Do NOT implement file reading or writing
-   - Do NOT access file system directly
-   - Do NOT implement file watching
-   - File I/O handled by dedicated I/O modules
-
-3. **UI or Rendering**
-   - Do NOT create or manipulate UI components
-   - Do NOT handle rendering or graphics
-   - UI/Rendering handled by ACE/ArkUI framework
-
-4. **System API Calls**
-   - Do NOT directly call system-level APIs
-   - Do NOT access hardware interfaces (except through OpenSSL for random)
-   - Do NOT modify system settings
-   - System access handled by system capability modules
-
-5. **Database Operations**
-   - Do NOT implement database connections
-   - Do NOT perform SQL queries
-   - Do NOT manage database transactions
-   - Database operations handled by dedicated database modules
-
-6. **Advanced Cryptography**
-   - Do NOT implement encryption algorithms beyond UUID random generation
-   - Do NOT implement hashing algorithms (except simple object hash)
-   - Do NOT implement digital signatures
-   - Advanced crypto handled by dedicated crypto modules
-   - Only use OpenSSL for random number generation
-
-7. **Thread Pool Management**
-   - Do NOT manage thread lifecycle or concurrency
-   - Do NOT implement thread synchronization primitives
-   - Thread management handled by concurrent modules (taskpool, worker)
-   - Use async/promises for asynchronous operations
-
-8. **Cross-Module Dependencies**
-   - Do NOT create dependencies on other utility modules
-   - Maintain module isolation and independence
-   - Only use built-in JavaScript/ArkTS capabilities
-   - Only depend on explicitly listed external libraries
-
-9. **Breaking API Changes**
-   - Do NOT change existing method signatures without deprecation
-   - Do NOT remove public APIs without migration path
-   - Maintain backward compatibility
-
-10. **Global State Pollution**
-    - Do NOT pollute global namespace beyond module exports
-    - Do NOT create global variables or singletons (except module exports)
-    - Keep state encapsulated within class instances
-
-11. **Custom Memory Management**
-    - Do NOT implement custom allocators or memory pools
-    - Do NOT manually manage memory (use new/delete and garbage collector)
-    - Memory management handled by runtime
-    - Use SecureC functions for safe operations
-
-12. **Security Bypass**
-    - Do NOT disable or bypass security features
-    - Do NOT expose internal implementation details
-    - Do NOT compromise utility function security
-    - Maintain proper input validation and sanitization
-
-13. **Compression/Encryption**
-    - Do NOT implement compression algorithms
-    - Do NOT implement encryption/decryption
-    - Such operations should be in separate specialized modules
-
-14. **Regular Expressions**
-    - Do NOT add complex regex-based parsing
-    - Keep regex usage minimal and well-tested
-    - Only use for simple validation (like UUID format)
-
-15. **Date/Time Operations**
-   - Do NOT implement date/time manipulation
-   - Do NOT handle time zones
-   - Date/time operations handled by built-in Date object
-
-### Architectural Constraints
-1. **Module Independence**: Util module should be standalone and not depend on other util modules
-2. **Type Safety**: Use TypeScript for type safety where possible
-3. **Error Handling**: Use BusinessError with error codes (401 for parameter errors, 10200002 for syntax errors)
-4. **Performance**: Optimize critical paths with native code (hispeed_string_plugin)
-5. **Security**: Use SecureC for C operations, enable CFI and branch protector
-7. **Encoding Support**: Must support multiple character encodings via ICU
-8. **Async Operations**: Use Promise-based APIs for async operations
-9. **Validation**: Always validate input parameters
-10. **Documentation**: Maintain clear API documentation
-
-### Modification Guidelines
-When extending this component:
-1. Follow TypeScript best practices and type safety
-2. Validate all input parameters and throw BusinessError appropriately
-3. Use consistent error codes (401 for parameter errors, 10200002 for syntax errors)
-4. Test all functionality with unit tests
-5. Use SecureC functions for C operations
-6. Support both synchronous and asynchronous operations where appropriate
-7. Maintain backward compatibility with existing APIs
-9. Consider performance implications for frequently called functions
-10. Use native code only for performance-critical operations
-11. Document all public APIs clearly
-12. Handle edge cases and error conditions gracefully
-13. Use ICU for all text encoding/decoding operations
-14. Use OpenSSL only for cryptographic random number generation
-15. Keep module dependencies minimal and explicit
+如果构建环境不可用，**不要声称完成**。列出应执行的命令、预期结果、未验证项与原因，并给出替代证据（CI 结果、人工 review checklist、`tsc --noEmit`/`-fsyntax-only` 语法检查输出）。**不得将未执行的验证描述为已通过；不得在无证据时声称完成。**

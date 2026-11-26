@@ -1,24 +1,30 @@
 # ets_utils 知识路由
 
+> 本文档是根 `AGENTS.md` §3 的深度展开：按场景/词汇/路径三个维度给出"先读什么"。
+> 嵌套指南一律为各目录下的 `AGENTS.md`（本仓不含 `CLAUDE.md`）。
+
 ## 场景触发路由
 
 改动前按场景读取对应文件：
 
 | 场景 | 先读 | 补充 |
 |------|------|------|
-| 二进制数据处理（Buffer/Blob/FastBuffer） | `js_api_module/buffer/CLAUDE.md` | `js_api_module/fastbuffer/CLAUDE.md` |
-| URI/URL 解析 | `js_api_module/uri/CLAUDE.md` | `js_api_module/url/CLAUDE.md` |
-| XML 相关（解析/序列化/转换） | `js_api_module/xml/CLAUDE.md` | `js_api_module/convertxml/CLAUDE.md` |
-| 并发编程（TaskPool/Worker/锁） | `js_concurrent_module/taskpool/CLAUDE.md` | `js_concurrent_module/worker/CLAUDE.md`、`js_concurrent_module/utils/CLAUDE.md` |
-| 日志与调试（Console/Timer） | `js_sys_module/console/CLAUDE.md` | `js_sys_module/timer/CLAUDE.md` |
-| 进程管理 | `js_sys_module/process/CLAUDE.md` | — |
-| 编解码（TextEncoder/Base64/UUID） | `js_util_module/util/CLAUDE.md` | — |
-| 集合容器 | `js_util_module/container/CLAUDE.md` | — |
-| Sendable 集合（并发安全） | `js_util_module/collections/CLAUDE.md` | — |
-| JSON 处理（BigInt、循环引用、has/remove） | `js_util_module/json/CLAUDE.md` | — |
-| 流式处理（Readable/Writable） | `js_util_module/stream/CLAUDE.md` | `js_util_module/util/CLAUDE.md`（TextEncoder/StringDecoder 依赖） |
-| 错误类型定义 / Kit 注册 | `base_sdk/ets/@ohos.base.ets` | `base_sdk/transfer/` |
-| 跨平台适配 | `platform/` | — |
+| 二进制数据处理（Buffer/Blob/FastBuffer） | `js_api_module/buffer/AGENTS.md` | `js_api_module/fastbuffer/AGENTS.md` |
+| URI/URL 解析 | `js_api_module/uri/AGENTS.md` | `js_api_module/url/AGENTS.md` |
+| XML 相关（解析/序列化/转换） | `js_api_module/xml/AGENTS.md` | `js_api_module/convertxml/AGENTS.md` |
+| 并发编程（TaskPool/Worker/锁） | `js_concurrent_module/taskpool/AGENTS.md` | `js_concurrent_module/worker/AGENTS.md`、`js_concurrent_module/utils/AGENTS.md` |
+| 并发共享辅助层 | `js_concurrent_module/common/helper/AGENTS.md` | `js_concurrent_module/taskpool/AGENTS.md`、`js_concurrent_module/worker/AGENTS.md` |
+| 日志与调试（Console/Timer） | `js_sys_module/console/AGENTS.md` | `js_sys_module/timer/AGENTS.md` |
+| 进程管理 | `js_sys_module/process/AGENTS.md` | — |
+| 编解码（TextEncoder/Base64/UUID） | `js_util_module/util/AGENTS.md` | — |
+| 集合容器 | `js_util_module/container/AGENTS.md` | — |
+| Sendable 集合（并发安全） | `js_util_module/collections/AGENTS.md` | `js_concurrent_module/utils/AGENTS.md` |
+| JSON 处理（BigInt、循环引用、has/remove） | `js_util_module/json/AGENTS.md` | — |
+| 流式处理（Readable/Writable） | `js_util_module/stream/AGENTS.md` | `js_util_module/util/AGENTS.md`（TextEncoder/StringDecoder 依赖） |
+| 诊断维护（堆快照/栈回溯/运行时统计） | `js_sys_module/dfx/AGENTS.md` | — |
+| 错误类型定义 / Kit 注册 | `base_sdk/AGENTS.md` | `base_sdk/transfer/` |
+| HILOG 宏 / 错误码构造 / 安全上报 | `tools/AGENTS.md` | `js_sys_module/console/AGENTS.md` |
+| 跨平台适配 | `platform/AGENTS.md` | 根 `AGENTS.md` §4.2 Ask before |
 
 ---
 
@@ -62,11 +68,13 @@
 | **JSON.has / JSON.remove** | JSON 对象键检查与删除 | `js_util_module/json/` |
 | **circular reference** | 循环引用检测（JSON.stringify） | `js_util_module/json/` |
 | **Readable / Writable / Duplex / Transform** | 流类型 | `js_util_module/stream/` |
-| **BusinessError** | 业务错误基类 | `base_sdk/ets/@ohos.base.ets` |
-| **NAPI** | Node-API 原生绑定 | `tools/` + 各模块 native 代码 |
+| **BusinessError** | 业务错误基类 | `base_sdk/AGENTS.md`（定义于 `base_sdk/ets/@ohos.base.ets`） |
+| **NAPI** | Node-API 原生绑定 | `tools/AGENTS.md` + 各模块 native 代码 |
 | **libxml2** | XML 解析 C 库 | `js_api_module/xml/`、`js_api_module/convertxml/` |
 | **ffrt** | 华为函数式运行时 | `js_concurrent_module/taskpool/`（依赖） |
 | **ArkPrivate** | 运行时内部 API 加载器 | `js_api_module/fastbuffer/`、`js_util_module/container/` |
+| **ErrorHelper** | BusinessError 构造工具（`tools/ets_error.h`、并发侧 `common/helper/error_helper.h`） | `tools/AGENTS.md` |
+| **ets_utils_host_unittest** | Linux host 单测聚合目标（无需设备） | 根 `AGENTS.md` §5.2 |
 
 ---
 
@@ -76,18 +84,19 @@
 
 | 路径模式 | 加载 |
 |---------|------|
-| `js_api_module/*/src/js_*.ts` | 对应模块的 CLAUDE.md（Public API 定义） |
-| `js_api_module/*/native_module_*.cpp` | 对应模块的 CLAUDE.md（NAPI 原生绑定） |
-| `js_concurrent_module/common/helper/` | 并发模块共享辅助（error_helper.h 含 15KB 错误码定义） |
-| `js_concurrent_module/utils/locks/` | 死锁检测与异步锁实现 |
-| `js_sys_module/timer/sys_timer.h` | Inner Kit 公共头文件 |
-| `js_sys_module/console/console.h` | Inner Kit 公共头文件（HILOG domain 0x3D00） |
-| `js_concurrent_module/worker/worker.h` | Inner Kit 公共头文件 |
-| `platform/*/process_helper.cpp` | 平台特定进程实现 |
-| `platform/*/util_helper.cpp` | 平台特定编解码实现 |
-| `base_sdk/transfer/kitRegister/` | Kit 注册回调映射 |
-| `js_util_module/json/src/json_js.ts` | JSON 模块 Public API（parse/stringify/has/remove 定义） |
-| `js_util_module/json/native_module_json.cpp` | JSON NAPI 模块注册 |
-| `tools/ets_error.h` | 全局 BusinessError 构造工具，修改需确认所有模块错误码格式兼容 |
-| `tools/log.h` | HILOG 宏定义，修改需确认 Console 模块 domain/tag 约束 |
-| `tools/common_helper.h` | ApiHelper 版本判断与平台适配，修改需确认跨模块版本逻辑一致性 |
+| `js_api_module/*/src/js_*.ts` | 对应模块的 `AGENTS.md`（Public API 定义） |
+| `js_api_module/*/native_module_*.cpp` | 对应模块的 `AGENTS.md`（NAPI 原生绑定） |
+| `js_concurrent_module/common/helper/` | `js_concurrent_module/common/helper/AGENTS.md`（并发共享辅助层，`error_helper.h` 定义并发侧错误码） |
+| `js_concurrent_module/utils/locks/` | `js_concurrent_module/utils/AGENTS.md`（死锁检测与异步锁实现） |
+| `js_sys_module/timer/sys_timer.h` | `js_sys_module/timer/AGENTS.md`（Inner Kit 公共头文件） |
+| `js_sys_module/console/console.h`、`console/log.h` | `js_sys_module/console/AGENTS.md`（Inner Kit 公共头文件，HILOG domain 0x3D00） |
+| `js_concurrent_module/worker/worker.h` | `js_concurrent_module/worker/AGENTS.md`（Inner Kit 公共头文件） |
+| `platform/*/process_helper.cpp` | `platform/AGENTS.md`（平台特定进程实现） |
+| `platform/*/util_helper.cpp` | `platform/AGENTS.md`（平台特定编解码实现） |
+| `base_sdk/transfer/kitRegister/` | `base_sdk/AGENTS.md`（Kit 注册回调映射） |
+| `js_util_module/json/src/json_js.ts` | `js_util_module/json/AGENTS.md`（parse/stringify/has/remove 定义） |
+| `js_util_module/json/native_module_json.cpp` | `js_util_module/json/AGENTS.md`（JSON NAPI 模块注册） |
+| `tools/ets_error.h` | `tools/AGENTS.md`（全局 BusinessError 构造工具，修改需确认所有模块错误码格式兼容） |
+| `tools/log.h` | `tools/AGENTS.md`（HILOG 宏定义，修改需确认 Console 模块 domain/tag 约束） |
+| `tools/common_helper.h` | `tools/AGENTS.md`（ApiHelper 版本判断与平台适配，修改需确认跨模块版本逻辑一致性） |
+| `tools/security_fault_reporter.h` | `tools/AGENTS.md`（安全故障上报，修改需确认 DFX 上报链路） |

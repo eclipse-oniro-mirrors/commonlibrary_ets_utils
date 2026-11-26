@@ -1,300 +1,76 @@
-# JSON Component Documentation
+# json（@ohos.util JSON 增强）模块指南
 
-## Name
-json
+> **维护声明（MUST）**：使用 agent 修改代码时，如新增/删除文件、构建目标变更、公共 API 变更或约束变更，必须同步更新本文件。
 
-## Purpose
-The json component provides enhanced JSON parsing and stringification utilities for ArkTS/JavaScript applications. It extends standard JSON functionality with additional features including BigInt support, circular reference detection, parameter validation, and utility methods for object manipulation (has, remove). The component offers robust JSON data interchange capabilities with improved error handling and type safety.
+## 1. 模块定位
 
-## Primary Language
-- **TypeScript** (Primary implementation language for JSON utilities)
-- **C++** (Native module registration and NAPI bindings)
+json 模块提供增强的 JSON 能力：BigInt 支持（BigIntMode：DEFAULT / PARSE_AS_BIGINT / ALWAYS_PARSE_AS_BIGINT，`JSON.parseBigInt`/`JSON.stringifyBigInt`）、循环引用检测与报错（`circular Reference`）、参数校验，以及对象工具方法 `JSON.has`（键存在检查）与 `JSON.remove`（键删除，返回被删值）。**解析与序列化基于运行时内置实现，本仓 TS 层（`src/json_js.ts`）负责 API 包装与参数校验，禁止自造解析器。**
 
-## Directory Structure
-```
-json/
-├── BUILD.gn                          # Build configuration
-├── tsconfig.json                     # TypeScript configuration
-├── native_module_json.cpp            # Native module registration
-└── src/
-    └── json_js.ts                   # JSON utility implementation
-```
+## 2. 代码地图
 
-### File Descriptions
-- **BUILD.gn**: GN build configuration defining compilation targets and dependencies
-- **tsconfig.json**: TypeScript compiler configuration
-- **native_module_json.cpp**: C++ file for NAPI module registration and embedded JS/ABC code
-- **src/json_js.ts**: TypeScript implementation of JSON utility functions (parse, stringify, has, remove)
+| 路径 | 职责 | 风险 |
+|------|------|------|
+| `src/json_js.ts` | TS 公共 API：parse/stringify/has/remove 包装与校验 | 🔴 BigIntMode 三模式与 `circular Reference` 错误消息是公共契约 |
+| `native_module_json.cpp` | NAPI 模块注册入口 | 🟡 导出面须与 d.ts 一致 |
+| `BUILD.gn` / `tsconfig.json` | 构建配置 | 🟢 |
 
-## Building
+## 3. 知识路由
 
-### Build System
-The component uses GN (Generate Ninja) build system with the following build targets:
+| 任务/术语 | 先读 |
+|-----------|------|
+| BigIntMode 三模式语义 | 本文件 §1 + 根 `AGENTS.md` §3.3（BigIntMode） |
+| 循环引用失败模式 | 根 `AGENTS.md` §4.5 |
+| Sendable 序列化（ASON，另一模块） | `js_concurrent_module/utils/AGENTS.md`（勿混淆） |
+| util 模块 | `js_util_module/util/AGENTS.md` |
 
-1. **build_js_ts (action)**: Compiles TypeScript to JavaScript
-   - Script: `$util_module/build_ts_js.py`
-   - Input: `src/json_js.ts`
-   - Output: `json_js.js`
+**外部组件依赖**：`napi:ace_napi`、ArkTS 运行时（内置 JSON.parseBigInt/stringifyBigInt）。共享配置经 `ets_utils_config.gni`。
 
-2. **gen_json_abc (es2abc_gen_abc)**: Compiles JavaScript to ABC bytecode
-   - Input: `json_js.js`
-   - Output: `json.abc`
-   - Extra args: `--module`
+## 4. 约束与边界
 
-3. **json_js (gen_obj)**: Generates object file from JavaScript code
-   - Output: `json.o` or `json.c` (platform-dependent)
+### 4.1 Do not（禁止项）
 
-4. **json_abc (gen_obj)**: Generates object file from ABC bytecode
-   - Output: `json_abc.o` or `json_abc.c` (platform-dependent)
+1. 禁止实现异步的 JSON 解析/序列化——JSON 操作必须保持同步
+2. 禁止自行实现 JSON 解析器——必须基于运行时内置的 `JSON.parseBigInt`/`JSON.stringifyBigInt`
+3. 禁止对既有 JSON API 语义做不兼容变更（错误消息 `circular Reference` 等是既有契约）
+4. 禁止让 has/remove 接受数组/非纯对象输入（必须报 401 参数错误）
+5. 禁止绕过 es2abc/TypeScript 编译流水线；禁止直接编辑 `.abc`/`.o` 构建产物
+6. 禁止修改错误码语义
+7. 禁止为通过测试删除或跳过既有用例
 
-5. **json (ohos_shared_library)**: Main shared library target
-   - Install directory: `module/util`
-   - Module name: `util.json` (@ohos.util.json)
-   - Security features: PAC_RET branch protection, CFI sanitization
+### 4.2 Ask before（需确认后再修改）
 
-6. **json_static (ohos_source_set)**: Static source set containing implementation
-   - Sources: `native_module_json.cpp`
-   - Include dirs: `include`, `ets_util_path`
+- 调整 BigIntMode 枚举或其行为前，须先确认三模式用例与 d.ts 同步更新
+- 修改 has/remove 返回语义前，须先确认既有应用依赖行为不变
 
-7. **json_packages (group)**: Aggregates all json packages
+### 4.3 架构不变量
 
-### Build Process Flow
-```
-json_js.ts → json_js.js → json.o/json.c → shared library
-                      ↓
-                 json.abc → json_abc.o/json_abc.c → shared library
+1. parse/stringify 委托运行时内置实现，本仓只做包装与校验
+2. 循环引用在 stringify 时必须检测并抛 BusinessError
+3. 对外错误统一为 BusinessError
+
+## 5. 构建与验证
+
+构建命令从 OpenHarmony 源码根目录执行，不在本子目录执行。
+
+### 5.1 构建
+
+```sh
+./build.sh --product-name rk3568 --build-target json
+# 聚合组（含 TS 编译流水线）
+./build.sh --product-name rk3568 --build-target json_packages
 ```
 
-### Build Dependencies
-**Standard OpenHarmony:**
-- `hilog:libhilog` - Logging framework
-- `napi:ace_napi` - Node-API bindings
-- `bounds_checking_function:libsec_shared` - Secure bounds checking
-- `icu:shared_icuuc` - ICU library for Unicode support
+### 5.2 测试
 
-### Compiler Configuration
-- C++ Standard: Default (not explicitly specified in config)
-- Security: PAC_RET branch protection, CFI sanitization
+**本模块无独立单测目标**——不存在 `test_json_unittest`。改动后以编译验证 + 运行时 JSON 行为集成测试覆盖（BigInt 三模式、循环引用、has/remove 全功能）。
 
-### Build Commands
-```bash
-# Build json module
-./build.sh --product-name <product_name> --build-target json
+### 5.3 Done 定义
 
-# Build json packages group
-./build.sh --product-name <product_name> --build-target json_packages
-```
+1. ✅ 修改的文件无新增编译错误，`json` 构建成功
+2. ✅ 未引入公共 API 不兼容变更
+3. ✅ 未违反本文件禁止事项（尤其同步语义与运行时委托）
+4. ✅ BigInt 三模式与循环引用行为不回归
 
-## Test Suite
+### 5.4 禁止伪造验证（强制）
 
-### Current Status
-No dedicated test directory exists for the json component within the `json/` directory.
-
-### Integration Testing
-Tests for json functionality are integrated as part of the broader ets_utils component test suite. According to bundle.json configuration, component tests may be included in:
-- Parent module test suites
-- Application-level integration tests
-- ArkTS runtime testing framework
-
-### Recommended Test Areas
-When extending this component, ensure tests cover:
-- JSON parsing with various data types (numbers, strings, objects, arrays, booleans, null)
-- JSON stringification with different replacer functions
-- BigInt parsing and stringification
-- Circular reference detection and handling
-- Parameter validation and error cases
-- has() method for key existence checking
-- remove() method for key removal
-- Error messages and BusinessError handling
-- Edge cases (empty strings, malformed JSON, special characters)
-- Performance with large JSON payloads
-- Unicode and special character handling
-
-## Dependency
-
-### Internal Dependencies
-- **Subsystem**: `commonlibrary`
-- **Component**: `ets_utils`
-- **Module**: Part of `js_util_module` alongside `collections`, `container`, `util`, and `stream`
-
-### External Dependencies
-
-#### Core Dependencies
-1. **NAPI (ace_napi)**
-   - Purpose: Provides Node-API interface for native module registration
-   - Usage: Module initialization, JS/ABC code embedding
-   - Version: Compatible with OpenHarmony NAPI specification
-
-2. **HiLog (libhilog)**
-   - Purpose: System logging framework
-   - Usage: Error logging and debugging (through `tools/log.h`)
-   - Integration: Used for logging error conditions
-
-3. **ICU (shared_icuuc)**
-   - Purpose: Internationalization Components for Unicode
-   - Usage: Unicode support for JSON string handling
-   - Integration: Required for proper text encoding/decoding
-
-4. **Bounds Checking Function (libsec_shared)**
-   - Purpose: Security bounds checking for memory operations
-   - Usage: Memory safety in native code
-   - Integration: Ensures safe memory access
-
-5. **es2abc Compiler**
-   - Purpose: Compile JavaScript to ArkTS bytecode
-   - Usage: Convert .js files to .abc for runtime execution
-   - Integration: Part of build toolchain
-
-### Runtime Dependencies
-- **ArkTS Runtime**: Must support standard JSON API extensions
-- **Global JSON Object**: Access to built-in JSON.parseBigInt and JSON.stringifyBigInt
-- **Error Handling**: BusinessError class for consistent error reporting
-
-### External Directory Interactions
-1. **Build System**: Interacts with GN build configuration and es2abc compiler
-2. **Runtime Core**: Integrates with ArkTS runtime's JSON implementation
-3. **Framework Integration**: Installed to `module/util` directory
-4. **GlobalThis**: Access to global JSON object for extended functionality
-5. **util_module**: Uses shared build_ts_js.py script from parent directory
-
-## Boundaries
-
-### What Can Be Done Within This Component
-
-#### ✅ Allowed Operations
-1. **JSON Parsing and Stringification**
-   - Implement enhanced parse() with BigInt support
-   - Implement enhanced stringify() with circular reference detection
-   - Support custom replacer functions
-   - Handle space formatting options
-   - Validate and sanitize input parameters
-
-2. **BigInt Support**
-   - Parse JSON strings containing BigInt values
-   - Stringify objects with BigInt properties
-   - Handle different BigInt modes (DEFAULT, PARSE_AS_BIGINT, ALWAYS_PARSE_AS_BIGINT)
-   - Ensure type safety for BigInt operations
-
-3. **Object Manipulation Utilities**
-   - Implement has() method to check key existence
-   - Implement remove() method to delete properties
-   - Validate object types (reject arrays for has/remove)
-   - Ensure proper property access patterns
-
-4. **Error Handling**
-   - Implement BusinessError class for consistent error reporting
-   - Validate parameter types (string, function, array, etc.)
-   - Provide descriptive error messages
-   - Handle and wrap standard JSON errors
-
-5. **Circular Reference Detection**
-   - Implement recursive object traversal
-   - Detect circular references before stringification
-   - Use Set for tracking visited objects
-   - Prevent infinite recursion
-
-6. **Parameter Validation**
-   - Validate text parameter is string type for parse()
-   - Validate replacer is function or array for stringify()
-   - Validate space is string or number for stringify()
-   - Validate object parameter for has()/remove()
-   - Validate key parameter is non-empty string
-
-7. **Build Configuration**
-   - Configure TypeScript compilation settings
-   - Set up JS to ABC bytecode compilation
-   - Manage platform-specific dependencies
-   - Configure security features (CFI, PAC_RET)
-
-8. **Module Registration**
-   - Implement NAPI module registration
-   - Embed JS and ABC code in native module
-   - Export utility functions as default export
-   - Handle module initialization
-
-### What Cannot Be Done Within This Component
-
-#### ❌ Prohibited Operations
-1. **Network or I/O Operations**
-   - Do NOT perform network requests or HTTP calls
-   - Do NOT read from or write to file system
-   - Do NOT implement database connections
-   - I/O operations handled by dedicated I/O modules
-
-2. **UI or Rendering**
-   - Do NOT create or manipulate UI components
-   - Do NOT handle rendering or graphics
-   - UI/Rendering handled by ACE/ArkUI framework
-
-3. **System API Calls**
-   - Do NOT directly call system-level APIs
-   - Do NOT access hardware interfaces
-   - Do NOT modify system settings
-   - System access handled by system capability modules
-
-4. **Custom JSON Implementations**
-   - Do NOT implement custom JSON parsers from scratch
-   - Do NOT bypass built-in JSON.parseBigInt and JSON.stringifyBigInt
-   - Always leverage runtime JSON implementations
-   - This component is a wrapper, not a replacement
-
-5. **Thread Pool Management**
-   - Do NOT manage thread lifecycle or concurrency
-   - Do NOT implement thread synchronization primitives
-   - Thread management handled by concurrent modules (taskpool, worker)
-
-6. **Cross-Module Dependencies**
-   - Do NOT create dependencies on other utility modules
-   - Maintain module isolation and independence
-   - Only use built-in JavaScript/ArkTS capabilities
-
-7. **Breaking API Changes**
-   - Do NOT change existing method signatures without deprecation
-   - Do NOT remove public APIs without migration path
-   - Maintain backward compatibility with standard JSON API
-
-8. **Global State Pollution**
-   - Do NOT pollute global namespace beyond module exports
-   - Do NOT create global variables or singletons
-   - Keep state encapsulated within function calls
-
-9. **Custom Memory Management**
-   - Do NOT implement custom allocators or memory pools
-   - Do NOT manually manage memory (use ArkTS garbage collector)
-   - Memory management handled by runtime
-
-10. **Security Bypass**
-    - Do NOT disable or bypass security features
-    - Do NOT expose internal implementation details
-    - Do NOT compromise JSON parsing security
-    - Maintain proper input validation and sanitization
-
-11. **Async Operations**
-    - Do NOT implement asynchronous parsing or stringification
-    - Do NOT use promises or async/await
-    - JSON operations should remain synchronous
-    - Async JSON handling should be done at application layer
-
-### Architectural Constraints
-1. **Wrapper Pattern**: This component wraps and enhances built-in JSON functionality
-2. **Type Safety**: Maintain TypeScript type safety throughout implementation
-3. **Error Consistency**: Use consistent BusinessError class for all errors (code: 401)
-4. **Runtime Dependency**: Component depends on built-in JSON extensions (parseBigInt, stringifyBigInt)
-5. **Synchronous Operations**: All JSON operations must be synchronous
-6. **No Side Effects**: Functions should not modify input objects unexpectedly
-7. **Standard Compliance**: Maintain compatibility with standard JSON specification
-8. **Performance**: Optimize for typical use cases while maintaining correctness
-
-### Modification Guidelines
-When extending this component:
-1. Always validate input parameters before processing
-2. Use BusinessError class with code 401 for all errors
-3. Leverage built-in JSON.parseBigInt and JSON.stringifyBigInt
-4. Implement comprehensive error messages
-5. Maintain backward compatibility with existing API
-6. Test edge cases including circular references and malformed JSON
-7. Ensure type safety with TypeScript generics where applicable
-9. Document any new features or behavioral changes
-10. Consider performance implications for large JSON payloads
-11. Handle Unicode and special characters properly
-12. Maintain consistency with standard JSON error messages
+如果构建环境不可用，**不要声称完成**。列出应执行的命令、预期结果、未验证项与原因，并给出替代证据（CI 结果、人工 review checklist、`tsc --noEmit` 语法检查输出）。**不得将未执行的验证描述为已通过；不得在无证据时声称完成。**

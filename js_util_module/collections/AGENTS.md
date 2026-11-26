@@ -1,191 +1,73 @@
-# Collections Component Documentation
+# collections（@ohos.util.collections）模块指南
 
-## Name
-collections
+> **维护声明（MUST）**：使用 agent 修改代码时，如新增/删除文件、构建目标变更、公共 API 变更或约束变更，必须同步更新本文件。
 
-## Purpose
-The collections component provides NAPI (Native API) bindings for ArkTS collection types. It acts as a bridge between native C++ code and ArkTS/JavaScript runtime, exposing sendable collection classes and typed arrays for use in concurrent and multi-threaded scenarios. The component enables efficient data sharing across threads through sendable data structures.
+## 1. 模块定位
 
-## Primary Language
-C++ (Native module implementation using NAPI)
+collections 是 Sendable 集合的 NAPI 桥接层：注册并导出可在并发场景跨线程共享的集合构造器——SendableArray、SendableSet、SendableMap、SendableInt8Array、SendableUint8Array、SendableInt16Array、SendableUint16Array、SendableInt32Array、SendableUint32Array、SendableArrayBuffer、BitVector。**集合逻辑在 ArkTS 运行时内置实现，本模块只做构造器注册与导出，不含任何集合实现代码。**
 
-## Directory Structure
+## 2. 代码地图
+
+| 路径 | 职责 | 风险 |
+|------|------|------|
+| `native_module_collections.cpp` | NAPI 模块注册：从运行时全局取 Sendable 构造器并导出 | 🔴 单文件承载模块；导出名与运行时内置名不一致即运行时崩溃 |
+| `libcollections.map` | 导出符号裁剪 | 🟡 |
+| `BUILD.gn` | 构建配置 | 🟢 |
+
+## 3. 知识路由
+
+| 任务/术语 | 先读 |
+|-----------|------|
+| Sendable 语义与使用约束 | 根 `AGENTS.md` §3.3（Sendable）、`js_concurrent_module/utils/AGENTS.md` |
+| 普通集合容器（非并发，另一模块） | `js_util_module/container/AGENTS.md`（勿混淆） |
+| Worker/TaskPool 中的共享数据 | `js_concurrent_module/worker/AGENTS.md`、`js_concurrent_module/taskpool/AGENTS.md` |
+
+**外部组件依赖**：`napi:ace_napi`、`hilog:libhilog`、ArkTS 运行时（Sendable 构造器来源）。
+
+## 4. 约束与边界
+
+### 4.1 Do not（禁止项）
+
+1. 禁止在本模块实现集合逻辑——它是纯 NAPI 桥接层，任何集合行为变更属于运行时
+2. 禁止对既有导出名做不兼容变更（SendableArray 等 11 个构造器名是公共契约）
+3. 禁止从非运行时渠道构造 Sendable 对象
+4. 禁止在桥接层缓存运行时全局对象而不随 env 生命周期管理
+5. 禁止为通过测试删除或跳过既有用例
+6. 禁止新增功能时不更新本文件
+
+### 4.2 Ask before（需确认后再修改）
+
+- 新增导出（如新的 Sendable 类型）前，须先确认运行时内置构造器已存在且命名与 d.ts 一致
+- 修改模块初始化时机前，须先确认 worker/taskpool 场景下跨 env 取值行为
+
+### 4.3 架构不变量
+
+1. 本模块只注册导出，不实现集合行为
+2. Sendable 构造器一律经运行时全局获取
+3. 对外错误统一为 BusinessError
+
+## 5. 构建与验证
+
+构建命令从 OpenHarmony 源码根目录执行，不在本子目录执行。
+
+### 5.1 构建
+
+```sh
+./build.sh --product-name rk3568 --build-target collections
 ```
-collections/
-├── BUILD.gn                          # Build configuration file
-└── native_module_collections.cpp     # Native module source code
-```
 
-### File Descriptions
-- **BUILD.gn**: GN build script defining the shared library compilation, dependencies, and installation configuration
-- **native_module_collections.cpp**: C++ implementation that exports ArkTS collection constructors to the NAPI module interface
+### 5.2 测试
 
-## Building
+**本模块无独立单测目标**——不存在 `test_collections_unittest`。改动后以编译验证 + 运行时 Sendable 行为集成测试覆盖（跨 worker 传递、并发读写场景）。
 
-### Build System
-The component uses the GN (Generate Ninja) build system with the following build targets:
+### 5.3 Done 定义
 
-1. **collections (ohos_shared_library)**: The main shared library target
-   - Install directory: `module/arkts`
-   - Module name: `arkts.collections` (@ohos.arkts.collections)
-   - Security features: PAC_RET branch protection, CFI sanitization
+1. ✅ 修改的文件无新增编译错误，`collections` 构建成功
+2. ✅ 导出名与运行时内置构造器、d.ts 声明一一对应
+3. ✅ 未引入公共 API 不兼容变更
+4. ✅ 未在本模块引入集合实现逻辑
+5. ✅ 未违反本文件禁止事项
 
-2. **collections_static (ohos_source_set)**: Static source set containing the implementation
-   - Include directories: `include`, `ets_util_path`
+### 5.4 禁止伪造验证（强制）
 
-### Build Dependencies
-**Standard OpenHarmony:**
-- `hilog:libhilog` - Logging framework
-- `napi:ace_napi` - Node-API bindings
-- `bounds_checking_function:libsec_shared` - Secure bounds checking
-
-### Build Commands
-```bash
-# Build the collections module
-./build.sh --product-name <product_name> --build-target collections
-```
-
-## Test Suite
-
-### Current Status
-No dedicated test directory exists for the collections component within the `collections/` directory.
-
-### Integration Testing
-Tests for the collections functionality are integrated as part of the broader ets_utils component test suite. According to the bundle.json configuration, component tests may be included in:
-- Parent module test suites
-- Integration tests with concurrent modules
-- ArkTS runtime testing framework
-
-### Recommended Test Areas
-When extending this component, ensure tests cover:
-- NAPI module registration and initialization
-- Collection constructor exposure
-- Thread-safe operations for sendable collections
-- Typed array data integrity
-- Cross-thread data sharing scenarios
-
-## Dependency
-
-### Internal Dependencies
-- **Subsystem**: `commonlibrary`
-- **Component**: `ets_utils`
-- **Module**: Part of `js_util_module` alongside `util`, `container`, `json`, and `stream`
-
-### External Dependencies
-
-#### Core Dependencies
-1. **NAPI (ace_napi)**
-   - Purpose: Provides Node-API interface for native module registration
-   - Usage: Module initialization, property definition, function exposure
-   - Version: Compatible with OpenHarmony NAPI specification
-
-2. **HiLog (libhilog)**
-   - Purpose: System logging framework
-   - Usage: Error logging and debugging information
-   - Integration: Used through `tools/log.h` header
-
-3. **Bounds Checking Function (libsec_shared)**
-   - Purpose: Security bounds checking for memory operations
-   - Usage: Memory safety in native code
-
-
-### Runtime Dependencies
-- **ArkTS Runtime**: Collection classes must be available in the ArkTS runtime environment
-- **ARK_Private API**: Access to `ArkPrivate.Load` for loading BitVector
-- **Global Object**: Requires access to global JavaScript runtime context
-
-### External Directory Interactions
-1. **Runtime Core**: Interacts with ArkTS runtime for collection class retrieval
-2. **Framework Integration**: Installed to `module/arkts` directory for framework loading
-3. **NAPI Framework**: Registers with the NAPI module system at startup
-
-## Boundaries
-
-### What Can Be Done Within This Component
-
-#### ✅ Allowed Operations
-1. **Export Collection Constructors**
-   - Expose ArkTS collection classes to NAPI interface
-   - Define module properties for collection access
-   - Register module with NAPI system
-
-2. **Supported Collection Types**
-   - SendableArray
-   - SendableSet
-   - SendableMap
-   - SendableArrayBuffer
-   - Typed Arrays: SendableInt8Array, SendableUint8Array, SendableInt16Array, SendableUint16Array, SendableInt32Array, SendableUint32Array, SendableUint8ClampedArray, SendableFloat32Array
-   - BitVector
-
-3. **Module Registration**
-   - Implement NAPI module initialization
-   - Define export properties
-   - Handle module lifecycle
-
-4. **Error Handling**
-   - Log initialization failures
-   - Validate function availability
-   - Report missing collection types
-
-5. **Build Configuration**
-   - Configure shared library compilation
-   - Set security features (CFI, PAC_RET)
-   - Manage platform-specific dependencies
-
-### What Cannot Be Done Within This Component
-
-#### ❌ Prohibited Operations
-1. **Collection Implementation**
-   - Do NOT implement collection algorithms or data structures
-   - Do NOT modify collection behavior or semantics
-   - All collection logic resides in ArkTS runtime
-
-2. **Thread Pool Management**
-   - Do NOT manage thread lifecycle directly
-   - Do NOT implement thread synchronization primitives
-   - Thread management handled by concurrent modules
-
-3. **Custom Collections**
-   - Do NOT add custom collection types not provided by ArkTS
-   - Do NOT create hybrid collection implementations
-   - Only expose existing ArkTS collections
-
-4. **Direct Memory Manipulation**
-   - Do NOT directly manipulate collection memory
-   - Do NOT bypass NAPI interface for collection access
-   - Use NAPI functions for all operations
-
-5. **Framework Integration**
-   - Do NOT modify framework loading mechanisms
-   - Do NOT change module installation paths
-   - Installation and loading managed by build system and framework
-
-6. **Type System Modifications**
-   - Do NOT alter type definitions or type checking
-   - Do NOT implement custom type coercion
-   - Type system managed by ArkTS compiler and runtime
-
-7. **Cross-Module Dependencies**
-   - Do NOT create direct dependencies on other util modules (util, container, json, stream)
-   - Maintain module isolation
-   - Use NAPI interface for inter-module communication
-
-8. **API Extensions**
-   - Do NOT add custom methods or properties to collections
-   - Do NOT modify standard collection APIs
-   - Maintain API compatibility with ArkTS specifications
-
-### Architectural Constraints
-1. **Bridge Pattern**: This component is strictly a bridge layer, not an implementation layer
-2. **Read-Only Access**: Collections are retrieved from global scope, not created here
-3. **Runtime Dependency**: Component is useless without ArkTS runtime providing collection classes
-4. **Minimal Logic**: Keep logic minimal; only perform validation and registration
-5. **No State Maintenance**: Do not maintain persistent state; state managed by ArkTS runtime
-
-### Modification Guidelines
-When extending this component:
-1. Only add new collection types if they exist in ArkTS runtime
-2. Follow existing pattern for exposing new constructors
-3. Maintain backward compatibility with existing exports
-4. Update documentation for any new collections
-5. Ensure proper error handling for all new exports
+如果构建环境不可用，**不要声称完成**。列出应执行的命令、预期结果、未验证项与原因，并给出替代证据（CI 结果、人工 review checklist、`-fsyntax-only` 语法检查输出）。**不得将未执行的验证描述为已通过；不得在无证据时声称完成。**

@@ -1,305 +1,93 @@
-# Container Component Documentation
+# container（@ohos.util.container 系列）模块指南
 
-## Name
-container
+> **维护声明（MUST）**：使用 agent 修改代码时，如新增/删除容器类型、构建目标变更、公共 API 变更或约束变更，必须同步更新本文件（含 `BUILD.gn` 的 `container_names` 列表与 §2 代码地图）。
 
-## Purpose
-The container component provides a comprehensive set of linear and non-linear data structure collections for ArkTS/JavaScript applications. It implements efficient, type-safe collection classes including ArrayList, LinkedList, Vector, Stack, Queue, Deque, HashMap, TreeMap, HashSet, TreeSet, PlainArray, LightweightMap, LightweightSet, and Struct. These collections offer developers optimized data storage and manipulation capabilities with various performance characteristics and use cases, ranging from dynamic arrays to tree-based maps and sets.
+## 1. 模块定位
 
-## Primary Language
-- **TypeScript** (Primary implementation language for collection logic)
-- **C++** (Native module registration and NAPI bindings)
+container 提供线性与非线性集合容器：ArrayList、LinkedList、Vector、Stack、Queue、Deque、List、HashMap、HashSet、TreeMap、TreeSet、PlainArray、LightweightMap、LightweightSet 及 Struct（字典基类），共 15 种类型。容器优先经 `ArkPrivate.Load()` 取运行时内置实现，缺失时回退本仓 TS 实现。主语言 TypeScript，NAPI 仅做模块注册与 JS/ABC 代码内嵌。
 
-## Directory Structure
-```
-container/
-├── BUILD.gn                          # Build configuration
-├── tsconfig.json                     # TypeScript configuration
-├── build_ts_js.py                    # TypeScript to JavaScript compiler script
-├── arraylist/
-│   ├── js_arraylist.ts              # ArrayList implementation
-│   └── native_module_arraylist.cpp  # ArrayList native module registration
-├── deque/
-│   ├── js_deque.ts
-│   └── native_module_deque.cpp
-├── hashmap/
-│   ├── js_hashmap.ts
-│   └── native_module_hashmap.cpp
-├── hashset/
-│   ├── js_hashset.ts
-│   └── native_module_hashset.cpp
-├── lightweghtmap/
-│   ├── js_lightweightmap.ts
-│   └── native_module_lightweightmap.cpp
-├── lightweightset/
-│   ├── js_lightweightset.ts
-│   └── native_module_lightweightset.cpp
-├── linkedlist/
-│   ├── js_linkedlist.ts
-│   └── native_module_linkedlist.cpp
-├── list/
-│   ├── js_list.ts
-│   └── native_module_list.cpp
-├── plainarray/
-│   ├── js_plainarray.ts
-│   └── native_module_plainarray.cpp
-├── queue/
-│   ├── js_queue.ts
-│   └── native_module_queue.cpp
-├── stack/
-│   ├── js_stack.ts
-│   └── native_module_stack.cpp
-├── struct/
-│   ├── js_struct.ts                 # Base class for dictionary structures
-│   └── native_module_struct.cpp
-├── treemap/
-│   ├── js_treemap.ts
-│   └── native_module_treemap.cpp
-├── treeset/
-│   ├── js_treeset.ts
-│   └── native_module_treeset.cpp
-└── vector/
-    ├── js_vector.ts
-    └── native_module_vector.cpp
-```
+## 2. 代码地图
 
-### File Descriptions
-- **BUILD.gn**: Main build configuration defining the template for all collection modules
-- **tsconfig.json**: TypeScript compiler configuration
-- **build_ts_js.py**: Python script to compile TypeScript files to JavaScript
-- **js_*.ts**: TypeScript implementation files containing collection class logic
-- **native_module_*.cpp**: C++ files for NAPI module registration and embedded JS/ABC code
+| 路径 | 职责 | 风险 |
+|------|------|------|
+| `BUILD.gn` | `container_lib` 模板 + `container_packages` 聚合组 + `build_ts_js` action | 🟡 新增容器必须同步 `container_names` |
+| `tsconfig.json` / `build_ts_js.py` | TS 编译配置与脚本 | 🟢 |
+| `arraylist/` … `vector/`（15 个子目录） | 每容器：`js_*.ts` 实现 + `native_module_*.cpp` 注册 | 🟡 公共 API 实现层 |
+| `struct/js_struct.ts`、`native_module_struct.cpp` | 字典结构基类（HashMap/HashSet 继承其 DictionaryClass） | 🔴 被多容器依赖 |
+| `lightweightmap/`、`lightweightset/` | 轻量容器 | 🟡 |
 
-## Building
+每个容器子目录结构一致：`js_<name>.ts`（容器类逻辑）+ `native_module_<name>.cpp`（NAPI 注册与 JS/ABC 内嵌）。
 
-### Build System
-The component uses GN (Generate Ninja) build system with a template-based approach for all collections:
+## 3. 知识路由
 
-1. **build_js_ts (action)**: Compiles TypeScript to JavaScript
-   - Script: `build_ts_js.py`
-   - Outputs: `js_*.js` files for all 15 collection types
+| 任务/术语 | 先读 |
+|-----------|------|
+| 新增一种集合容器 | 本文件 §4.4 + 根 `AGENTS.md` §5.3（构建配置变更验证） |
+| ArkPrivate 内置实现/回退 | 根 `AGENTS.md` §3.3（ArkPrivate）、§4.4 不变量 #3 |
+| Sendable 集合（并发安全，另一模块） | `js_util_module/collections/AGENTS.md`（勿混淆） |
+| util 模块（errorUtil 等依赖） | `js_util_module/util/AGENTS.md` |
 
-2. **container_lib (template)**: Template for each collection library
-   - Generates object files from JS code
-   - Compiles JS to ABC bytecode using es2abc
-   - Creates static source set with native module
-   - Builds shared library for final output
+**外部组件依赖**：`napi:ace_napi`（NAPI 注册）、`hilog:libhilog`（经 struct 模块 errorUtil 记日志）。运行时依赖：ArkTS 运行时（`ArkPrivate.Load()` 可选快路径）、globalThis 回退、`util.struct` 字典基类。
 
-3. **container_packages (group)**: Aggregates all collection packages
+## 4. 约束与边界
 
-### Build Process Flow
-```
-.ts file → .js file → .o/.c object file → shared library
-              ↓
-         .abc bytecode → .o/.c object file → shared library
+### 4.1 Do not（禁止项）
+
+1. 禁止在本模块实现线程管理/同步原语——并发由 taskpool/worker 模块负责
+2. 禁止引入网络、文件系统、数据库等 I/O 操作
+3. 禁止创建 UI/渲染逻辑或直接调用系统级 API
+4. 禁止依赖 collections/json/stream/util（errorUtil 经 struct 既定路径除外）等其它 util 模块
+5. 禁止不做废弃流程就变更既有方法签名或删除公共 API
+6. 禁止在集合实例外维护全局可变状态
+7. 禁止实现自定义内存分配器/内存池——内存由运行时 GC 管理
+
+### 4.2 Ask before（需确认后再修改）
+
+- 新增容器类型时，须先确认：类型已存在于 `container_names` 命名约定、`ArkPrivate` 是否提供内置版本、错误检查模式与既有容器一致
+- 修改 `struct/` 字典基类时，须先确认 HashMap/HashSet 等derived容器全部回归
+- 修改 Proxy 拦截行为（如 HandlerArrayList 的 get/set/deleteProperty 陷阱）时，须先确认原型修改防护语义不变
+
+### 4.3 架构不变量
+
+1. 每个容器模块独立可编译、可部署（`container_lib` 模板生成）
+2. 优先 `ArkPrivate.Load()`，不可用时回退 TS 实现，两者行为必须一致
+3. TypeScript 泛型类型安全贯穿实现
+4. JS 与 ABC 代码内嵌进原生模块分发
+5. 错误检查统一走 errorUtil 模式（401 参数错）
+
+### 4.4 新增容器步骤
+
+1. 新建 `js_<name>.ts` + `native_module_<name>.cpp`（遵循既有容器模板）
+2. 在 `BUILD.gn` 的 `container_names` 列表登记新容器名
+3. 按既有容器实现错误检查（errorUtil）与 Proxy 模式（如适用）
+4. 补充对应测试（容器创建、CRUD、边界、迭代器、比较排序）
+5. 更新本文件 §2 代码地图
+
+## 5. 构建与验证
+
+构建命令从 OpenHarmony 源码根目录执行，不在本子目录执行。
+
+### 5.1 构建
+
+```sh
+# 15 种容器聚合组（注意：不存在名为 container 的构建目标）
+./build.sh --product-name rk3568 --build-target container_packages
+# 单个容器（如 ArrayList；目标名与 container_names 一致）
+./build.sh --product-name rk3568 --build-target arraylist
 ```
 
-### Build Targets
-Each of the 15 collections builds independently:
-- arraylist, deque, queue, vector, linkedlist, list, stack, struct
-- treemap, treeset, hashmap, hashset
-- lightweightmap, lightweightset, plainarray
+### 5.2 测试
 
-### Build Dependencies
-**Standard OpenHarmony:**
-- `hilog:libhilog` - Logging framework
-- `napi:ace_napi` - Node-API bindings
+**本模块无独立单测目标**——不存在 `test_container_unittest`。改动后以编译验证（`container_packages`）+ 集成模块测试覆盖；新增容器时按 §4.4 第 4 步补测试。
 
-### Compiler Configuration
-- C++ Standard: C++17
-- Warnings: `-Wno-deprecated-declarations`
-- Security: PAC_RET branch protection, CFI sanitization
+### 5.3 Done 定义
 
-### Build Commands
-```bash
-# Build all container modules
-./build.sh --product-name <product_name> --build-target container
+1. ✅ 修改的文件无新增编译错误，`container_packages` 构建成功
+2. ✅ 新增/修改容器均在 `container_names` 与本文件登记
+3. ✅ 未引入公共 API 不兼容变更
+4. ✅ ArkPrivate 快路径与 TS 回退行为一致（如适用）
+5. ✅ 未违反本文件禁止事项
 
-# Build specific container (e.g., ArrayList)
-./build.sh --product-name <product_name> --build-target arraylist
+### 5.4 禁止伪造验证（强制）
 
-# Build container packages group
-./build.sh --product-name <product_name> --build-target container_packages
-```
-
-## Test Suite
-
-### Current Status
-No dedicated test directory exists for the container component within the `container/` directory.
-
-### Integration Testing
-Tests for container functionality are integrated as part of the broader ets_utils component test suite. According to bundle.json, tests may be included in:
-- Parent module test suites
-- Application-level integration tests
-- ArkTS runtime testing framework
-
-### Recommended Test Areas
-When extending this component, ensure tests cover:
-- Collection creation and initialization
-- CRUD operations (add, insert, remove, get, set)
-- Edge cases (empty collections, boundary conditions)
-- Type safety and error handling
-- Performance characteristics (time complexity)
-- Memory management and capacity handling
-- Iterator and traversal functionality
-- Comparison and sorting operations
-- Serialization/deserialization (if applicable)
-
-## Dependency
-
-### Internal Dependencies
-- **Subsystem**: `commonlibrary`
-- **Component**: `ets_utils`
-- **Module**: Part of `js_util_module` alongside `collections`, `util`, `json`, and `stream`
-
-### External Dependencies
-
-#### Core Dependencies
-1. **NAPI (ace_napi)**
-   - Purpose: Provides Node-API interface for native module registration
-   - Usage: Module initialization, property definition, JS/ABC code embedding
-   - Version: Compatible with OpenHarmony NAPI specification
-
-2. **HiLog (libhilog)**
-   - Purpose: System logging framework
-   - Usage: Error logging and debugging (through struct module)
-   - Integration: Used via errorUtil from `util.struct`
-
-3. **es2abc Compiler**
-   - Purpose: Compile JavaScript to ArkTS bytecode
-   - Usage: Convert .js files to .abc for runtime execution
-   - Integration: Part of build toolchain
-
-
-### Runtime Dependencies
-- **ArkTS Runtime**: Must support standard JavaScript collections API
-- **ArkPrivate API**: Optional fast path through `globalThis.ArkPrivate.Load()`
-- **Global Object**: Access to global scope for fallback implementations
-- **util.struct Module**: Base dictionary class used by HashMap/HashSet
-
-### External Directory Interactions
-1. **Build System**: Interacts with GN build configuration and es2abc compiler
-2. **Runtime Core**: Collections integrate with ArkTS runtime's object model
-3. **Framework Integration**: Installed to `module/util` directory
-4. **util.struct**: HashMap/HashSet extend DictionaryClass from struct module
-5. **ArkPrivate API**: Attempts to load optimized implementations when available
-
-## Boundaries
-
-### What Can Be Done Within This Component
-
-#### ✅ Allowed Operations
-1. **Collection Implementation**
-   - Implement collection classes with full CRUD operations
-   - Define collection-specific algorithms (sorting, searching, traversal)
-   - Implement capacity management and dynamic resizing
-   - Create iterator protocols for traversal
-   - Implement type-safe generic interfaces
-
-2. **Supported Collection Types**
-   - **Linear Collections**: ArrayList, LinkedList, Vector, Stack, Queue, Deque, List
-   - **Map Collections**: HashMap, TreeMap, LightweightMap
-   - **Set Collections**: HashSet, TreeSet, LightweightSet
-   - **Special Collections**: PlainArray, Struct (base class)
-
-3. **Error Handling**
-   - Validate input parameters and types
-   - Check range and boundary conditions
-   - Throw appropriate error messages
-   - Bind context validation for method calls
-   - New target validation for constructors
-
-4. **Proxy Integration**
-   - Use Proxy for property interception (as in ArrayList HandlerArrayList)
-   - Implement custom get/set/deleteProperty traps
-   - Define property descriptors and ownKeys behavior
-   - Control prototype modification attempts
-
-5. **Build Configuration**
-   - Configure TypeScript compilation settings
-   - Set up JS to ABC bytecode compilation
-   - Manage platform-specific dependencies
-   - Configure security features (CFI, PAC_RET)
-
-6. **Module Registration**
-   - Implement NAPI module registration for each collection
-   - Embed JS and ABC code in native modules
-   - Export collection classes as default exports
-   - Handle fallback implementations when ArkPrivate unavailable
-
-7. **Utility Functions**
-   - Implement comparison and sorting algorithms
-   - Create conversion methods (toArray, toString, etc.)
-   - Implement capacity management (resize, trim, increaseCapacity)
-   - Provide clone and copy functionality
-
-### What Cannot Be Done Within This Component
-
-#### ❌ Prohibited Operations
-1. **Thread Pool Management**
-   - Do NOT manage thread lifecycle or concurrency
-   - Do NOT implement thread synchronization primitives
-   - Thread management handled by concurrent modules (taskpool, worker)
-
-2. **Network or I/O Operations**
-   - Do NOT perform network requests or HTTP calls
-   - Do NOT access file system directly
-   - Do NOT implement database connections
-   - I/O operations handled by dedicated I/O modules
-
-3. **UI or Rendering**
-   - Do NOT create or manipulate UI components
-   - Do NOT handle rendering or graphics
-   - UI/Rendering handled by ACE/ArkUI framework
-
-4. **System API Calls**
-   - Do NOT directly call system-level APIs
-   - Do NOT access hardware interfaces
-   - Do NOT modify system settings
-   - System access handled by system capability modules
-
-5. **Cross-Module Dependencies**
-   - Do NOT create dependencies on collections from other modules
-   - Maintain module isolation and independence
-   - Only depend on util.struct for base dictionary functionality
-
-6. **Breaking API Changes**
-   - Do NOT change existing method signatures without deprecation
-   - Do NOT remove public APIs without migration path
-   - Maintain backward compatibility
-
-7. **Global State Pollution**
-   - Do NOT pollute global namespace beyond necessary exports
-   - Do NOT create global variables or singletons
-   - Keep state encapsulated within collection instances
-
-8. **Custom Memory Management**
-   - Do NOT implement custom allocators or memory pools
-   - Do NOT manually manage memory (use ArkTS garbage collector)
-   - Memory management handled by runtime
-
-9. **Security Bypass**
-   - Do NOT disable or bypass security features
-   - Do NOT expose internal implementation details
-   - Maintain proper encapsulation and access control
-
-### Architectural Constraints
-1. **Module Independence**: Each collection module is independently buildable and deployable
-2. **Optional Optimization**: Use ArkPrivate fast path when available, fallback to TS implementation
-3. **Type Safety**: Maintain TypeScript type safety throughout implementation
-4. **Performance**: Optimize for typical use cases while maintaining flexibility
-6. **Embedding**: JS and ABC code embedded in native modules for distribution
-7. **Proxy Usage**: Leverage ES6 Proxy for property interception where appropriate
-8. **Error Consistency**: Use consistent error checking patterns across all collections
-
-### Modification Guidelines
-When extending this component:
-1. Follow existing patterns for new collection types
-2. Implement comprehensive error checking using errorUtil patterns
-3. Use TypeScript generics for type-safe implementations
-4. Consider using Proxy for custom property behavior
-5. Provide both JS fallback and potential ArkPrivate optimization paths
-6. Maintain consistent API naming and behavior across collections
-7. Update BUILD.gn template if adding new collection types
-8. Ensure compatibility with util.struct base class where applicable
-10. Document performance characteristics and use case recommendations
+如果构建环境不可用，**不要声称完成**。列出应执行的命令、预期结果、未验证项与原因，并给出替代证据（CI 结果、人工 review checklist、`tsc --noEmit` 语法检查输出）。**不得将未执行的验证描述为已通过；不得在无证据时声称完成。**

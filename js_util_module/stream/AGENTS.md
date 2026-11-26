@@ -1,335 +1,78 @@
-# Stream Component Documentation
+# stream（@ohos.stream）模块指南
 
-## Name
-stream
+> **维护声明（MUST）**：使用 agent 修改代码时，如新增/删除文件、构建目标变更、公共 API 变更或约束变更，必须同步更新本文件。
 
-## Purpose
-The stream component provides a comprehensive stream processing framework for ArkTS/JavaScript applications. It implements four core stream types - Readable, Writable, Duplex, and Transform - enabling efficient data flow control, backpressure management, and event-driven data processing. The component supports text encoding/decoding, pipe operations for stream chaining, and flow control mechanisms like pause/resume, making it suitable for handling large datasets and real-time data streams.
+## 1. 模块定位
 
-## Primary Language
-- **TypeScript** (Primary implementation language for stream classes)
-- **C++** (Native module registration and NAPI bindings)
+stream 模块提供流式处理框架：四种核心流类型（Readable/Writable/Duplex/Transform）、背压管理（highWaterMark、doRead 返回值、drain 事件）、pipe 流串联、pause/resume 流控、事件驱动数据处理、经 TextEncoder/StringDecoder 的文本编解码集成，适用于大数据集与实时流场景。TS 层（`src/stream_js.ts`）承载实现，C++ 层只做 NAPI 注册与 JS/ABC 内嵌。
 
-## Directory Structure
-```
-stream/
-├── BUILD.gn                          # Build configuration
-├── tsconfig.json                     # TypeScript configuration
-├── stream_gen_obj.gni               # GN template for object generation
-├── native_module_stream.cpp           # Native module registration
-└── src/
-    └── stream_js.ts                  # Stream implementation
-```
+## 2. 代码地图
 
-### File Descriptions
-- **BUILD.gn**: GN build configuration defining compilation targets and dependencies
-- **tsconfig.json**: TypeScript compiler configuration
-- **stream_gen_obj.gni**: GN template for generating object files from JS and ABC code
-- **native_module_stream.cpp**: C++ file for NAPI module registration and embedded JS/ABC code
-- **src/stream_js.ts**: TypeScript implementation of Readable, Writable, Duplex, and Transform stream classes
+| 路径 | 职责 | 风险 |
+|------|------|------|
+| `src/stream_js.ts` | TS 公共 API：四类流、背压与事件实现 | 🔴 背压/事件语义错误会导致内存溢出 |
+| `native_module_stream.cpp` | NAPI 模块注册与 JS/ABC 内嵌 | 🟡 |
+| `stream_gen_obj.gni` | GN 对象生成模板 | 🟡 |
+| `BUILD.gn` / `tsconfig.json` | 构建配置 | 🟢 |
 
-## Building
+## 3. 知识路由
 
-### Build System
-The component uses GN (Generate Ninja) build system with the following build targets:
+| 任务/术语 | 先读 |
+|-----------|------|
+| 背压失败模式 | 根 `AGENTS.md` §4.5（doRead 返回值/drain 事件） |
+| TextEncoder/StringDecoder 依赖 | `js_util_module/util/AGENTS.md` |
+| Buffer（二进制基础） | `js_api_module/buffer/AGENTS.md` |
 
-1. **build_ts_js (action)**: Compiles TypeScript to JavaScript
-   - Script: `$util_module/build_ts_js.py`
-   - Input: `src/stream_js.ts`
-   - Output: `stream_js.js`
+**外部组件依赖**：`napi:ace_napi`、`hilog:libhilog`、util 模块（TextEncoder/StringDecoder）。共享配置经 `ets_utils_config.gni`。
 
-2. **gen_stream_abc (es2abc_gen_abc)**: Compiles JavaScript to ABC bytecode
-   - Input: `stream_js.js`
-   - Output: `stream.abc`
-   - Extra args: `--module`
+## 4. 约束与边界
 
-3. **stream_js (gen_obj)**: Generates object file from JavaScript code
-   - Output: `stream.o` or `stream.c` (platform-dependent)
+### 4.1 Do not（禁止项）
 
-4. **stream_abc (gen_obj)**: Generates object file from ABC bytecode
-   - Output: `stream_abc.o` or `stream_abc.c` (platform-dependent)
+1. 禁止在流实现中引入网络 I/O 或文件系统 I/O——流是数据结构抽象，不绑定具体源
+2. 禁止绕过背压机制直接写入（必须尊重 highWaterMark 与 doRead 返回值）
+3. 禁止对既有 stream 公共 API 做不兼容变更；确需变更必须走废弃流程
+4. 禁止在事件回调中做阻塞操作
+5. 禁止绕过 es2abc/TypeScript 编译流水线；禁止直接编辑 `.abc`/`.o` 构建产物
+6. 禁止修改错误码语义
+7. 禁止为通过测试删除或跳过既有用例
+8. 禁止新增功能时不更新本文件
 
-5. **stream (ohos_shared_library)**: Main shared library target
-   - Install directory: `module/util`
-   - Module name: `stream` (@ohos.util.stream)
-   - No explicit security features configured
+### 4.2 Ask before（需确认后再修改）
 
-6. **stream_static (ohos_source_set)**: Static source set containing implementation
-   - Sources: `native_module_stream.cpp`
-   - Include dirs: `include`
+- 修改 highWaterMark 或背压判定逻辑前，须先确认大数据集场景内存行为
+- 修改 pipe 错误传播语义前，须先确认流级联错误用例覆盖
+- 修改 pause/resume 时序前，须先确认与 Node.js Stream 语义对齐
 
-7. **stream_packages (group)**: Aggregates all stream packages
+### 4.3 架构不变量
 
-### Build Process Flow
-```
-stream_js.ts → stream_js.js → stream.o/stream.c → shared library
-                         ↓
-                    stream.abc → stream_abc.o/stream_abc.c → shared library
+1. 流为纯数据结构抽象，I/O 源由使用方提供
+2. 事件语义与 Node.js Stream 模型对齐
+3. 对外错误统一为 BusinessError
+
+## 5. 构建与验证
+
+构建命令从 OpenHarmony 源码根目录执行，不在本子目录执行。
+
+### 5.1 构建
+
+```sh
+./build.sh --product-name rk3568 --build-target stream
+# 聚合组（含 TS 编译流水线）
+./build.sh --product-name rk3568 --build-target stream_packages
 ```
 
-### Build Dependencies
-**Standard OpenHarmony:**
-- `hilog:libhilog` - Logging framework
-- `napi:ace_napi` - Node-API bindings
+### 5.2 测试
 
-### Compiler Configuration
-- C++ Standard: Default (not explicitly specified in config)
-- Security: No explicit security features configured
+**本模块无独立单测目标**——不存在 `test_stream_unittest`。改动后以编译验证 + 应用侧流处理集成测试覆盖（四类流、背压、pipe、编解码）。
 
-### Build Commands
-```bash
-# Build stream module
-./build.sh --product-name <product_name> --build-target stream
+### 5.3 Done 定义
 
-# Build stream packages group
-./build.sh --product-name <product_name> --build-target stream_packages
-```
+1. ✅ 修改的文件无新增编译错误，`stream` 构建成功
+2. ✅ 未引入公共 API 不兼容变更
+3. ✅ 未违反本文件禁止事项（尤其背压与 I/O 约束）
+4. ✅ 四类流与 pipe/pause/resume 行为不回归
 
-## Test Suite
+### 5.4 禁止伪造验证（强制）
 
-### Current Status
-No dedicated test directory exists for stream component within `stream/` directory.
-
-### Integration Testing
-Tests for stream functionality are integrated as part of broader ets_utils component test suite. According to bundle.json configuration, component tests may be included in:
-- Parent module test suites
-- Application-level integration tests
-- ArkTS runtime testing framework
-
-### Recommended Test Areas
-When extending this component, ensure tests cover:
-- Readable stream: read(), push(), pause(), resume(), pipe(), unpipe()
-- Writable stream: write(), end(), cork(), uncork(), setDefaultEncoding()
-- Duplex stream: Combined read/write operations
-- Transform stream: doTransform(), doFlush() implementations
-- Event handling: on(), off() for all event types
-- Flow control: pause/resume, high watermark, drain events
-- Pipe operations: Connecting Readable to Writable streams
-- Encoding/decoding: Various encoding types (UTF-8, ASCII, GBK, etc.)
-- Error handling: BusinessError with various error codes
-- Backpressure: writableNeedDrain, writableLength, writableHighWatermark
-- Callback handling: Single execution, multiple callback errors
-- End-of-stream handling: end events, closed state
-
-## Dependency
-
-### Internal Dependencies
-- **Subsystem**: `commonlibrary`
-- **Component**: `ets_utils`
-- **Module**: Part of `js_util_module` alongside `collections`, `container`, `json`, and `util`
-
-### External Dependencies
-
-#### Core Dependencies
-1. **NAPI (ace_napi)**
-   - Purpose: Provides Node-API interface for native module registration
-   - Usage: Module initialization, JS/ABC code embedding
-   - Version: Compatible with OpenHarmony NAPI specification
-
-2. **HiLog (libhilog)**
-   - Purpose: System logging framework
-   - Usage: Error logging and debugging (through `tools/log.h`)
-   - Integration: Used for logging error conditions
-
-3. **es2abc Compiler**
-   - Purpose: Compile JavaScript to ArkTS bytecode
-   - Usage: Convert .js files to .abc for runtime execution
-   - Integration: Part of build toolchain
-
-4. **util Module**
-   - Purpose: Provides TextEncoder and StringDecoder utilities
-   - Usage: Required via `requireNapi('util')`
-   - Integration: Used for encoding/decoding stream data
-
-### Runtime Dependencies
-- **ArkTS Runtime**: Must support standard stream-like API patterns
-- **Global Object**: Access to global scope for requireNapi utility
-- **util Module**: Must provide TextEncoder and StringDecoder
-- **Event Loop**: Relies on Promise.resolve() for async operation scheduling
-- **setTimeout/setInterval**: Used for async callback execution
-
-### External Directory Interactions
-1. **Build System**: Interacts with GN build configuration and es2abc compiler
-2. **Runtime Core**: Integrates with ArkTS runtime's object model
-3. **Framework Integration**: Installed to `module/util` directory
-4. **util Module**: Requires TextEncoder and StringDecoder from util module
-5. **util_module**: Uses shared build_ts_js.py script from parent directory
-
-## Boundaries
-
-### What Can Be Done Within This Component
-
-#### ✅ Allowed Operations
-1. **Stream Implementation**
-   - Implement Readable stream with data reading capabilities
-   - Implement Writable stream with data writing capabilities
-   - Implement Duplex stream combining read and write
-   - Implement Transform stream for data transformation
-   - Support event-driven architecture with EventEmitter
-
-2. **Flow Control**
-   - Implement pause/resume for Readable streams
-   - Implement backpressure with high watermark
-   - Implement drain events for Writable streams
-   - Manage buffer sizes and flow state
-   - Implement cork/uncork for write buffering
-
-3. **Data Operations**
-   - Read data chunks from Readable streams
-   - Write data chunks to Writable streams
-   - Transform data in Transform streams
-   - Push data into Readable buffers
-   - Handle encoding/decoding conversions
-
-4. **Event Handling**
-   - Implement on() for event listener registration
-   - Implement off() for event listener removal
-   - Support multiple event types (data, end, error, close, drain, etc.)
-   - Emit events with proper data flow
-
-5. **Pipe Operations**
-   - Implement pipe() to connect Readable to Writable
-   - Implement unpipe() to disconnect streams
-   - Handle automatic flow control in piped streams
-   - Manage multiple pipe destinations
-
-6. **Encoding Support**
-   - Support multiple encodings (UTF-8, ASCII, GBK, ISO-8859, etc.)
-   - Use TextEncoder for string to binary conversion
-   - Use StringDecoder for binary to string conversion
-   - Validate encoding types
-
-7. **Error Handling**
-   - Implement BusinessError class with error codes
-   - Handle stream-specific errors (write after end, multiple callbacks, etc.)
-   - Emit error events to listeners
-   - Throw errors when appropriate
-
-8. **Buffer Management**
-   - Manage internal buffers for both read and write streams
-   - Implement high watermark for backpressure
-   - Track buffer lengths
-   - Implement buffer flushing logic
-
-9. **Lifecycle Management**
-   - Implement doInitialize() for stream initialization
-   - Implement doRead() for data production
-   - Implement doWrite() for data consumption
-   - Implement doWritev() for batch writes
-   - Implement doTransform() for data transformation
-   - Implement doFlush() for final data flush
-
-10. **Build Configuration**
-    - Configure TypeScript compilation settings
-    - Set up JS to ABC bytecode compilation
-    - Manage platform-specific dependencies
-    - Use GN templates for object generation
-
-11. **Module Registration**
-    - Implement NAPI module registration
-    - Embed JS and ABC code in native module
-    - Export stream classes as default export
-    - Handle module initialization
-
-### What Cannot Be Done Within This Component
-
-#### ❌ Prohibited Operations
-1. **Network I/O**
-   - Do NOT implement network sockets or HTTP clients
-   - Do NOT perform network requests or API calls
-   - Do NOT handle network protocols
-   - Network I/O handled by dedicated network modules
-
-2. **File System I/O**
-   - Do NOT implement file reading or writing
-   - Do NOT access file system directly
-   - Do NOT implement file watching
-   - File I/O handled by dedicated I/O modules
-
-3. **UI or Rendering**
-   - Do NOT create or manipulate UI components
-   - Do NOT handle rendering or graphics
-   - UI/Rendering handled by ACE/ArkUI framework
-
-4. **System API Calls**
-   - Do NOT directly call system-level APIs
-   - Do NOT access hardware interfaces
-   - Do NOT modify system settings
-   - System access handled by system capability modules
-
-5. **Database Operations**
-   - Do NOT implement database connections
-   - Do NOT perform SQL queries
-   - Do NOT manage database transactions
-   - Database operations handled by dedicated database modules
-
-6. **Compression/Encryption**
-   - Do NOT implement compression algorithms (gzip, zlib, etc.)
-   - Do NOT implement encryption/decryption
-   - Such operations should be in separate specialized modules
-
-7. **Thread Pool Management**
-   - Do NOT manage thread lifecycle or concurrency
-   - Do NOT implement thread synchronization primitives
-   - Thread management handled by concurrent modules (taskpool, worker)
-   - Use Promise.resolve() and setTimeout() for async, not threads
-
-8. **Cross-Module Dependencies**
-   - Do NOT create dependencies on other utility modules (except util for TextEncoder/Decoder)
-   - Maintain module isolation and independence
-   - Only use built-in JavaScript/ArkTS capabilities
-
-9. **Breaking API Changes**
-   - Do NOT change existing method signatures without deprecation
-   - Do NOT remove public APIs without migration path
-   - Maintain backward compatibility with Node.js-like stream API
-
-10. **Global State Pollution**
-    - Do NOT pollute global namespace beyond module exports
-    - Do NOT create global variables or singletons
-    - Keep state encapsulated within stream instances
-
-11. **Custom Memory Management**
-    - Do NOT implement custom allocators or memory pools
-    - Do NOT manually manage memory (use ArkTS garbage collector)
-    - Memory management handled by runtime
-
-12. **Security Bypass**
-    - Do NOT disable or bypass security features
-    - Do NOT expose internal implementation details
-    - Do NOT compromise stream processing security
-    - Maintain proper input validation and sanitization
-
-13. **Async/Await in Synchronous Methods**
-    - Do NOT use async/await in synchronous stream methods
-    - Use Promise.resolve() and setTimeout() for async operations
-    - Maintain synchronous API surface with async callbacks
-
-### Architectural Constraints
-1. **Event-Driven**: All stream operations are event-driven through EventEmitter
-2. **Node.js Compatibility**: Maintain compatibility with Node.js stream API patterns
-3. **Abstract Base Classes**: Readable, Writable, Duplex, Transform are abstract base classes
-4. **Template Method Pattern**: Subclasses implement doRead(), doWrite(), doTransform(), doFlush()
-5. **Backpressure Management**: Use high watermark and drain events for flow control
-6. **Encoding Support**: Must support multiple text encodings via TextEncoder/Decoder
-7. **Callback-Based**: Use callback pattern for async operations, not promises
-8. **No Direct I/O**: Streams are abstract data flow mechanisms, not I/O implementations
-9. **Buffer Management**: Internal buffering with high watermark for performance
-10. **Error Propagation**: Errors propagate through event system and thrown exceptions
-
-### Modification Guidelines
-When extending this component:
-1. Follow Node.js stream API patterns for compatibility
-2. Implement abstract methods (doRead, doWrite, doTransform, doFlush) in subclasses
-3. Use EventEmitter for all event handling
-4. Maintain proper backpressure management with high watermark
-5. Support pause/resume flow control for Readable streams
-6. Implement cork/uncork for Writable stream buffering
-7. Validate all input parameters and throw BusinessError appropriately
-8. Use consistent error codes (401 for parameter errors, 102xxxxx for stream-specific errors)
-9. Test pipe operations between different stream types
-10. Ensure proper cleanup in error conditions and stream end
-11. Use Promise.resolve() and setTimeout() for async operation scheduling
-13. Document all event types and their data formats
-14. Consider performance implications for large data chunks
-15. Handle encoding conversions properly for international character sets
+如果构建环境不可用，**不要声称完成**。列出应执行的命令、预期结果、未验证项与原因，并给出替代证据（CI 结果、人工 review checklist、`tsc --noEmit` 语法检查输出）。**不得将未执行的验证描述为已通过；不得在无证据时声称完成。**
