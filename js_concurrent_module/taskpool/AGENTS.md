@@ -1,130 +1,100 @@
-# AGENTS
-**Name**: TaskPool
-**Purpose**: TaskPool is a concurrent task execution module for arkcompiler runtime that implements task scheduling and execution management. It provides a thread pool-based parallel execution environment for ArkTS code with features including:
-- Task execution with priority levels (HIGH, MEDIUM, LOW, IDLE)
-- Task group management for batch task execution
-- Delayed and periodic task execution
-- Task dependency management
-- Load balancing and dynamic thread pool scaling
-- Task cancellation and timeout handling
-- Task result information tracking
-- Sequence runner for ordered task execution
-- Async runner for asynchronous task execution
-- Worker thread lifecycle management
-- Task duration statistics and monitoring
-- System event reporting for diagnostics
-**Primary Language**: C++ with N-API bindings for ArkTS interoperability.
+# taskpool（@ohos.taskpool）模块指南
 
-## Directory Structure
-```text
-taskpool/
-├── BUILD.gn                                      # Main build configuration
-├── native_module_taskpool.cpp                    # NAPI module registration entry point
-├── taskpool.h / taskpool.cpp                     # Main TaskPool API class
-├── task_manager.h / task_manager.cpp             # Task manager for task lifecycle and scheduling
-├── task.h / task.cpp                             # Task implementation
-├── task_group.h / task_group.cpp                 # Task group implementation
-├── task_group_manager.h / task_group_manager.cpp # Task group manager
-├── worker.h / worker.cpp                         # Worker thread implementation
-├── thread.h / thread.cpp                         # Thread abstraction
-├── task_queue.h / task_queue.cpp                 # Task queue for scheduling
-├── task_runner.h / task_runner.cpp                # Task runner base class
-├── base_runner.h / base_runner.cpp               # Base runner implementation
-├── base_runner_manager.h / base_runner_manager.cpp # Base runner manager
-├── sequence_runner.h / sequence_runner.cpp       # Sequence runner for ordered execution
-├── sequence_runner_manager.h / sequence_runner_manager.cpp # Sequence runner manager
-├── async_runner.h / async_runner.cpp             # Async runner for async execution
-├── async_runner_manager.h / async_runner_manager.cpp # Async runner manager
-├── log_manager.h / log_manager.cpp               # Logging management
-├── dfx_hisys_event.h / dfx_hisys_event.cpp      # System event reporting
-├── AGENTS.md                                     # This documentation file
-└── test/                                         # Unit tests subdirectory
-    ├── BUILD.gn
-    ├── test.h / test.cpp
-    ├── test_taskpool.cpp                         # TaskPool-specific tests
-    └── test_ark.cpp                              # ArkTS runtime tests
+> **维护声明（MUST）**：使用 agent 修改代码时，如新增/删除文件、构建目标变更、公共 API 变更或约束变更，必须同步更新本文件。
+
+## 1. 模块定位
+
+TaskPool 是 ArkTS 并发任务调度模块：基于线程池的并行执行环境，提供任务优先级（HIGH/MEDIUM/LOW/IDLE）、任务组（TaskGroup）、延时与周期任务、任务依赖管理、负载均衡与线程池动态伸缩、任务取消与超时、任务结果信息跟踪、顺序执行器（SequenceRunner）、异步执行器（AsyncRunner）、工作线程生命周期管理、任务时长统计与 HiSysEvent 事件上报。主语言 C++17，经 N-API 绑定暴露给 ArkTS。
+
+## 2. 代码地图
+
+| 路径 | 职责 | 风险 |
+|------|------|------|
+| `native_module_taskpool.cpp` | NAPI 模块注册入口 | 🟡 导出面须与 d.ts 一致 |
+| `taskpool.h` / `taskpool.cpp` | 对外调度入口与 NAPI 方法绑定 | 🔴 调度语义核心 |
+| `task.h` / `task.cpp` | 任务对象与结果信息（TaskInfo） | 🟡 |
+| `task_group.h` / `task_group.cpp`、`task_group_manager.*` | 任务组提交与取消 | 🟡 |
+| `task_manager.h` / `task_manager.cpp` | 任务生命周期与线程池管理、负载均衡 | 🔴 状态机绕过会破坏调度 |
+| `task_queue.h` / `task_queue.cpp` | 全局任务队列（优先级、分组） | 🔴 饥饿/优先级反转风险所在 |
+| `thread.h` / `thread.cpp`、`worker.h` / `worker.cpp`（本目录内部工作线程，非 @ohos.worker 模块） | 工作线程实现 | 🔴 线程生命周期与关闭时序 |
+| `base_runner.*`、`task_runner.*` | Runner 基类与任务执行器 | 🟡 |
+| `async_runner.*`、`async_runner_manager.*` | AsyncRunner 异步执行 | 🟡 |
+| `sequence_runner.*`、`sequence_runner_manager.*` | SequenceRunner 顺序执行 | 🟡 |
+| `log_manager.*` | 任务时长统计与日志 | 🟢 |
+| `dfx_hisys_event.h` / `dfx_hisys_event.cpp` | HiSysEvent 上报（domain `ARKTS_TASKPOOL`） | 🟡 事件参数是下游硬性合约 |
+| `libtaskpool.map` | 导出符号裁剪 | 🔴 新增导出符号须同步维护 |
+| `test/` | 单元测试 | 🟢 |
+
+## 3. 知识路由
+
+| 任务/术语 | 先读 |
+|-----------|------|
+| 任务饥饿/优先级反转 | 本文件 §2（`task_queue`）+ `docs/knowledge/expert/ets-utils-expert.md` |
+| Worker 线程通信（另一模块） | `js_concurrent_module/worker/AGENTS.md`（勿与本目录 `worker.cpp` 混淆） |
+| 超时定时器（依赖 timer 模块） | `js_sys_module/timer/AGENTS.md` |
+| 共享辅助层修改 | `js_concurrent_module/common/helper/AGENTS.md` |
+| HiSysEvent 契约 | 根 `AGENTS.md` §4.2（`hisysevent.yaml`） |
+
+**外部组件依赖**：`js_sys_module/timer:timer`（超时）、`ffrt:libffrt`（经 `ets_utils_config.gni` 的 `ENABLE_TASKPOOL_FFRT` 条件启用）、`qos_manager:qos`（ohos 平台 QoS）、`hilog:libhilog`、`hitrace:hitrace_meter`、HiSysEvent（`ENABLE_TASKPOOL_HISYSEVENT`）。源码含 `../common/helper/` 共享文件与 `platform/ohos/qos_helper.cpp`。
+
+## 4. 约束与边界
+
+### 4.1 Do not（禁止项）
+
+1. 禁止对既有 taskpool 公共 API 做不兼容变更；确需变更必须走废弃流程
+2. 禁止绕过任务状态机——任务提交/取消/超时必须经 TaskManager/TaskGroupManager 既有路径
+3. 禁止直接操作线程池底层结构——伸缩与关闭必须走既有生命周期管理
+4. 禁止修改 HiSysEvent 事件名与参数定义（`hisysevent.yaml` 中 domain `ARKTS_TASKPOOL`，如 `ARK_FFRT_UV` FAULT 事件）
+5. 禁止持有 `napi_ref`/`napi_deferred` 而不注册环境清理钩子
+6. 禁止修改错误码语义与错误消息格式
+7. 禁止为通过测试删除或跳过既有用例
+8. 禁止未经协调修改 `../common/helper/` 共享文件
+9. 禁止绕过 es2abc/TypeScript 编译流水线；禁止直接编辑 `.abc`/`.o` 构建产物
+
+### 4.2 Ask before（需确认后再修改）
+
+- 修改线程池伸缩策略（worker 扩容/缩容阈值）前，须先确认长任务阻塞短任务、空闲收缩等场景用例覆盖
+- 修改优先级调度语义前，须先确认优先级反转/饥饿防护用例通过
+- 修改 SequenceRunner/AsyncRunner 行为前，须先确认对应序列语义用例通过
+- 更换 ffrt 依赖启用方式前，须先确认 `ets_utils_config.gni` 与全平台编译
+
+### 4.3 架构不变量
+
+1. 任务提交后进入全局 TaskQueue，由 TaskManager 统一调度到工作线程
+2. TaskGroup 取消语义为组内任务统一处理
+3. 依赖 timer 模块实现任务超时
+4. 对外错误统一为 BusinessError
+
+## 5. 构建与验证
+
+构建命令从 OpenHarmony 源码根目录执行，不在本子目录执行。
+
+### 5.1 构建
+
+```sh
+./build.sh --product-name rk3568 --build-target taskpool
+# 源码集（供其它目标静态链接）
+./build.sh --product-name rk3568 --build-target taskpool_static
 ```
 
-## Building
-The component uses GN build system with BUILD.gn configuration, run the following command:
-```bash
-# Build the taskpool module (within OpenHarmony build system)
-./build.sh --product-name <product> --build-target taskpool
+### 5.2 单元测试
 
-# Build static version
-./build.sh --product-name <product> --build-target taskpool_static
+```sh
+./build.sh --product-name rk3568 --build-target test_taskpool_unittest
+hdc file send ./out/rk3568/tests/unittest/ets_utils/ets_utils/js_concurrent_module/taskpool/test_taskpool_unittest /data/local/tmp/
+hdc shell "cd /data/local/tmp && chmod 777 ./test_taskpool_unittest && ./test_taskpool_unittest"
 ```
 
-## Test Suite
-To execute the code tests, run the following command:
-```bash
-# Build and generate an executable file
-./build.sh --product-name <product> --build-target test_taskpool_unittest
-# Send the executable file to the device using hdc
-hdc shell send ./out/<product>/tests/unittest/ets_utils/ets_utils/js_concurrent_module/taskpool/test_taskpool_unittest /data/local/tmp/
-# Run the executable file
-hdc shell
-cd /data/local/tmp/
-chmod 777 ./test_taskpool_unittest
-./test_taskpool_unittest
-```
+同时修改 `common/helper/` 时须补跑 `test_concurrent_unittest`（见 `js_concurrent_module/common/helper/AGENTS.md`）。
 
-## Dependency
-### Package Dependencies
-| Dependency | Purpose | Platform |
-|------------|---------|----------|
-| `napi:ace_napi` | N-API bindings for JavaScript engine | All |
-| `bounds_checking_function:libsec_shared` | Security bounds checking | All |
-| `hilog:libhilog` | System logging | All (non-Linux host) |
-| `innerkits:libhilog_linux` | System logging (Linux host) | Linux host |
-| `hitrace:hitrace_meter` | Performance tracing | All |
-| `c_utils:utils` | Common utilities | OHOS (standard) |
-| `eventhandler:libeventhandler` | Event handling | OHOS (standard) |
-| `ffrt:libffrt` | Flexible Function Runtime | OHOS (standard) |
-| `hisysevent:libhisysevent` | System event reporting | OHOS (standard) |
-| `runtime_core:ani` | ARK Native Interface | OHOS (standard) |
-| `runtime_core:libarkruntime` | ARK runtime library | OHOS (standard) |
-| `init:libbegetutil` | Init utilities | OHOS (standard) |
-| `bundle_framework:appexecfwk_base` | Bundle framework base | OHOS (standard) |
-| `bundle_framework:appexecfwk_core` | Bundle framework core | OHOS (standard) |
-| `ipc:ipc_core` | IPC core | OHOS (standard) |
-| `samgr:samgr_proxy` | System ability manager proxy | OHOS (standard) |
-| `qos_manager:qos` | Quality of Service management | OHOS (standard, optional) |
+### 5.3 Done 定义
 
-### External Directory Interactions
-- `../common/helper/` - Shared helper utilities for concurrent modules (napi_helper.cpp, concurrent_helper.cpp, async_stack_helper.cpp, hybrid_concurrent_helper.cpp)
-- `../../js_sys_module/timer/` - Timer module dependency for time-related operations
-- `../../` - Parent ets_utils module for shared configurations (ets_utils_config.gni)
-- `$platform_root/` - Platform-specific implementations (qos_helper.cpp, process_helper.cpp)
+1. ✅ 修改的文件无新增编译错误，`taskpool`（及 `taskpool_static`，如适用）构建成功
+2. ✅ `test_taskpool_unittest` 通过（或按 §5.4 声明未验证项）
+3. ✅ 未引入公共 API 不兼容变更
+4. ✅ 未违反本文件禁止事项（尤其 HiSysEvent 契约与线程生命周期）
+5. ✅ HiSysEvent 事件参数与 `hisysevent.yaml` 定义一致（如涉及）
 
-## Default Configuration
-- Default thread pool size: Determined by ConcurrentHelper::GetMaxThreads()
-- Default task priority: Priority::DEFAULT (MEDIUM)
-- Task timeout: Configurable per task
-- Load balance interval: Configurable via system properties
-- FFRT support: Enabled for system apps by default, can be disabled via flags
+### 5.4 禁止伪造验证（强制）
 
-## Boundaries
-### Allowed Operations
-- ✅ Add new task types by extending the Task class
-- ✅ Implement new runner types by extending TaskRunner
-- ✅ Add new N-API methods to expose ArkTS APIs
-- ✅ Modify task queue implementation for performance optimization
-- ✅ Add new priority levels for task scheduling
-- ✅ Extend task dependency management features
-- ✅ Add new diagnostic/telemetry events
-- ✅ Improve load balancing and thread pool scaling algorithms
-- ✅ Enhance task cancellation and timeout handling
-- ✅ Add new task execution modes
-- ✅ Extend task group management features
-- ✅ Improve error handling and exception propagation
-
-### Prohibited Operations
-- ❌ Do NOT modify shared helper files in `../common/helper/` without coordinating with other modules
-- ❌ Do NOT bypass the task lifecycle state machine
-- ❌ Do NOT use raw thread APIs - always use the provided Thread/Worker abstractions
-- ❌ Do NOT store sensitive data in task objects without proper security measures
-- ❌ Do NOT break compatibility with existing TaskPool ArkTS API contracts
-- ❌ Do NOT modify worker thread management without understanding the load balancing requirements
-- ❌ Do NOT disable task priority scheduling without proper justification
-- ❌ Do NOT remove or modify task dependency validation logic
+如果构建环境不可用，**不要声称完成**。列出应执行的命令、预期结果、未验证项与原因，并给出替代证据（CI 结果、人工 review checklist、`tsc --noEmit`/`-fsyntax-only` 语法检查输出）。**不得将未执行的验证描述为已通过；不得在无证据时声称完成。**

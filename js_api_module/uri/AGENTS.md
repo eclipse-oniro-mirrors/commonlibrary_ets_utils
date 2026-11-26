@@ -1,257 +1,94 @@
-# AGENTS
-**Name**: URI
-**Purpose**: URI (Uniform Resource Identifier) is a parsing and manipulation module for ArkTS runtime that implements standard URI functionality. It provides comprehensive URI operations including:
-- **Core Functionality**: URI parsing and validation from string input, URI component extraction (scheme, authority, path, query, fragment), URI normalization and equality comparison, query parameter management (add, get, clear, hasKey, hasValue, setAll, remove, etc.), path segment manipulation
-- **Protocol Support**: Support for both absolute and relative URIs, hierarchical and opaque URI handling, IPv4 and IPv6 host address support
-- **Encoding Operations**: URL encoding/decoding for safe character handling with comprehensive character set support
-- **Standard Compliance**: Implements RFC 3986 compliant URI parsing and manipulation
+# uri（@ohos.uri）模块指南
 
-**Primary Language**: C++ with N-API bindings for ArkTS interoperability and TypeScript wrapper layer.
+> **维护声明（MUST）**：使用 agent 修改代码时，如新增/删除文件、构建目标变更、公共 API 变更或约束变更，必须同步更新本文件。
 
-## Directory Structure
-```text
-uri/
-├── BUILD.gn                                      # Main build configuration defining compilation targets and dependencies
-├── tsconfig.json                                 # TypeScript compiler configuration (tsconfig options)
-├── src/
-│   └── js_uri.ts                                 # TypeScript API wrapper exposing Uri class and public API surface
-├── js_uri.h / js_uri.cpp                         # Core URI implementation: Uri class with RFC 3986 compliant parsing, character validation rules, component extractors, normalization algorithms
-├── native_module_uri.h / native_module_uri.cpp   # N-API module registration: UriConstructor binding, method exports (Normalize, Equals, IsAbsolute, etc.)
-└── test/                                         # Unit tests subdirectory
-    ├── BUILD.gn                                  # Test build configuration
-    ├── test.h / test_napi.cpp                    # N-API binding tests
-    └── test_ark.cpp                              # ArkTS runtime integration tests
+## 1. 模块定位
+
+URI（Uniform Resource Identifier）模块实现 RFC 3986 标准的 URI 解析与操作：字符串解析与校验、组件提取（scheme/authority/path/query/fragment）、归一化与相等比较、查询参数管理（add/get/hasKey/hasValue/setAll/remove 等）、路径段操作、IPv4/IPv6 支持、层级与不透明 URI 处理。主语言为 C++，经 N-API 绑定暴露给 ArkTS，TS 包装层位于 `src/js_uri.ts`。
+
+## 2. 代码地图
+
+| 路径 | 职责 | 风险 |
+|------|------|------|
+| `src/js_uri.ts` | TS 公共 API 包装（Uri 类与公开接口面） | 🟡 公共 API 定义层，签名变更需兼容评估 |
+| `js_uri.h` / `js_uri.cpp` | 核心 C++ 实现：RFC 3986 解析、字符校验规则、组件提取、归一化算法 | 🔴 RFC 3986 语义与错误码契约所在 |
+| `native_module_uri.h` / `native_module_uri.cpp` | NAPI 模块注册与导出（UriConstructor、Normalize、Equals、IsAbsolute 等） | 🟡 导出面须与 d.ts 一致 |
+| `liburi.map` | 动态库导出符号裁剪 | 🔴 新增导出符号须同步维护 |
+| `BUILD.gn` / `tsconfig.json` | 构建配置 | 🟢 |
+| `test/` | 单元测试（NAPI 绑定 + ArkTS 运行时集成） | 🟢 |
+
+## 3. 知识路由
+
+| 任务/术语 | 先读 |
+|-----------|------|
+| RFC 3986 解析行为变更 | 本文件 §4 + 根 `AGENTS.md` §4.5 失败模式 |
+| URL（WHATWG）相关任务 | `js_api_module/url/AGENTS.md`（勿混淆两套标准） |
+| NAPI 绑定层修改 | 根 `AGENTS.md` §3.2 路径路由 + `tools/AGENTS.md` |
+| 专家经验（错误码/坑点） | `docs/knowledge/expert/ets-utils-expert.md` |
+
+**外部组件依赖**：`napi:ace_napi`（NAPI 绑定）、`c_utils:utils`（非标准系统）、`hilog:libhilog`（日志）、`icu:shared_icuuc`（编码/国际化）、`bounds_checking_function:libsec_shared`（内存安全，测试）、`ets_runtime:libark_jsruntime`（测试）、`libuv:uv`（测试）。
+
+**构建系统协作**（本仓外，禁止当作本仓文件）：`ets_utils_config.gni`（经 `//commonlibrary/ets_utils/ets_utils_config.gni` 引用）、TypeScript 编译脚本 `js_api_module/build_ts_js.py`、es2abc 字节码编译链（`build/config/components/ets_frontend/es2abc_config.gni`，构建系统提供）。
+
+## 4. 约束与边界
+
+### 4.1 Do not（禁止项）
+
+1. 禁止对已有 Uri 公共 API 做不兼容变更（删方法、改参数类型、改返回值）；确需变更必须走废弃流程
+2. 禁止实现违反 RFC 3986 的解析逻辑；禁止绕过或修改字符校验规则（`g_ruleAlpha`、`g_ruleDigit`、`g_ruleScheme` 等）
+3. 禁止修改错误消息格式与错误码（越界 10200001 等，错误码语义是公共契约）
+4. 禁止绕过 NAPI 类型检查与安全机制；禁止不经编码考虑的原始字符串操作
+5. 禁止引入内存泄漏、缓冲区溢出、use-after-free；禁止向 JS 层暴露裸内存指针
+6. 禁止吞掉或隐藏错误；禁止为通过测试删除或跳过既有用例
+7. 禁止污染全局命名空间或修改既有全局对象原型
+8. 禁止对非依赖清单内的模块（collections/json/stream）建立依赖
+9. 禁止绕过 es2abc/TypeScript 编译流水线，禁止直接编辑 `.abc`/`.o` 构建产物
+10. 禁止新增功能时不更新本文件（而非 CLAUDE.md——本仓嵌套指南一律为 AGENTS.md）
+
+### 4.2 Ask before（需确认后再修改）
+
+- 修改 URI 组件长度上限或校验规则时，须先确认与 RFC 3986 及既有应用的兼容性
+- 修改归一化算法（scheme/路径/查询/host）时，须先确认不改变既有相等比较结果
+- 修改 `native_module_uri.cpp` 导出列表或 `liburi.map` 时，须先确认 d.ts 与导出面一致
+
+### 4.3 架构不变量
+
+1. TS 层只定义公共 API；C++ 层通过 NAPI 提供高性能实现
+2. 解析与校验逻辑只能在 `js_uri.cpp` 实现，TS 层不得复造解析规则
+3. 所有对外错误必须为 BusinessError（401 参数错 / 10200001 越界）
+
+## 5. 构建与验证
+
+构建命令从 OpenHarmony 源码根目录执行，不在本子目录执行。
+
+### 5.1 构建
+
+```sh
+./build.sh --product-name rk3568 --build-target uri
+# 静态库
+./build.sh --product-name rk3568 --build-target uri_static
+# 聚合组（含 build_ts_js / uri）
+./build.sh --product-name rk3568 --build-target uri_packages
 ```
 
-## Building
-The component uses GN (Generate Ninja) build system with BUILD.gn configuration file. The build process compiles TypeScript to JavaScript, converts to ABC bytecode using es2abc compiler, and finally links with C++ native implementation into a shared library.
+### 5.2 单元测试
 
-### Build System
-The component uses GN build system configured through BUILD.gn with the following characteristics:
-- **Build Tool**: GN (Generate Ninja) - Meta-build system that generates Ninja build files
-- **Compiler Toolchain**: C++ compiler toolchain
-- **TypeScript Compiler**: build_ts_js.py action that invokes ArkTS tsc compiler
-- **Bytecode Compiler**: es2abc compiler that converts JavaScript to ArkTS ABC bytecode
-- **Integration**: Seamless integration with ArkTS runtime and N-API framework
-
-### Build Targets
-BUILD.gn defines the following build targets:
-
-#### Core Targets
-- **gen_uri_abc**: Compiles JavaScript (.js) files to ABC bytecode (.abc) using es2abc compiler
-  - **Purpose**: Transform TypeScript source to ArkTS-executable bytecode format
-  - **Inputs**: TypeScript files from `src/` directory
-  - **Outputs**: ABC bytecode file with embedded native code
-  - **Dependencies**: es2abc compiler, ArkTS runtime headers
-
-- **uri_static**: Static library containing native C++ implementation
-  - **Purpose**: Compile C++ source files and link into static library
-  - **Sources**: `js_uri.cpp` (native implementation), related C++ files
-  - **Outputs**: `uri_static.a` / `uri_static.lib` (platform-dependent)
-  - **Note**: Static library allows compile-time optimization but does not allow runtime flexibility
-
-- **uri**: Final shared library target
-  - **Purpose**: Aggregate all components into loadable shared library
-  - **Sources**: Compiled C++ objects, embedded ABC bytecode
-  - **Outputs**: `liburi.so` (Linux), `liburi.dylib` (macOS), `liburi.dll` (Windows)
-  - **Dependencies**: uri_static (static), es2abc compiler (bytecode generation), N-API framework headers
-
-### Build Commands
-```bash
-# Build URI module (from repository root)
-./build.sh --product-name <product> --build-target uri
-
-# Build specific targets
-./build.sh --product-name <product> --build-target gen_uri_abc     # Generate ABC bytecode from TypeScript
-./build.sh --product-name <product> --build-target uri_static     # Build static library with native implementation
-./build.sh --product-name <product> --build-target uri             # Build final shared library
+```sh
+./build.sh --product-name rk3568 --build-target test_uri_unittest
+hdc file send ./out/rk3568/tests/unittest/ets_utils/ets_utils/jsapi/uri/napi/test_uri_unittest /data/local/tmp/
+hdc shell "cd /data/local/tmp && chmod 777 ./test_uri_unittest && ./test_uri_unittest"
 ```
 
-## Test Suite
-Comprehensive unit test suite covering all URI functionality areas.
+测试内容：`test_napi.cpp`（构造器、方法绑定、参数校验、BusinessError 错误码）与 `test_ark.cpp`（解析、组件提取、查询管理、路径操作、边界条件、RFC 合规）。扩展组件时按解析覆盖、组件提取、查询操作、路径操作、归一化、编码解码、错误处理七大优先级补齐用例。
 
-### Test Build
-```bash
-# Build and generate test executable
-./build.sh --product-name <product> --build-target test_uri_unittest
+### 5.3 Done 定义
 
-# Test executable output: test_uri_unittest
-# Location: ./out/<product>/tests/unittest/ets_utils/js_api_module/uri/
-```
+1. ✅ 修改的文件无新增编译错误，`uri` 构建成功
+2. ✅ `test_uri_unittest` 通过（或按 §5.4 声明未验证项）
+3. ✅ 未引入公共 API 不兼容变更（.ts 导出面与 d.ts 一致）
+4. ✅ 未违反本文件禁止事项
+5. ✅ 新增/修改的错误路径有明确 BusinessError 返回与日志
 
-### Test Execution
-```bash
-# Transfer executable to device
-hdc shell send ./out/<product>/tests/unittest/ets_utils/js_api_module/uri/test_uri_unittest /data/local/tmp/
+### 5.4 禁止伪造验证（强制）
 
-# Execute on device
-hdc shell
-cd /data/local/tmp/
-chmod 777 ./test_uri_unittest
-./test_uri_unittest
-```
-
-### Test Suite Content
-The test suite includes comprehensive tests organized by category:
-
-#### 1. N-API Binding Tests (test_napi.cpp)
-- **Constructor Tests**: Verify Uri object creation with string input
-- **Method Binding Tests**: Ensure all exported methods (Normalize, Equals, IsAbsolute, etc.) are properly bound
-- **Parameter Validation**: Type checking for all method parameters (string, number, Uri)
-- **Error Handling**: Verify BusinessError exceptions with correct error codes
-
-#### 2. ArkTS Runtime Integration Tests (test_ark.cpp)
-- **Parsing Functionality**: Test URI parsing from various valid and invalid string inputs
-- **Component Extraction**: Verify correct extraction of scheme, authority, path, query, fragment components
-- **Query Management**: Test add, get, remove, hasKey, hasValue, setAll operations
-- **Path Operations**: Test path segment manipulation (add, delete, modify)
-- **Edge Cases**: Boundary conditions (empty strings, overly long inputs, special characters)
-- **RFC 3986 Compliance**: Verify adherence to URI specification requirements
-
-#### 3. Unit Test Framework
-- **Assertions**: EXPECT_EQ, EXPECT_TRUE, EXPECT_THROW for validating expected behaviors
-- **Test Coverage**: Measure code coverage across all URI functionality
-- **Performance**: Benchmark critical parsing paths for optimization validation
-
-### Recommended Test Areas
-When extending this component, ensure tests cover:
-- **Parsing Coverage** (Priority 1)
-  - Valid URI schemes: http, https, ftp, file, mailto, etc.
-  - Invalid inputs: empty strings, malformed URIs, invalid characters
-  - RFC 3986 compliance: character validation, encoding rules
-  - Parsing failures: error messages and error codes
-  - Component boundaries: maximum lengths (各自 scheme, 2048 chars for authority, etc.)
-
-- **Component Extraction** (Priority 2)
-  - Correct scheme parsing for all valid schemes
-  - Authority format: username@host, user:pass@host
-  - Path formats: absolute, relative, path-rootless, path-absolute, path-noscheme
-  - Query string format: ?key=value&key2=value2 with proper encoding
-  - Fragment extraction: identifier after # without proper validation
-  - Opaque URIs: proper handling of non-hierarchical URIs
-
-- **Query Operations** (Priority 3)
-  - Add: insert query parameters, verify addition
-  - Get: retrieve query values, verify existence
-  - HasKey: check key existence before access
-  - HasValue: check value existence
-  - SetAll: bulk insert from map/object
-  - Remove: delete specific or all query parameters
-  - Clear: remove all query parameters
-  - Parse: string to query object conversion
-  - Stringify: query object to string format
-
-- **Path Manipulation** (Priority 4)
-  - Add: add path segments
-  - Delete: remove path segments at indices
-  - Modify: update existing path segments
-  - Slice: extract sub-paths
-  - Normalize: path normalization algorithms
-  - Join: concatenate path segments
-  - Split: break path into segments
-  - Parent: resolve parent directory references
-
-- **Normalization** (Priority 5)
-  - Scheme normalization: lowercase, remove default port
-  - Path normalization: remove dot segments, resolve . and ..
-  - Query normalization: sort parameters, encode spaces
-  - Host normalization: lowercase hostname, convert international domain names to Punycode
-  - Fragment normalization: percent-encode reserved characters
-
-- **Encoding/Decoding** (Priority 6)
-  - UTF-8 encoding: convert to/from UTF-8 byte arrays
-  - Base64: binary to text encoding for URI components
-  - Percent encoding: encode special characters as %XX
-  - Hex encoding: convert binary data to hex string
-  - Character set validation: ASCII, UTF-8, GBK, Big5, ICU character sets
-
-- **Error Handling** (Priority 7)
-  - Invalid URI format: throw BusinessError(401, "parameter error")
-  - Invalid scheme: throw BusinessError(401, "unsupported scheme")
-  - Invalid characters: throw BusinessError(401, "illegal characters")
-  - Out of range: throw BusinessError(10200001, "out of range")
-  - Missing component: throw BusinessError(401, "missing required component")
-  - Encoding errors: throw BusinessError(401, "encoding failure")
-
-- **Integration** (Priority 8)
-  - ArkTS runtime: test with real ArkTS VM
-  - N-API framework: verify N-API binding correctness
-  - Error propagation: verify error propagation through N-API layer
-  - Memory management: test with actual heap allocation/deallocation
-
-## Dependency
-### Package Dependencies
-| Dependency | Purpose | Platform |
-|------------|---------|----------|
-| `napi:ace_napi` | Node-API bindings for native module registration and export | All |
-| `c_utils:utils` | Common utility functions (logging, macros, assertions) | Non-standard system |
-| `hilog:libhilog` | System logging framework for error reporting and debugging | All |
-| `icu:shared_icuuc` | International Components for Unicode (ICU) - character encoding, locale data | All |
-| `bounds_checking_function:libsec_shared` | Security functions for bounds checking and memory safety | Test |
-| `ets_runtime:libark_jsruntime` | ArkTS JavaScript runtime engine | Test |
-| `libuv:uv` | Event loop utilities for async I/O operations | Test |
-
-### External Directory Interactions
-- `../../ets_utils_config.gni` - Parent module configuration for shared build settings
-  - Provides common compiler flags, optimization settings, and platform definitions
-- `../../build_ts_js.py` - TypeScript compilation script used by all ets_utils modules
-  - Converts `.ts` files to `.js` JavaScript files using ArkTS tsc compiler
-- `../../es2abc` (from es2abc_config.gni) - ABC bytecode compiler
-  - Converts `.js` files to `.abc` ArkTS bytecode for runtime execution
-  - Provides compiler integration and optimization flags
-- `../../include/` - Public API header directory for external module interfaces
-- `../../napi/` - N-API framework headers for native module development
-
-## Boundaries
-### Allowed Operations
-- ✅ **Extend Uri Class** - Add new URI parsing methods by extending the Uri class with additional functionality
-- ✅ **Implement N-API Bindings** - Add new N-API bindings to expose additional URI operations to ArkTS layer
-- ✅ **Query Parameter Management** - Extend query parameter manipulation functions (add, get, remove, clear, hasKey, hasValue, forEach, etc.)
-- ✅ **Path Operations** - Add new path manipulation methods (join, normalize, resolve, parent, etc.)
-- ✅ **Encoding/Decoding Support** - Add support for additional character encodings beyond UTF-8 and Base64
-- ✅ **IPv4/IPv6 Support** - Extend host address parsing to support IPv6 addresses and IPv6 zone IDs
-- ✅ **Custom URI Schemes** - Add support for custom URI schemes (e.g., jar:, urn:)
-- ✅ **Error Handling** - Add new error types with specific error codes for different failure scenarios
-- ✅ **Performance Optimization** - Optimize character encoding/decoding operations for frequently used encodings
-- ✅ **Utility Functions** - Add URI transformation utilities (escape, unescape, file URL to path, etc.)
-- ✅ **Validation Enhancement** - Add stricter validation for URI components according to RFC 3986 and security requirements
-- ✅ **Testing Support** - Add diagnostic hooks and profiling capabilities for URI operations
-- ✅ **Documentation** - Maintain clear API documentation for all Uri methods with examples
-
-### Prohibited Operations
-- ❌ **API Breaking Changes** - Do NOT modify existing Uri class public API signatures without considering backward compatibility
-  - Breaking changes include: removing methods, changing parameter types, altering return values
-  - Rationale: Existing applications depend on stable API contracts; breaking changes cause widespread failures
-  - Migration path: If breaking changes are necessary, provide deprecation warnings and migration guide
-  - Exception: Only break API if absolutely required for security or critical bug fixes
-
-- ❌ **RFC 3986 Violations** - Do NOT implement URI parsing logic that violates RFC 3986 specification
-  - **Character Validation**: Do NOT bypass or modify character validation rules (g_ruleAlpha, g_ruleDigit, g_ruleScheme, etc.)
-  - **Encoding Rules**: Do NOT use incorrect encoding rules for percent-encoding or Base64 padding
-  - **Component Separation**: Do NOT ignore # (fragment) separator or ? (query) separator without proper parsing
-  - **Length Limits**: Do NOT exceed maximum length limits for URI components (scheme limits, total length 2GB-8MB)
-  - **Security**: Do NOT introduce security vulnerabilities through URI parsing (injection attacks, buffer overflows)
-  - **Error Message Format**: Do NOT change error message format or error codes (errStr_, error numbers)
-  - **Normalization Logic**: Do NOT alter URI normalization algorithms that could lead to incorrect results
-
-- ❌ **N-API Safety Bypass** - Do NOT bypass N-API type checking and safety mechanisms
-  - **Raw String Manipulation** - Do NOT use raw string manipulation without proper encoding consideration
-  - **Type System Bypass** - Do NOT circumvent TypeScript type system for parameters
-  - **Memory Safety** - Do NOT introduce memory leaks, buffer overflows, or use-after-free vulnerabilities
-  - **Error Suppression** - Do NOT swallow or hide errors without proper handling or reporting
-
-- ❌ **Test Suite Breaking** - Do NOT modify or remove existing test cases without updating documentation
-  - **Test Coverage Reduction** - Do NOT reduce test coverage or remove critical test categories
-  - **Documentation Neglect** - Do NOT fail to update CLAUDE.md when adding new features or modifying behavior
-
-- ❌ **Global Namespace Pollution** - Do NOT add unnecessary global variables or singletons
-  - Do NOT modify existing global object prototypes without approval
-  - Do NOT create naming conflicts with existing modules or libraries
-
-- ❌ **Cross-Module Dependencies** - Do NOT create dependencies on non-util modules (collections, json, stream)
-  - Only depend on explicitly allowed external libraries listed in Dependency section
-  - Maintain module independence and clear separation of concerns
-
-- ❌ **Build System Bypass** - Do NOT modify BUILD.gn configuration directly without understanding implications
-  - Do NOT add custom build targets that break established build patterns
-  - Do NOT bypass es2abc compiler or TypeScript compilation process
+如果构建环境不可用，**不要声称完成**。列出应执行的命令、预期结果、未验证项与原因，并给出替代证据（CI 结果、人工 review checklist、`tsc --noEmit`/`-fsyntax-only` 语法检查输出）。**不得将未执行的验证描述为已通过；不得在无证据时声称完成。**

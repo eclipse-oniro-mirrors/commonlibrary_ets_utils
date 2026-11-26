@@ -2,7 +2,7 @@
 
 ## 构建前提
 
-所有构建命令从 OpenHarmony 源码根目录执行。本仓库在源码树中的路径为 `commonlibrary/ets_utils`。
+所有构建命令从 OpenHarmony 源码根目录执行，不在本仓子目录执行。本仓库在源码树中的路径为 `commonlibrary/ets_utils`。
 
 ---
 
@@ -26,16 +26,21 @@
 | XML | `./build.sh --product-name rk3568 --build-target xml` |
 | TaskPool | `./build.sh --product-name rk3568 --build-target taskpool` |
 | Worker | `./build.sh --product-name rk3568 --build-target worker` |
+| 并发工具（locks/ASON/condition） | `./build.sh --product-name rk3568 --build-target utils` |
 | Console | `./build.sh --product-name rk3568 --build-target console` |
 | Process | `./build.sh --product-name rk3568 --build-target process` |
 | Timer | `./build.sh --product-name rk3568 --build-target timer` |
+| DFX | `./build.sh --product-name rk3568 --build-target dfx` |
 | Util | `./build.sh --product-name rk3568 --build-target util` |
-| Container | `./build.sh --product-name rk3568 --build-target container` |
+| Container（15 种容器聚合） | `./build.sh --product-name rk3568 --build-target container_packages` |
+| Container（单个容器，如 ArrayList） | `./build.sh --product-name rk3568 --build-target arraylist` |
 | Collections | `./build.sh --product-name rk3568 --build-target collections` |
 | JSON | `./build.sh --product-name rk3568 --build-target json` |
 | Stream | `./build.sh --product-name rk3568 --build-target stream` |
 | BaseSDK | `./build.sh --product-name rk3568 --build-target base_sdk_ets` |
 | BaseTransfer | `./build.sh --product-name rk3568 --build-target base_transfer_ets` |
+
+> 注意：不存在名为 `container` 的构建目标，聚合目标为 `container_packages`，单个容器目标与 `js_util_module/container/BUILD.gn` 的 `container_names` 列表一致。
 
 ### 静态库目标（部分模块支持）
 
@@ -52,22 +57,19 @@
 ### 单元测试构建与运行
 
 ```sh
-# 构建测试
-./build.sh --product-name rk3568 --build-target test_<module>_unittest
+# 构建测试（示例：URI；目标与产物路径按下方表格替换）
+./build.sh --product-name rk3568 --build-target test_uri_unittest
 
 # 部署到设备
-hdc file send ./out/rk3568/tests/unittest/ets_utils/<path>/test_<module>_unittest /data/local/tmp/
+hdc file send ./out/rk3568/tests/unittest/ets_utils/ets_utils/jsapi/uri/napi/test_uri_unittest /data/local/tmp/
 
 # 执行测试
-hdc shell
-cd /data/local/tmp/
-chmod 777 ./test_<module>_unittest
-./test_<module>_unittest
+hdc shell "cd /data/local/tmp && chmod 777 ./test_uri_unittest && ./test_uri_unittest"
 ```
 
 ### 各模块测试目标与路径
 
-| 模块 | 构建目标 | 产物 `<path>`（相对 `out/rk3568/tests/unittest/ets_utils/`） |
+| 模块 | 构建目标 | 产物路径（相对 `out/rk3568/tests/unittest/ets_utils/`） |
 |------|---------|---------|
 | Buffer | `test_buffer_unittest` | `ets_utils/jsapi/buffer/napi` |
 | ConvertXML | `test_convertxml_unittest` | `ets_utils/jsapi/convertxml/napi` |
@@ -84,6 +86,16 @@ chmod 777 ./test_<module>_unittest
 | Util | `test_util_unittest` | `ets_utils/jsutil/util/napi` |
 | dfx / fastbuffer / json / stream / collections / container | 无独立单测目标 | 改动后经编译验证与相关集成模块测试覆盖 |
 
+> 注意：并发工具模块只有一个单测目标 `test_utils_unittest`（源码含 `test_locks.cpp`、`test_condition.cpp`），不存在 `test_locks_unittest`/`test_condition_unittest` 目标。
+
+### Host 单元测试（Linux，无需设备）
+
+```sh
+./build.sh --product-name rk3568 --build-target ets_utils_host_unittest
+```
+
+聚合上表全部单测目标（host toolchain），产物位于 `out/rk3568/clang_x64/tests/unittest/ets_utils/`。注意：该目标仅在 Linux host 且非独立编译（indep）模式下生效。
+
 ---
 
 ## Done 定义
@@ -92,7 +104,7 @@ chmod 777 ./test_<module>_unittest
 
 1. 所有修改的文件无新增编译错误
 2. 相关模块构建成功（`./build.sh --product-name rk3568 --build-target <module>`）
-3. 相关测试用例通过（`test_<module>_unittest`）
+3. 相关测试用例通过（`test_<module>_unittest`，以目标表为准）
 4. 未引入公共 API 不兼容变更
 5. 未违反专家经验中列出的任何禁止事项
 6. NAPI 原生代码的内存管理正确（无泄漏、无悬垂引用）
@@ -106,19 +118,20 @@ chmod 777 ./test_<module>_unittest
 
 1. **编译验证**：仅构建修改的模块
 2. **单测验证**：仅运行修改模块的单元测试
-3. **依赖影响**：如果修改了公共头文件（inner_kits）或共享辅助代码（common/helper），需额外构建依赖模块
+3. **依赖影响**：如果修改了公共头文件（inner_kits）或共享辅助代码（common/helper、tools），需额外构建依赖模块
 
 ### 按任务类型的额外验证
 
 | 任务类型 | 额外验证 |
 |---------|---------|
-| Buffer/FastBuffer NAPI 绑定 | 运行 buffer + fastbuffer 测试，验证 ArkPrivate.Load |
+| Buffer/FastBuffer NAPI 绑定 | 运行 buffer + fastbuffer 相关测试，验证 ArkPrivate.Load |
 | XML/ConvertXML | 同时验证两个模块（共用 libxml2） |
 | 并发辅助（common/helper） | 运行 TaskPool + Worker + Concurrent Utils 测试 |
 | Inner Kit 头文件 | 验证所有依赖模块构建通过 |
 | platform/ 适配 | 验证所有平台宏分支编译 |
 | JSON 模块 | 验证 parse/stringify/has/remove 全功能 + BigInt 三模式 |
 | Collections 桥接层 | 验证 NAPI 绑定 + ArkTS 运行时集合行为一致 |
+| Container 容器 | 编译 `container_packages` + 新增容器单测（如适用） |
 
 ### 回退方案
 
@@ -143,17 +156,18 @@ chmod 777 ./test_<module>_unittest
 
 任务完成时，回复必须包含：
 
-1. **修改文件列表**（含完整路径）
-2. **执行的构建/测试命令及结果**
-3. **Done 定义各项的逐项确认**（✅/❌）
+1. **变更摘要**（修改文件列表含完整路径 + 风险等级）
+2. **验证结果**（执行的构建/测试命令及结果、Done 定义逐项确认 ✅/❌）
+3. **兼容性影响**（公共 API/Inner Kit/HiSysEvent 等评估，如相关）
+4. **未验证项**（因环境限制未运行的验证 + 残留风险）
+5. **遗留项**（后续待办或风险）
 
-## 无构建环境时
+## 禁止伪造验证（强制）
 
-如果无法运行构建/测试，必须：
+如果构建环境不可用，**不要声称完成**。列出应执行的命令、预期结果、未验证项与原因，并给出替代证据（如 CI 结果链接、人工 review checklist、静态分析输出）。**不得将未执行的验证描述为已通过；不得在无证据时声称完成。** 可行的替代手段：
 
 1. 语法检查修改文件（TS 使用 `tsc --noEmit`；C++ 使用编译器的 `-fsyntax-only` 仅语法检查模式）
-2. 在回复中明确标注"未验证构建"
-3. 列出需要人工验证的项
+2. 明确列出需要人工验证的项
 
 ## 静态分析
 

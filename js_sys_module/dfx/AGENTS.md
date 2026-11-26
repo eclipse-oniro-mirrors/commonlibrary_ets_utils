@@ -1,75 +1,71 @@
-# AGENTS
-**Name**: DFX
-**Purpose**: DFX is a diagnostics and fault analysis module for ArkTS ecosystem that provides JavaScript APIs for runtime memory inspection, heap snapshot dumping, stack trace capture, and runtime statistics. It enables applications and tools to perform memory profiling and diagnostics with features including:
-- Heap snapshot dumping to file (VM mode and app mode)
-- Heap tracking with configurable time interval (start/stop)
-- Hybrid native + JavaScript stack trace building
-- Runtime statistics start/stop/print
-- ArrayBuffer total size query
-- Heap total and used size query
-**Primary Language**: C++ with N-API bindings for JavaScript interoperability.
+# dfx（@ohos.dfx）模块指南
 
-## Directory Structure
-```text
-dfx/
-├── BUILD.gn                    # Main build configuration (module name: dfx, install dir: module)
-└── native_module_dfx.cpp       # NAPI module registration + 10 exported functions
+> **维护声明（MUST）**：使用 agent 修改代码时，如新增/删除文件、构建目标变更、公共 API 变更或约束变更，必须同步更新本文件。
+
+## 1. 模块定位
+
+dfx 是诊断维护模块，提供运行时内存检查与堆分析 JS API：堆快照落盘（VM 模式与应用模式）、按时间间隔的堆跟踪（start/stop）、JS + 原生混合栈构建、运行时统计（start/stop/print）、ArrayBuffer 总大小查询、堆总量/已用量查询。主语言 C++，经 N-API 绑定暴露。
+
+## 2. 代码地图
+
+| 路径 | 职责 | 风险 |
+|------|------|------|
+| `native_module_dfx.cpp` | 全部实现：NAPI 模块注册 + 10 个导出函数 | 🔴 单文件承载模块，改动集中且直接影响诊断链路 |
+| `BUILD.gn` | 构建配置（模块名 `dfx`，安装目录 `module/`） | 🟡 安装目录属系统部署契约 |
+
+## 3. 知识路由
+
+| 任务/术语 | 先读 |
+|-----------|------|
+| 混合栈回溯辅助 | `js_concurrent_module/common/helper/AGENTS.md`（async_stack_helper） |
+| 安全故障上报 | `tools/AGENTS.md`（security_fault_reporter.h） |
+| HiSysEvent/DFX 链路 | 根 `AGENTS.md` §4.2 Ask before |
+
+**外部组件依赖**：`napi:ace_napi`、`hilog:libhilog`、运行时堆接口（ets_runtime）。
+
+## 4. 约束与边界
+
+### 4.1 Do not（禁止项）
+
+1. 禁止在快照/统计输出中泄露敏感数据（密钥、个人数据、其它应用信息）
+2. 禁止绕过运行时既有接口自造内存检查逻辑
+3. 禁止对既有 dfx 公共 API 做不兼容变更
+4. 禁止在堆跟踪回调中做耗时/阻塞操作，影响被测进程
+5. 禁止持有 `napi_ref` 而不注册环境清理钩子
+6. 禁止修改错误码语义
+7. 禁止为通过测试删除或跳过既有用例
+
+### 4.2 Ask before（需确认后再修改）
+
+- 修改快照文件路径或落盘策略前，须先确认权限与存储沙箱约束
+- 修改堆跟踪间隔语义前，须先确认调用方使用方式（应用侧 vs 工具侧）
+
+### 4.3 架构不变量
+
+1. 诊断能力只读，不修改被测运行时状态
+2. 对外错误统一为 BusinessError
+
+## 5. 构建与验证
+
+构建命令从 OpenHarmony 源码根目录执行，不在本子目录执行。
+
+### 5.1 构建
+
+```sh
+./build.sh --product-name rk3568 --build-target dfx
 ```
 
-## Building
-The component uses GN build system with BUILD.gn configuration, run the following command:
-```bash
-./build.sh --product-name <product> --build-target dfx
-```
+### 5.2 测试
 
-## Test Suite
-No dedicated test directory exists for the dfx module. DFX functionality is verified through integration tests and manual device testing.
+**本模块无独立单测目标**——不存在 `test_dfx_unittest`。改动后以编译验证 + 应用侧/工具侧诊断链路集成验证覆盖。
 
-## Dependency
-### Package Dependencies
-| Dependency | Purpose | Platform |
-|------------|---------|----------|
-| `napi:ace_napi` | N-API bindings for JavaScript engine | All |
-| `hilog:libhilog` | System logging | All |
-| `icu:shared_icuuc` | Unicode internationalization components | All |
-| `libuv:uv` | Event loop utilities | All |
-| `node:node_header_notice` | Node-API header notice | All |
-| `c_utils:utils` | Common utilities | Non-standard system |
+### 5.3 Done 定义
 
-### External Directory Interactions
-- `../../tools/log.h` - HILOG logging wrapper
-- `../../` - Parent ets_utils module for shared configurations
+1. ✅ 修改的文件无新增编译错误，`dfx` 构建成功
+2. ✅ 未引入公共 API 不兼容变更
+3. ✅ 未违反本文件禁止事项（尤其敏感信息与阻塞约束）
+4. ✅ 快照/统计输出格式与既有消费方兼容
 
-## Exported API Surface
+### 5.4 禁止伪造验证（强制）
 
-| Function | Parameters | Returns | Description |
-|----------|-----------|---------|-------------|
-| `dumpHeapSnapshot` | `path: string, isVmMode: boolean` | `void` | Dump heap snapshot to file path |
-| `buildNativeAndJsStackTrace` | — | `string` | Build hybrid native+JS stack trace |
-| `startHeapTracking` | `timeInterval: number, isVmMode: boolean` | `boolean` | Start heap tracking |
-| `stopHeapTracking` | `filePath: string` | `boolean` | Stop heap tracking, output to file |
-| `printStatisticResult` | — | `void` | Print runtime statistics |
-| `startRuntimeStat` | — | `void` | Start runtime statistics collection |
-| `stopRuntimeStat` | — | `void` | Stop runtime statistics collection |
-| `getArrayBufferSize` | — | `number` | Get ArrayBuffer total size |
-| `getHeapTotalSize` | — | `number` | Get heap total size |
-| `getHeapUsedSize` | — | `number` | Get heap used size |
-
-All functions delegate to `NativeEngine` methods via `reinterpret_cast<NativeEngine*>(env)`.
-
-## Boundaries
-### Allowed Operations
-- ✅ Add new diagnostic NAPI functions that delegate to `NativeEngine` methods
-- ✅ Extend heap snapshot/tracking configuration options
-- ✅ Add new runtime statistics metrics
-- ✅ Improve error handling and parameter validation
-- ✅ Add new stack trace capture modes
-
-### Prohibited Operations
-- ❌ Do NOT implement heap analysis logic in this module — all logic delegates to `NativeEngine`; this module is a thin NAPI binding layer
-- ❌ Do NOT modify `NativeEngine` API signatures — changes require coordination with the ArkTS runtime team
-- ❌ Do NOT break compatibility with existing DFX API contracts (`dumpHeapSnapshot`, `buildNativeAndJsStackTrace`, etc.)
-- ❌ Do NOT add file system I/O beyond what `NativeEngine` provides for snapshot/tracking output
-- ❌ Do NOT use platform-specific code without proper build guards
-- ❌ Do NOT bypass HILOG for error reporting — all errors must be logged via `HILOG_ERROR`
-- ❌ Do NOT remove the `NAPI_ASSERT` parameter count checks — they prevent runtime crashes from invalid argument counts
+如果构建环境不可用，**不要声称完成**。列出应执行的命令、预期结果、未验证项与原因，并给出替代证据（CI 结果、人工 review checklist、`-fsyntax-only` 语法检查输出）。**不得将未执行的验证描述为已通过；不得在无证据时声称完成。**
